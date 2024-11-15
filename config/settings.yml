@@ -1,0 +1,7 @@
+plugins:
+  project_uniform_enabled:
+    default: true
+    client: true
+  project_uniform_admin_only:
+    default: false
+    client: true

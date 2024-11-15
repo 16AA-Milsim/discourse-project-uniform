@@ -1,0 +1,17 @@
+<div class="project-uniform-settings">
+  <h2>Project Uniform Settings</h2>
+  {{#if tentacleVisible}}
+    <div class="tentacle">
+      <img src="https://eviltrout.com/images/tentacle.gif" alt="Project Uniform Image">
+    </div>
+  {{/if}}
+
+  <div class="buttons">
+    <DButton
+      @label="project_uniform.show"
+      @action={{action "showTentacle"}}
+      @icon="eye"
+      @id="show-tentacle"
+    />
+  </div>
+</div>
