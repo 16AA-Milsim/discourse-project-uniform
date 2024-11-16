@@ -2,3 +2,4 @@ en:
   site_settings:
     project_uniform_enabled: "Enable Project Uniform"
     project_uniform_admin_only: "Restrict Project Uniform to Admins Only"
+    project_uniform_image_upload: "Upload an image for Project Uniform"
