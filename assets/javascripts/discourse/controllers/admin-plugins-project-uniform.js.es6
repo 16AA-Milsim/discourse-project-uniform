@@ -4,54 +4,113 @@ import { tracked } from "@glimmer/tracking";
 import { ajax } from "discourse/lib/ajax"; // Import the ajax helper
 
 export default class AdminPluginsProjectUniformController extends Controller {
-  @tracked projectUniformEnabled = Discourse.SiteSettings.project_uniform_enabled;
-  @tracked projectUniformAdminOnly = Discourse.SiteSettings.project_uniform_admin_only;
-  @tracked backgroundImage = Discourse.SiteSettings.project_uniform_image_upload; // Assuming this is your background image setting
-  @tracked foregroundImage = Discourse.SiteSettings.project_uniform_foreground_image_upload; // New setting for foreground image
+  // Tracked properties for each uniform type
+  @tracked uniformImagePreviewBritishArmyEnlisted = localStorage.getItem('projectUniformImageEnlisted') || null;
+  @tracked uniformImagePreviewBritishArmyOfficers = localStorage.getItem('projectUniformImageOfficers') || null;
+  @tracked uniformImagePreviewRAFEnlisted = localStorage.getItem('projectUniformImageRAFEnlisted') || null;
+  @tracked uniformImagePreviewRAFOfficers = localStorage.getItem('projectUniformImageRAFOfficers') || null;
 
+  // British Army Enlisted
   @action
-  toggleProjectUniform(event) {
-    this.projectUniformEnabled = event.target.checked;
-    this.updateSetting("project_uniform_enabled", this.projectUniformEnabled ? "true" : "false");
-  }
-
-  @action
-  toggleAdminOnly(event) {
-    this.projectUniformAdminOnly = event.target.checked;
-    this.updateSetting("project_uniform_admin_only", this.projectUniformAdminOnly ? "true" : "false");
-  }
-
-  updateSetting(settingKey, value) {
-    ajax(`/admin/site_settings/${settingKey}`, {
-      method: "PUT",
-      data: { value }
-    }).catch((error) => {
-      console.error(`Failed to save setting: ${settingKey}`, error);
-    });
+  triggerFileUploadEnlisted() {
+    document.getElementById('uniform-image-upload-enlisted').click();
   }
 
   @action
-  handleBackgroundImageUpload(event) {
-    this.uploadImage(event.target.files[0], "project_uniform_image_upload")
-      .then((url) => {
-        this.backgroundImage = url;
-      })
-      .catch((error) => {
-        console.error("Failed to upload background image:", error);
-      });
+  handleUniformImageUploadEnlisted(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.uniformImagePreviewBritishArmyEnlisted = reader.result;
+        localStorage.setItem('projectUniformImageEnlisted', reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   @action
-  handleForegroundImageUpload(event) {
-    this.uploadImage(event.target.files[0], "project_uniform_foreground_image_upload")
-      .then((url) => {
-        this.foregroundImage = url;
-      })
-      .catch((error) => {
-        console.error("Failed to upload foreground image:", error);
-      });
+  deleteImageEnlisted() {
+    this.uniformImagePreviewBritishArmyEnlisted = null;
+    localStorage.removeItem('projectUniformImageEnlisted');
   }
 
+  // British Army Officers
+  @action
+  triggerFileUploadOfficers() {
+    document.getElementById('uniform-image-upload-officers').click();
+  }
+
+  @action
+  handleUniformImageUploadOfficers(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.uniformImagePreviewBritishArmyOfficers = reader.result;
+        localStorage.setItem('projectUniformImageOfficers', reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  @action
+  deleteImageOfficers() {
+    this.uniformImagePreviewBritishArmyOfficers = null;
+    localStorage.removeItem('projectUniformImageOfficers');
+  }
+
+  // Royal Air Force Enlisted
+  @action
+  triggerFileUploadRAFEnlisted() {
+    document.getElementById('uniform-image-upload-raf-enlisted').click();
+  }
+
+  @action
+  handleUniformImageUploadRAFEnlisted(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.uniformImagePreviewRAFEnlisted = reader.result;
+        localStorage.setItem('projectUniformImageRAFEnlisted', reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  @action
+  deleteImageRAFEnlisted() {
+    this.uniformImagePreviewRAFEnlisted = null;
+    localStorage.removeItem('projectUniformImageRAFEnlisted');
+  }
+
+  // Royal Air Force Officers
+  @action
+  triggerFileUploadRAFOfficers() {
+    document.getElementById('uniform-image-upload-raf-officers').click();
+  }
+
+  @action
+  handleUniformImageUploadRAFOfficers(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.uniformImagePreviewRAFOfficers = reader.result;
+        localStorage.setItem('projectUniformImageRAFOfficers', reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  @action
+  deleteImageRAFOfficers() {
+    this.uniformImagePreviewRAFOfficers = null;
+    localStorage.removeItem('projectUniformImageRAFOfficers');
+  }
+
+  // Optional shared upload method (if needed for background/other images)
   uploadImage(file, settingKey) {
     return new Promise((resolve, reject) => {
       if (!file) {
