@@ -1,5 +1,6 @@
+# config/locales/client.en.yml
+
 en:
   js:
     project_uniform:
-      title: "Project Uniform"
-      show: "Show Project Uniform"
+      title: "Project Uniform Settings"

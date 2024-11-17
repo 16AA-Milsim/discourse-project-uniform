@@ -9,3 +9,15 @@ plugins:
     type: upload
     default: ""
     client: true
+  project_uniform_foreground_image_upload:
+    type: upload
+    default: ""
+    client: true
+  project_uniform_tooltip_text:
+    type: string
+    default: "Center foreground image tooltip"
+    client: true
+  project_uniform_tooltip_image:
+    type: upload
+    default: ""
+    client: true

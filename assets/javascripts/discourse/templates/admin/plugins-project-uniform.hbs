@@ -1,17 +1,41 @@
-<div class="project-uniform-settings">
-  <h2>Project Uniform Settings</h2>
-  {{#if tentacleVisible}}
-    <div class="tentacle">
-      <img src="https://eviltrout.com/images/tentacle.gif" alt="Project Uniform Image">
+{{! assets/javascripts/discourse/templates/admin/plugins-project-uniform.hbs }}
+
+<h2>Project Uniform Settings</h2>
+
+<p>Configure your settings for Project Uniform here.</p>
+
+<!-- Enable Project Uniform Setting -->
+<div class="setting-container">
+  <label for="enable-uniform">Enable Project Uniform:</label>
+  <input type="checkbox" id="enable-uniform" checked={{this.projectUniformEnabled}} {{on "change" this.toggleProjectUniform}}>
+</div>
+
+<!-- Admin Only Setting -->
+<div class="setting-container">
+  <label for="admin-only">Admin Only:</label>
+  <input type="checkbox" id="admin-only" checked={{this.projectUniformAdminOnly}} {{on "change" this.toggleAdminOnly}}>
+</div>
+
+<!-- Background Image Upload Setting -->
+<div class="setting-container">
+  <label for="background-image-upload">Upload Background Image:</label>
+  <input type="file" id="background-image-upload" accept="image/*" {{on "change" this.handleBackgroundImageUpload}}>
+
+  {{#if this.backgroundImage}}
+    <div class="uploaded-image-preview">
+      <img src="{{this.backgroundImage}}" alt="Current Background Image" style="max-width: 200px; margin-top: 10px;">
     </div>
   {{/if}}
+</div>
 
-  <div class="buttons">
-    <DButton
-      @label="project_uniform.show"
-      @action={{action "showTentacle"}}
-      @icon="eye"
-      @id="show-tentacle"
-    />
-  </div>
+<!-- Foreground Image Upload Setting -->
+<div class="setting-container">
+  <label for="foreground-image-upload">Upload Foreground Image:</label>
+  <input type="file" id="foreground-image-upload" accept="image/*" {{on "change" this.handleForegroundImageUpload}}>
+
+  {{#if this.foregroundImage}}
+    <div class="uploaded-image-preview">
+      <img src="{{this.foregroundImage}}" alt="Current Foreground Image" style="max-width: 200px; margin-top: 10px;">
+    </div>
+  {{/if}}
 </div>
