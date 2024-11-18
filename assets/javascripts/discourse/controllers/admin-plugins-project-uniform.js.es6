@@ -1,126 +1,88 @@
 import Controller from "@ember/controller";
 import { action } from "@ember/object";
 import { tracked } from "@glimmer/tracking";
-import { ajax } from "discourse/lib/ajax"; // Import the ajax helper
+import { ajax } from "discourse/lib/ajax";
 
 export default class AdminPluginsProjectUniformController extends Controller {
-  // Tracked properties for each uniform type
-  @tracked uniformImagePreviewBritishArmyEnlisted = localStorage.getItem('projectUniformImageEnlisted') || null;
-  @tracked uniformImagePreviewBritishArmyOfficers = localStorage.getItem('projectUniformImageOfficers') || null;
-  @tracked uniformImagePreviewRAFEnlisted = localStorage.getItem('projectUniformImageRAFEnlisted') || null;
-  @tracked uniformImagePreviewRAFOfficers = localStorage.getItem('projectUniformImageRAFOfficers') || null;
+  // Uniforms and ranks definitions as data arrays
+  uniforms = [
+    { name: 'BA Officers', key: 'ba_officers' },
+    { name: 'BA Enlisted', key: 'ba_enlisted' },
+    { name: 'RAF Officers', key: 'raf_officers' },
+    { name: 'RAF Enlisted', key: 'raf_enlisted' }
+  ];
 
-  // British Army Enlisted
-  @action
-  triggerFileUploadEnlisted() {
-    document.getElementById('uniform-image-upload-enlisted').click();
+  britishArmyRanks = [
+    { name: 'Maj', key: 'maj' },
+    { name: 'Capt', key: 'capt' },
+    { name: 'Lt', key: 'lt' },
+    { name: '2Lt', key: '2lt' },
+    { name: 'WO1', key: 'wo1' },
+    { name: 'WO2', key: 'wo2' },
+    { name: 'CSgt/SSgt', key: 'csjt_ssjt' },
+    { name: 'Sgt', key: 'sgt' },
+    { name: 'Cpl/Bdr', key: 'cpl_bdr' },
+    { name: 'LCpl/LBdr', key: 'lcpl_lbdr' },
+    { name: 'Pte/Gnr', key: 'pte_gnr' },
+    { name: 'Rec', key: 'rec' }
+  ];
+
+  rafRanks = [
+    { name: 'Sqn Ldr', key: 'sqn_ldr' },
+    { name: 'Flt Lt', key: 'flt_lt' },
+    { name: 'Fg Off', key: 'fg_off' },
+    { name: 'Plt Off', key: 'plt_off' },
+    { name: 'FSAcr', key: 'fsacr' },
+    { name: 'SAcr', key: 'sacr' }
+  ];
+
+  capBadges = [
+    { name: 'Para', key: 'para' },
+    { name: 'RAMC', key: 'ramc' }
+  ];
+
+  // Tracked properties for image previews
+  @tracked imagePreviews = {};
+
+  // Fetch stored images when the controller initializes
+  constructor() {
+    super(...arguments);
+    this.loadStoredImages();
+  }
+
+  loadStoredImages() {
+    const allKeys = [
+      ...this.uniforms.map((item) => item.key),
+      ...this.britishArmyRanks.map((item) => item.key),
+      ...this.rafRanks.map((item) => item.key),
+      ...this.capBadges.map((item) => item.key)
+    ];
+    allKeys.forEach((key) => {
+      // Try without .json if not working
+      ajax(`/admin/site_settings/${key}`, { method: "GET" })
+        .then((response) => {
+          if (response && (response.value || typeof response === 'string')) {
+            this.imagePreviews[key] = response.value || response;
+          } else {
+            console.warn(`No valid value for key ${key}`);
+            this.imagePreviews[key] = null;
+          }
+        })
+        .catch((error) => {
+          console.error(`Failed to load image for ${key}:`, error);
+        });
+    });
   }
 
   @action
-  handleUniformImageUploadEnlisted(event) {
+  handleFileUpload(event, imageKey) {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.uniformImagePreviewBritishArmyEnlisted = reader.result;
-        localStorage.setItem('projectUniformImageEnlisted', reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  @action
-  deleteImageEnlisted() {
-    this.uniformImagePreviewBritishArmyEnlisted = null;
-    localStorage.removeItem('projectUniformImageEnlisted');
-  }
-
-  // British Army Officers
-  @action
-  triggerFileUploadOfficers() {
-    document.getElementById('uniform-image-upload-officers').click();
-  }
-
-  @action
-  handleUniformImageUploadOfficers(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.uniformImagePreviewBritishArmyOfficers = reader.result;
-        localStorage.setItem('projectUniformImageOfficers', reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  @action
-  deleteImageOfficers() {
-    this.uniformImagePreviewBritishArmyOfficers = null;
-    localStorage.removeItem('projectUniformImageOfficers');
-  }
-
-  // Royal Air Force Enlisted
-  @action
-  triggerFileUploadRAFEnlisted() {
-    document.getElementById('uniform-image-upload-raf-enlisted').click();
-  }
-
-  @action
-  handleUniformImageUploadRAFEnlisted(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.uniformImagePreviewRAFEnlisted = reader.result;
-        localStorage.setItem('projectUniformImageRAFEnlisted', reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  @action
-  deleteImageRAFEnlisted() {
-    this.uniformImagePreviewRAFEnlisted = null;
-    localStorage.removeItem('projectUniformImageRAFEnlisted');
-  }
-
-  // Royal Air Force Officers
-  @action
-  triggerFileUploadRAFOfficers() {
-    document.getElementById('uniform-image-upload-raf-officers').click();
-  }
-
-  @action
-  handleUniformImageUploadRAFOfficers(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.uniformImagePreviewRAFOfficers = reader.result;
-        localStorage.setItem('projectUniformImageRAFOfficers', reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  @action
-  deleteImageRAFOfficers() {
-    this.uniformImagePreviewRAFOfficers = null;
-    localStorage.removeItem('projectUniformImageRAFOfficers');
-  }
-
-  // Optional shared upload method (if needed for background/other images)
-  uploadImage(file, settingKey) {
-    return new Promise((resolve, reject) => {
-      if (!file) {
-        return reject("No file selected for upload.");
-      }
-
       const formData = new FormData();
       formData.append("file", file);
       formData.append("upload_type", "site_setting");
-
+      formData.append("for_site_setting", "true");
+      formData.append("client_id", "yourClientID");  
       ajax("/uploads.json", {
         method: "POST",
         data: formData,
@@ -132,17 +94,25 @@ export default class AdminPluginsProjectUniformController extends Controller {
           const imageUrl = response.url.startsWith("//")
             ? `${window.location.protocol}${response.url}`
             : response.url;
-
-          // Save the URL to the site setting
-          return ajax(`/admin/site_settings/${settingKey}`, {
+  
+          // Save the URL to the relevant site setting for persistence
+          return ajax(`/admin/site_settings/${imageKey}`, {
             method: "PUT",
             data: { value: imageUrl }
-          }).then(() => resolve(imageUrl));
+          }).then(() => {
+            console.log(`Image for ${imageKey} saved successfully.`);
+            this.imagePreviews[imageKey] = imageUrl;
+            console.log(`Image URL saved successfully for ${imageKey}:`, imageUrl);
+          }).catch((error) => {
+            console.error(`Failed to save site setting for ${imageKey}:`, error);
+          });
         } else {
           throw new Error("Image upload failed.");
         }
       })
-      .catch(reject);
-    });
-  }
+      .catch((error) => {
+        console.error("Image upload failed:", error);
+      });
+    }
+  }  
 }

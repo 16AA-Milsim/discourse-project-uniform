@@ -1,95 +1,57 @@
 <h1>Project Uniform Settings</h1>
 
 <h2>Uniforms</h2>
-
-<!-- British Army Officers -->
-<div class="uniform-image-container">
-  <h4>BA Officers</h4>
-  <div class="uniform-image-wrapper">
-    <div class="uniform-image-preview">
-      {{#if this.uniformImagePreviewBritishArmyOfficers}}
-        <img src="{{this.uniformImagePreviewBritishArmyOfficers}}" alt="British Army Officer Uniform" class="uniform-image-preview__img">
-      {{else}}
-        <div class="uniform-image-preview__placeholder">No image uploaded.</div>
-      {{/if}}
-      <button class="btn no-text btn-icon btn-default image-upload-btn" title="Upload Image" type="button" {{on "click" this.triggerFileUploadOfficers}}>
-        <svg class="fa d-icon d-icon-far-image svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#far-image"></use></svg>
-      </button>
-      <input type="file" id="uniform-image-upload-officers" accept="image/*" class="hidden-upload-field" {{on "change" this.handleUniformImageUploadOfficers}}>
-      <div class="image-upload-controls">
-        <button class="btn btn-danger no-text btn-icon" title="Delete" type="button" {{on "click" this.deleteImageOfficers}}>
-          <svg class="fa d-icon d-icon-trash-can svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#trash-can"></use></svg>
-        </button>
-      </div>
-    </div>
-  </div>
+<div class="image-row-container">
+  {{#each this.uniforms as |uniform|}}
+    <ImageContainer 
+      @title={{uniform.name}} 
+      @imageKey={{uniform.key}} 
+      @inputId="image-upload-{{uniform.key}}"
+      @initialPreview={{get this.imagePreviews uniform.key}}
+      @onFileUpload={{this.handleFileUpload}}
+      @onDeleteImage={{this.deleteImage}}
+    />
+  {{/each}}
 </div>
 
-<!-- British Army Enlisted -->
-<div class="uniform-image-container">
-  <h4>BA Enlisted</h4>
-  <div class="uniform-image-wrapper">
-    <div class="uniform-image-preview">
-      {{#if this.uniformImagePreviewBritishArmyEnlisted}}
-        <img src="{{this.uniformImagePreviewBritishArmyEnlisted}}" alt="British Army Enlisted Uniform" class="uniform-image-preview__img">
-      {{else}}
-        <div class="uniform-image-preview__placeholder">No image uploaded.</div>
-      {{/if}}
-      <button class="btn no-text btn-icon btn-default image-upload-btn" title="Upload Image" type="button" {{on "click" this.triggerFileUploadEnlisted}}>
-        <svg class="fa d-icon d-icon-far-image svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#far-image"></use></svg>
-      </button>
-      <input type="file" id="uniform-image-upload-enlisted" accept="image/*" class="hidden-upload-field" {{on "change" this.handleUniformImageUploadEnlisted}}>
-      <div class="image-upload-controls">
-        <button class="btn btn-danger no-text btn-icon" title="Delete" type="button" {{on "click" this.deleteImageEnlisted}}>
-          <svg class="fa d-icon d-icon-trash-can svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#trash-can"></use></svg>
-        </button>
-      </div>
-    </div>
-  </div>
+<h2>Cap Badges</h2>
+<div class="image-row-container">
+  {{#each this.capBadges as |badge|}}
+    <ImageContainer 
+      @title={{badge.name}} 
+      @imageKey={{badge.key}} 
+      @inputId="image-upload-{{badge.key}}"
+      @initialPreview={{get this.imagePreviews badge.key}}
+      @onFileUpload={{this.handleFileUpload}}
+      @onDeleteImage={{this.deleteImage}}
+    />
+  {{/each}}
 </div>
 
-<!-- Royal Air Force Officers -->
-<div class="uniform-image-container">
-  <h4>RAF Officers</h4>
-  <div class="uniform-image-wrapper">
-    <div class="uniform-image-preview">
-      {{#if this.uniformImagePreviewRAFOfficers}}
-        <img src="{{this.uniformImagePreviewRAFOfficers}}" alt="RAF Officer Uniform" class="uniform-image-preview__img">
-      {{else}}
-        <div class="uniform-image-preview__placeholder">No image uploaded.</div>
-      {{/if}}
-      <button class="btn no-text btn-icon btn-default image-upload-btn" title="Upload Image" type="button" {{on "click" this.triggerFileUploadRAFOfficers}}>
-        <svg class="fa d-icon d-icon-far-image svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#far-image"></use></svg>
-      </button>
-      <input type="file" id="uniform-image-upload-raf-officers" accept="image/*" class="hidden-upload-field" {{on "change" this.handleUniformImageUploadRAFOfficers}}>
-      <div class="image-upload-controls">
-        <button class="btn btn-danger no-text btn-icon" title="Delete" type="button" {{on "click" this.deleteImageRAFOfficers}}>
-          <svg class="fa d-icon d-icon-trash-can svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#trash-can"></use></svg>
-        </button>
-      </div>
-    </div>
-  </div>
+<h2>Ranks - British Army</h2>
+<div class="image-row-container">
+  {{#each this.britishArmyRanks as |rank|}}
+    <ImageContainer 
+      @title={{rank.name}} 
+      @imageKey={{rank.key}} 
+      @inputId="image-upload-{{rank.key}}"
+      @initialPreview={{get this.imagePreviews rank.key}}
+      @onFileUpload={{this.handleFileUpload}}
+      @onDeleteImage={{this.deleteImage}}
+    />
+  {{/each}}
 </div>
 
-<!-- Royal Air Force Enlisted -->
-<div class="uniform-image-container">
-  <h4>RAF Enlisted</h4>
-  <div class="uniform-image-wrapper">
-    <div class="uniform-image-preview">
-      {{#if this.uniformImagePreviewRAFEnlisted}}
-        <img src="{{this.uniformImagePreviewRAFEnlisted}}" alt="RAF Enlisted Uniform" class="uniform-image-preview__img">
-      {{else}}
-        <div class="uniform-image-preview__placeholder">No image uploaded.</div>
-      {{/if}}
-      <button class="btn no-text btn-icon btn-default image-upload-btn" title="Upload Image" type="button" {{on "click" this.triggerFileUploadRAFEnlisted}}>
-        <svg class="fa d-icon d-icon-far-image svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#far-image"></use></svg>
-      </button>
-      <input type="file" id="uniform-image-upload-raf-enlisted" accept="image/*" class="hidden-upload-field" {{on "change" this.handleUniformImageUploadRAFEnlisted}}>
-      <div class="image-upload-controls">
-        <button class="btn btn-danger no-text btn-icon" title="Delete" type="button" {{on "click" this.deleteImageRAFEnlisted}}>
-          <svg class="fa d-icon d-icon-trash-can svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#trash-can"></use></svg>
-        </button>
-      </div>
-    </div>
-  </div>
+<h2>Ranks - Royal Air Force</h2>
+<div class="image-row-container">
+  {{#each this.rafRanks as |rank|}}
+    <ImageContainer 
+      @title={{rank.name}} 
+      @imageKey={{rank.key}} 
+      @inputId="image-upload-{{rank.key}}"
+      @initialPreview={{get this.imagePreviews rank.key}}
+      @onFileUpload={{this.handleFileUpload}}
+      @onDeleteImage={{this.deleteImage}}
+    />
+  {{/each}}
 </div>
