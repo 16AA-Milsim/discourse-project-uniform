@@ -1,0 +1,710 @@
+==== FILE: ./plugin.rb ====
+# name: project-uniform
+# about: Adds a placeholder image to the user's summary page
+# version: 0.1.0
+# authors: Daniel Frederiksen
+
+enabled_site_setting :project_uniform_enabled
+
+add_admin_route 'project_uniform.title', 'project-uniform'
+
+register_asset "stylesheets/project-uniform.scss"
+
+Discourse::Application.routes.append do
+  get '/admin/plugins/project-uniform' => 'admin/site_settings#index', constraints: StaffConstraint.new, defaults: { filter: 'project uniform' }
+end
+
+
+
+==== FILE: ./config/locales/en.yml ====
+en:
+  project_uniform:
+    description: "A plugin to add a Service Uniform to user Summary pages"
+
+
+
+==== FILE: ./config/locales/server.en.yml ====
+en:
+  site_settings:
+    project_uniform_enabled: "Enable Project Uniform"
+    project_uniform_admin_only: "Restrict Project Uniform output visibility to Admins Only"
+    project_uniform_image_upload: "Upload an image for Project Uniform"
+    project_uniform_overlay_image_upload: "Upload an overlay image for Project Uniform"
+  js:
+    project_uniform:
+      title: "Project Uniform"
+
+
+==== FILE: ./config/locales/client.en.yml ====
+# config/locales/client.en.yml
+
+en:
+  js:
+    project_uniform:
+      title: "Project Uniform"
+
+
+
+==== FILE: ./config/settings.yml ====
+plugins:
+  project_uniform_enabled:
+    type: boolean
+    default: true
+    client: true
+  project_uniform_image_upload:
+    type: upload
+    default: ""
+    client: true
+  project_uniform_foreground_image_upload:
+    type: upload
+    default: ""
+    client: true
+  project_uniform_tooltip_text:
+    type: string
+    default: "Center foreground image tooltip"
+    client: true
+  project_uniform_tooltip_image:
+    type: upload
+    default: ""
+    client: true
+
+  # Uniforms
+  ba_officers:
+    type: upload
+    default: ""
+    client: true
+  ba_enlisted:
+    type: upload
+    default: ""
+    client: true
+  raf_officers:
+    type: upload
+    default: ""
+    client: true
+  raf_enlisted:
+    type: upload
+    default: ""
+    client: true
+
+  # British Army Ranks
+  maj:
+    type: upload
+    default: ""
+    client: true
+  capt:
+    type: upload
+    default: ""
+    client: true
+  lt:
+    type: upload
+    default: ""
+    client: true
+  2lt:
+    type: upload
+    default: ""
+    client: true
+  wo1:
+    type: upload
+    default: ""
+    client: true
+  wo2:
+    type: upload
+    default: ""
+    client: true
+  csjt_ssjt:
+    type: upload
+    default: ""
+    client: true
+  sgt:
+    type: upload
+    default: ""
+    client: true
+  cpl_bdr:
+    type: upload
+    default: ""
+    client: true
+  lcpl_lbdr:
+    type: upload
+    default: ""
+    client: true
+  pte_gnr:
+    type: upload
+    default: ""
+    client: true
+  rec:
+    type: upload
+    default: ""
+    client: true
+
+  # RAF Ranks
+  sqn_ldr:
+    type: upload
+    default: ""
+    client: true
+  flt_lt:
+    type: upload
+    default: ""
+    client: true
+  fg_off:
+    type: upload
+    default: ""
+    client: true
+  plt_off:
+    type: upload
+    default: ""
+    client: true
+  fsacr:
+    type: upload
+    default: ""
+    client: true
+  sacr:
+    type: upload
+    default: ""
+    client: true
+
+  # Cap Badges
+  para:
+    type: upload
+    default: ""
+    client: true
+  ramc:
+    type: upload
+    default: ""
+    client: true
+
+
+
+==== FILE: ./assets/stylesheets/project-uniform.scss ====
+.image-row-container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap; /* This ensures wrapping of items when more than 4 per row */
+    width: 100%; /* Allow the container to be flexible */
+    width: 940px; /* Optional: You can limit the maximum width for better control */
+}
+
+.image-container {
+    flex: 1 1 calc(25%); /* Flex-basis 25% minus the gap to allow for four columns */
+    box-sizing: border-box;
+    margin-bottom: 20px; /* Optional: Adjust to control vertical spacing */
+}
+
+.image-upload-btn, .btn, .btn-danger {
+    border: 1px solid rgba(0, 0, 0, 0);
+    font-size: var(--font-0);
+    line-height: normal;
+    box-sizing: border-box;
+    padding: .5em .65em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-weight: normal;
+    border-radius: var(--d-button-border-radius);
+    transition: var(--d-button-transition);
+    cursor: pointer;
+}
+
+.image-upload-btn {
+    color: var(--primary);
+    background-color: #6d6d6d;
+    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0));
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    z-index: 10;
+}
+
+.btn-danger {
+    color: var(--secondary);
+    background-color: var(--danger);
+    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0));
+}
+
+.btn-danger:hover svg {
+    fill: rgb(83, 83, 83); /* Change to your desired color */
+}
+
+.btn-danger .d-icon{
+    color: #ccc;
+}
+
+.image-upload-btn svg, .btn svg {
+    vertical-align: middle;
+}
+
+.image-upload-controls {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 5px;
+}
+
+.hidden-upload-field {
+    display: none;
+}
+
+.image-wrapper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.image-preview {
+    flex: 0 0 auto;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 200px;
+    height: 150px;
+    overflow: hidden;
+    background-color: #969696;
+    box-sizing: border-box;
+}
+
+.image-preview__img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+
+
+==== FILE: ./assets/javascripts/discourse/components/image-container.js ====
+import Component from '@glimmer/component';
+import { action } from '@ember/object';
+import { tracked } from '@glimmer/tracking';
+
+export default class ImageContainerComponent extends Component {
+  @tracked imagePreview = null;
+
+  constructor() {
+    super(...arguments);
+    // Initialize image preview from a passed argument or fallback
+    this.imagePreview = this.args.initialPreview || null;
+  }
+
+  @action
+  triggerFileUpload() {
+    document.getElementById(this.args.inputId).click();
+  }
+
+  @action
+  handleImageUpload(event) {
+    if (typeof this.args.onFileUpload === 'function') {
+      // Delegate the upload handling to the provided action
+      this.args.onFileUpload(event, this.args.imageKey);
+    } else {
+      console.error("No 'onFileUpload' action provided.");
+    }
+  }
+
+  @action
+  deleteImage() {
+    this.imagePreview = null;
+    if (typeof this.args.onDeleteImage === 'function') {
+      this.args.onDeleteImage(this.args.imageKey);
+    }
+  }
+}
+
+
+
+==== FILE: ./assets/javascripts/discourse/templates/components/image-container.hbs ====
+<div class="image-container">
+  <h4>{{@title}}</h4>
+  <div class="image-wrapper">
+    <div class="image-preview" style="background-color: {{if this.imagePreview '#909090' 'rgba(255, 100, 100, 0.2)'}};">
+      {{#if this.imagePreview}}
+        <img src="{{this.imagePreview}}" alt="{{@title}} Image" class="image-preview__img">
+      {{else}}
+        <div class="image-preview__placeholder">No image uploaded.</div>
+      {{/if}}
+      <button class="btn no-text btn-icon btn-default image-upload-btn" title="Upload Image" type="button" {{on "click" this.triggerFileUpload}}>
+        <svg class="fa d-icon d-icon-far-image svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#far-image"></use></svg>
+      </button>
+      <input type="file" id="{{@inputId}}" accept="image/*" class="hidden-upload-field" {{on "change" this.handleImageUpload}}>
+      <div class="image-upload-controls">
+        <button class="btn btn-danger no-text btn-icon" title="Delete" type="button" {{on "click" this.deleteImage}}>
+          <svg class="fa d-icon d-icon-trash-can svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#trash-can"></use></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+==== FILE: ./assets/javascripts/discourse/templates/admin/plugins-project-uniform.hbs ====
+<h1>Project Uniform Settings</h1>
+
+<h2>Uniforms</h2>
+<div class="image-row-container">
+  {{#each this.uniforms as |uniform|}}
+    <ImageContainer 
+      @title={{uniform.name}} 
+      @imageKey={{uniform.key}} 
+      @inputId="image-upload-{{uniform.key}}"
+      @initialPreview={{get this.imagePreviews uniform.key}}
+      @onFileUpload={{this.handleFileUpload}}
+      @onDeleteImage={{this.deleteImage}}
+    />
+  {{/each}}
+</div>
+
+<h2>Cap Badges</h2>
+<div class="image-row-container">
+  {{#each this.capBadges as |badge|}}
+    <ImageContainer 
+      @title={{badge.name}} 
+      @imageKey={{badge.key}} 
+      @inputId="image-upload-{{badge.key}}"
+      @initialPreview={{get this.imagePreviews badge.key}}
+      @onFileUpload={{this.handleFileUpload}}
+      @onDeleteImage={{this.deleteImage}}
+    />
+  {{/each}}
+</div>
+
+<h2>Ranks - British Army</h2>
+<div class="image-row-container">
+  {{#each this.britishArmyRanks as |rank|}}
+    <ImageContainer 
+      @title={{rank.name}} 
+      @imageKey={{rank.key}} 
+      @inputId="image-upload-{{rank.key}}"
+      @initialPreview={{get this.imagePreviews rank.key}}
+      @onFileUpload={{this.handleFileUpload}}
+      @onDeleteImage={{this.deleteImage}}
+    />
+  {{/each}}
+</div>
+
+<h2>Ranks - Royal Air Force</h2>
+<div class="image-row-container">
+  {{#each this.rafRanks as |rank|}}
+    <ImageContainer 
+      @title={{rank.name}} 
+      @imageKey={{rank.key}} 
+      @inputId="image-upload-{{rank.key}}"
+      @initialPreview={{get this.imagePreviews rank.key}}
+      @onFileUpload={{this.handleFileUpload}}
+      @onDeleteImage={{this.deleteImage}}
+    />
+  {{/each}}
+</div>
+
+
+
+==== FILE: ./assets/javascripts/discourse/controllers/admin-plugins-project-uniform.js.es6 ====
+import Controller from "@ember/controller";
+import { action } from "@ember/object";
+import { tracked } from "@glimmer/tracking";
+import { ajax } from "discourse/lib/ajax";
+
+export default class AdminPluginsProjectUniformController extends Controller {
+  // Uniforms and ranks definitions as data arrays
+  uniforms = [
+    { name: 'BA Officers', key: 'ba_officers' },
+    { name: 'BA Enlisted', key: 'ba_enlisted' },
+    { name: 'RAF Officers', key: 'raf_officers' },
+    { name: 'RAF Enlisted', key: 'raf_enlisted' }
+  ];
+
+  britishArmyRanks = [
+    { name: 'Maj', key: 'maj' },
+    { name: 'Capt', key: 'capt' },
+    { name: 'Lt', key: 'lt' },
+    { name: '2Lt', key: '2lt' },
+    { name: 'WO1', key: 'wo1' },
+    { name: 'WO2', key: 'wo2' },
+    { name: 'CSgt/SSgt', key: 'csjt_ssjt' },
+    { name: 'Sgt', key: 'sgt' },
+    { name: 'Cpl/Bdr', key: 'cpl_bdr' },
+    { name: 'LCpl/LBdr', key: 'lcpl_lbdr' },
+    { name: 'Pte/Gnr', key: 'pte_gnr' },
+    { name: 'Rec', key: 'rec' }
+  ];
+
+  rafRanks = [
+    { name: 'Sqn Ldr', key: 'sqn_ldr' },
+    { name: 'Flt Lt', key: 'flt_lt' },
+    { name: 'Fg Off', key: 'fg_off' },
+    { name: 'Plt Off', key: 'plt_off' },
+    { name: 'FSAcr', key: 'fsacr' },
+    { name: 'SAcr', key: 'sacr' }
+  ];
+
+  capBadges = [
+    { name: 'Para', key: 'para' },
+    { name: 'RAMC', key: 'ramc' }
+  ];
+
+  // Tracked properties for image previews
+  @tracked imagePreviews = {};
+
+  // Fetch stored images when the controller initializes
+  constructor() {
+    super(...arguments);
+    this.loadStoredImages();
+  }
+
+  loadStoredImages() {
+    const allKeys = [
+      ...this.uniforms.map((item) => item.key),
+      ...this.britishArmyRanks.map((item) => item.key),
+      ...this.rafRanks.map((item) => item.key),
+      ...this.capBadges.map((item) => item.key)
+    ];
+    allKeys.forEach((key) => {
+      // Try without .json if not working
+      ajax(`/admin/site_settings/${key}`, { method: "GET" })
+        .then((response) => {
+          if (response && (response.value || typeof response === 'string')) {
+            this.imagePreviews[key] = response.value || response;
+          } else {
+            console.warn(`No valid value for key ${key}`);
+            this.imagePreviews[key] = null;
+          }
+        })
+        .catch((error) => {
+          console.error(`Failed to load image for ${key}:`, error);
+        });
+    });
+  }
+
+  @action
+  handleFileUpload(event, imageKey) {
+    const file = event.target.files[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_type", "site_setting");
+      formData.append("for_site_setting", "true");
+      formData.append("client_id", "yourClientID");  
+      ajax("/uploads.json", {
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false
+      })
+      .then((response) => {
+        if (response && response.url) {
+          const imageUrl = response.url.startsWith("//")
+            ? `${window.location.protocol}${response.url}`
+            : response.url;
+  
+          // Save the URL to the relevant site setting for persistence
+          return ajax(`/admin/site_settings/${imageKey}`, {
+            method: "PUT",
+            data: { value: imageUrl }
+          }).then(() => {
+            console.log(`Image for ${imageKey} saved successfully.`);
+            this.imagePreviews[imageKey] = imageUrl;
+            console.log(`Image URL saved successfully for ${imageKey}:`, imageUrl);
+          }).catch((error) => {
+            console.error(`Failed to save site setting for ${imageKey}:`, error);
+          });
+        } else {
+          throw new Error("Image upload failed.");
+        }
+      })
+      .catch((error) => {
+        console.error("Image upload failed:", error);
+      });
+    }
+  }  
+}
+
+
+==== FILE: ./assets/javascripts/discourse/project-uniform-route-map.js ====
+export default {
+    resource: 'admin.adminPlugins',
+    path: '/plugins',
+    map() {
+      this.route('project-uniform');
+    }
+  };
+  
+
+
+==== FILE: ./assets/javascripts/discourse/initializers/intializers.js.es6 ====
+import { withPluginApi } from 'discourse/lib/plugin-api';
+
+export default {
+  name: 'project-uniform',
+  initialize() {
+    withPluginApi('0.8.26', api => {
+      api.onPageChange(url => {
+        if (url && url.includes('/u/') && url.includes('/summary')) {
+          const container = document.querySelector('.user-content');
+          if (container && !document.querySelector('.project-uniform-placeholder')) {
+            // Extract username from URL
+            const username = url.split('/u/')[1].split('/')[0];
+            const apiUrl = `/u/${username}.json`;
+
+            // Fetch user data
+            fetch(apiUrl)
+              .then(response => response.ok ? response.json() : Promise.reject(response.statusText))
+              .then(userData => {
+                if (userData?.user) {
+                  const { user, user_badges = [], badges = [] } = userData;
+                  const groups = user.groups || [];
+
+                  // Extract badge names
+                  const badgeNames = user_badges.map(ub => badges.find(b => b.id === ub.badge_id)?.name || 'Unnamed Badge');
+
+                  // Display user information
+                  const userInfo = createUserInfo(groups, badgeNames);
+                  container.prepend(userInfo);
+
+                  // Retrieve and format uploaded image URLs
+                  const backgroundImageUrl = formatUrl(Discourse.SiteSettings.project_uniform_image_upload);
+                  const foregroundImageUrl = formatUrl(Discourse.SiteSettings.project_uniform_foreground_image_upload);
+
+                  // Create and merge images on a canvas
+                  mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl);
+                }
+              })
+              .catch(error => console.error('Error fetching user data:', error));
+          }
+        }
+      });
+    });
+  }
+};
+
+function createUserInfo(groups, badgeNames) {
+  const userInfo = document.createElement('div');
+  userInfo.style.textAlign = 'center';
+  userInfo.style.marginBottom = '10px';
+  userInfo.className = 'project-uniform-user-info';
+
+  const groupsElement = document.createElement('p');
+  groupsElement.textContent = `Groups: ${groups.map(group => group.name).join(', ') || 'None'}`;
+
+  const badgesElement = document.createElement('p');
+  badgesElement.textContent = `Badges: ${badgeNames.length > 0 ? badgeNames.join(', ') : 'None'}`;
+
+  userInfo.appendChild(groupsElement);
+  userInfo.appendChild(badgesElement);
+
+  return userInfo;
+}
+
+function formatUrl(url) {
+  return url?.startsWith('/') ? `${window.location.origin}${url}` : url;
+}
+
+function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const bgImage = new Image();
+  const fgImage = new Image();
+  let imagesLoaded = 0;
+
+  const onImageLoad = () => {
+    imagesLoaded++;
+    if (imagesLoaded === 2) {
+      // Set canvas size and draw images
+      canvas.width = bgImage.naturalWidth || 1;
+      canvas.height = bgImage.naturalHeight || 1;
+      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+      const fgWidth = fgImage.naturalWidth || 0;
+      const fgHeight = fgImage.naturalHeight || 0;
+      const fgX = (canvas.width - fgWidth) / 2;
+      const fgY = (canvas.height - fgHeight) / 2;
+      if (fgWidth > 0 && fgHeight > 0) {
+        ctx.drawImage(fgImage, fgX, fgY, fgWidth, fgHeight);
+      }
+
+      // Display the merged image
+      const mergedImage = createImageElement(canvas.toDataURL('image/png'), 'Merged Project Uniform Image');
+      container.prepend(mergedImage);
+
+      // Add tooltip if foreground image is present
+      if (fgWidth > 0 && fgHeight > 0) {
+        createTooltip(mergedImage, fgX, fgY, fgWidth, fgHeight);
+      }
+    }
+  };
+
+  bgImage.onload = onImageLoad;
+  fgImage.onload = onImageLoad;
+  bgImage.onerror = onImageLoad;
+  fgImage.onerror = onImageLoad;
+
+  bgImage.src = backgroundImageUrl || '';
+  fgImage.src = foregroundImageUrl || '';
+}
+
+function createImageElement(src, alt) {
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = alt;
+  img.style.display = 'block';
+  img.style.margin = '0 auto';
+  img.style.position = 'relative';
+  return img;
+}
+
+function createTooltip(element, fgX, fgY, fgWidth, fgHeight) {
+  const tooltip = document.createElement('div');
+  const tooltipText = Discourse.SiteSettings.project_uniform_tooltip_text || 'Center foreground image tooltip';
+  tooltip.textContent = tooltipText;
+  tooltip.style.position = 'absolute';
+  tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+  tooltip.style.color = '#fff';
+  tooltip.style.padding = '5px';
+  tooltip.style.borderRadius = '3px';
+  tooltip.style.whiteSpace = 'nowrap';
+  tooltip.style.visibility = 'hidden';
+  tooltip.style.zIndex = '1000';
+  tooltip.style.transition = 'opacity 0.2s';
+  tooltip.style.opacity = '0';
+
+  // Optionally add an image to the tooltip if provided
+  const tooltipImageUrl = Discourse.SiteSettings.project_uniform_tooltip_image;
+  if (tooltipImageUrl) {
+    const tooltipImage = document.createElement('img');
+    tooltipImage.src = tooltipImageUrl.startsWith('/')
+      ? `${window.location.origin}${tooltipImageUrl}`
+      : tooltipImageUrl;
+    tooltipImage.style.display = 'block';
+    tooltipImage.style.maxWidth = '100px'; // Adjust the size as needed
+    tooltipImage.style.marginTop = '5px';
+    tooltip.appendChild(tooltipImage);
+  }
+
+  document.body.appendChild(tooltip);
+
+  element.addEventListener('mousemove', (e) => {
+    const rect = element.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (mouseX >= fgX && mouseX <= fgX + fgWidth && mouseY >= fgY && mouseY <= fgY + fgHeight) {
+      tooltip.style.left = `${e.pageX + 10}px`;
+      tooltip.style.top = `${e.pageY + 10}px`;
+      tooltip.style.visibility = 'visible';
+      tooltip.style.opacity = '1';
+    } else {
+      tooltip.style.visibility = 'hidden';
+      tooltip.style.opacity = '0';
+    }
+  });
+
+  element.addEventListener('mouseleave', () => {
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.opacity = '0';
+  });
+}
+
+
+
+

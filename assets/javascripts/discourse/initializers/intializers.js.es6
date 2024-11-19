@@ -28,8 +28,21 @@ export default {
                   container.prepend(userInfo);
 
                   // Retrieve and format uploaded image URLs
-                  const backgroundImageUrl = formatUrl(Discourse.SiteSettings.project_uniform_image_upload);
-                  const foregroundImageUrl = formatUrl(Discourse.SiteSettings.project_uniform_foreground_image_upload);
+                  const backgroundImageUrl = formatUrl(Discourse.SiteSettings.ba_enlisted_uniform);
+                  let foregroundImageUrl = '';
+
+                  // Conditionally add images based on group membership
+                  if (groups.some(group => group.name === 'Sergeant')) {
+                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.sgt_rank);
+                  } else if (groups.some(group => group.name === 'Corporal')) {
+                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.cpl_bdr_rank);
+                  } else if (groups.some(group => group.name === 'Bombardier')) {
+                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.cpl_bdr_rank);
+                  } else if (groups.some(group => group.name === 'Lance_Corporal')) {
+                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.lcpl_lbdr_rank);
+                  } else if (groups.some(group => group.name === 'Lance_Bombardier')) {
+                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.lcpl_lbdr_rank);
+                  }
 
                   // Create and merge images on a canvas
                   mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl);
@@ -75,28 +88,39 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl) 
 
   const onImageLoad = () => {
     imagesLoaded++;
-    if (imagesLoaded === 2) {
+    if (imagesLoaded === 2 || (imagesLoaded === 1 && !foregroundImageUrl)) {
       // Set canvas size and draw images
       canvas.width = bgImage.naturalWidth || 1;
       canvas.height = bgImage.naturalHeight || 1;
+
+      // Add shadow for background image
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'; // Shadow color
+      ctx.shadowBlur = 10; // Shadow blur radius
+      ctx.shadowOffsetX = 0; // Horizontal offset
+      ctx.shadowOffsetY = 0; // Vertical offset
+
+      // Draw the background image with shadow
       ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
-      const fgWidth = fgImage.naturalWidth || 0;
-      const fgHeight = fgImage.naturalHeight || 0;
-      const fgX = (canvas.width - fgWidth) / 2;
-      const fgY = (canvas.height - fgHeight) / 2;
-      if (fgWidth > 0 && fgHeight > 0) {
-        ctx.drawImage(fgImage, fgX, fgY, fgWidth, fgHeight);
+      // Reset shadow settings to prevent it from affecting the foreground image
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      if (foregroundImageUrl) {
+        const fgWidth = fgImage.naturalWidth || 0;
+        const fgHeight = fgImage.naturalHeight || 0;
+        const fgX = (canvas.width - fgWidth) / 2;
+        const fgY = (canvas.height - fgHeight) / 2;
+        if (fgWidth > 0 && fgHeight > 0) {
+          ctx.drawImage(fgImage, fgX, fgY, fgWidth, fgHeight);
+        }
       }
 
       // Display the merged image
       const mergedImage = createImageElement(canvas.toDataURL('image/png'), 'Merged Project Uniform Image');
       container.prepend(mergedImage);
-
-      // Add tooltip if foreground image is present
-      if (fgWidth > 0 && fgHeight > 0) {
-        createTooltip(mergedImage, fgX, fgY, fgWidth, fgHeight);
-      }
     }
   };
 
@@ -119,7 +143,7 @@ function createImageElement(src, alt) {
   return img;
 }
 
-function createTooltip(element, fgX, fgY, fgWidth, fgHeight) {
+function createTooltip(element, fgX, fgY, fgWidth, fgHeight, fgImage) {
   const tooltip = document.createElement('div');
   const tooltipText = Discourse.SiteSettings.project_uniform_tooltip_text || 'Center foreground image tooltip';
   tooltip.textContent = tooltipText;
@@ -131,10 +155,11 @@ function createTooltip(element, fgX, fgY, fgWidth, fgHeight) {
   tooltip.style.whiteSpace = 'nowrap';
   tooltip.style.visibility = 'hidden';
   tooltip.style.zIndex = '1000';
-  tooltip.style.transition = 'opacity 0.2s';
+  tooltip.style.transition = 'opacity 0.05s';
   tooltip.style.opacity = '0';
+  tooltip.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.5)';
 
-  // Optionally add an image to the tooltip if provided
+  // Add an optional tooltip image
   const tooltipImageUrl = Discourse.SiteSettings.project_uniform_tooltip_image;
   if (tooltipImageUrl) {
     const tooltipImage = document.createElement('img');
@@ -142,19 +167,20 @@ function createTooltip(element, fgX, fgY, fgWidth, fgHeight) {
       ? `${window.location.origin}${tooltipImageUrl}`
       : tooltipImageUrl;
     tooltipImage.style.display = 'block';
-    tooltipImage.style.maxWidth = '100px'; // Adjust the size as needed
+    tooltipImage.style.maxWidth = '100px'; // Adjust as needed
     tooltipImage.style.marginTop = '5px';
     tooltip.appendChild(tooltipImage);
   }
 
   document.body.appendChild(tooltip);
 
+  // Add event listeners for tooltip visibility
   element.addEventListener('mousemove', (e) => {
     const rect = element.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left - fgX;
+    const mouseY = e.clientY - rect.top - fgY;
 
-    if (mouseX >= fgX && mouseX <= fgX + fgWidth && mouseY >= fgY && mouseY <= fgY + fgHeight) {
+    if (isMouseOverVisiblePixel(fgImage, mouseX, mouseY, fgWidth, fgHeight)) {
       tooltip.style.left = `${e.pageX + 10}px`;
       tooltip.style.top = `${e.pageY + 10}px`;
       tooltip.style.visibility = 'visible';
@@ -171,3 +197,16 @@ function createTooltip(element, fgX, fgY, fgWidth, fgHeight) {
   });
 }
 
+function isMouseOverVisiblePixel(image, x, y, width, height) {
+  if (x < 0 || y < 0 || x >= width || y >= height) return false;
+
+  // Create an off-screen canvas to get image pixel data
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(image, 0, 0, width, height);
+
+  const pixel = context.getImageData(x, y, 1, 1).data; // Get the pixel data at (x, y)
+  return pixel[3] !== 0; // Check if the alpha channel is non-transparent
+}

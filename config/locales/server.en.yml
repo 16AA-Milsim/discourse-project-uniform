@@ -4,6 +4,34 @@ en:
     project_uniform_admin_only: "Restrict Project Uniform output visibility to Admins Only"
     project_uniform_image_upload: "Upload an image for Project Uniform"
     project_uniform_overlay_image_upload: "Upload an overlay image for Project Uniform"
+    # Uniforms
+    ba_officers: "BA Officers Uniform"
+    ba_enlisted: "BA Enlisted Uniform"
+    raf_officers: "RAF Officers Uniform"
+    raf_enlisted: "RAF Enlisted Uniform"
+    # British Army Ranks
+    maj: "Major"
+    capt: "Captain"
+    lt: "Lieutenant"
+    2lt: "Second Lieutenant"
+    wo1: "Warrant Officer Class 1"
+    wo2: "Warrant Officer Class 2"
+    csgt_ssgt: "Colour Sergeant / Staff Sergeant"
+    sgt: "Sergeant"
+    cpl_bdr: "Corporal / Bombardier"
+    lcpl_lbdr: "Lance Corporal / Lance Bombardier"
+    pte_gnr: "Private / Gunner"
+    rec: "Recruit"
+    # RAF Ranks
+    sqn_ldr: "Squadron Leader"
+    flt_lt: "Flight Lieutenant"
+    fg_off: "Flying Officer"
+    plt_off: "Pilot Officer"
+    fsacr: "Flight Sergeant Aircrew"
+    sacr: "Sergeant Aircrew"
+    # Cap Badges
+    para: "Parachute Regiment Badge"
+    ramc: "Royal Army Medical Corps badge"
   js:
     project_uniform:
       title: "Project Uniform"
