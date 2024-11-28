@@ -3,123 +3,173 @@ plugins:
     type: boolean
     default: true
     client: true
-  project_uniform_image_upload:
-    type: upload
-    default: ""
-    client: true
-  project_uniform_foreground_image_upload:
-    type: upload
-    default: ""
-    client: true
-  project_uniform_tooltip_text:
-    type: string
-    default: "Center foreground image tooltip"
-    client: true
-  project_uniform_tooltip_image:
-    type: upload
-    default: ""
+  project_uniform_admin_only:
+    type: boolean
+    default: false
     client: true
 
   # Uniforms
-  ba_officers_uniform:
+  project_uniform_ba_officers_uniform:
     type: upload
     default: ""
     client: true
-  ba_enlisted_uniform:
+  project_uniform_ba_enlisted_uniform:
     type: upload
     default: ""
     client: true
-  raf_officers_uniform:
+  project_uniform_raf_officers_uniform:
     type: upload
     default: ""
     client: true
-  raf_enlisted_uniform:
+  project_uniform_raf_enlisted_uniform:
     type: upload
     default: ""
     client: true
 
   # British Army Ranks
-  maj_rank:
+  project_uniform_maj_rank:
     type: upload
     default: ""
     client: true
-  capt_rank:
+  project_uniform_capt_rank:
     type: upload
     default: ""
     client: true
-  lt_rank:
+  project_uniform_lt_rank:
     type: upload
     default: ""
     client: true
-  2lt_rank:
+  project_uniform_2lt_rank:
     type: upload
     default: ""
     client: true
-  wo1_rank:
+  project_uniform_wo1_rank:
     type: upload
     default: ""
     client: true
-  wo2_rank:
+  project_uniform_wo2_rank:
     type: upload
     default: ""
     client: true
-  csgt_ssgt_rank:
+  project_uniform_csgt_ssgt_rank:
     type: upload
     default: ""
     client: true
-  sgt_rank:
+  project_uniform_sgt_rank:
     type: upload
     default: ""
     client: true
-  cpl_bdr_rank:
+  project_uniform_cpl_bdr_rank:
     type: upload
     default: ""
     client: true
-  lcpl_lbdr_rank:
+  project_uniform_lcpl_lbdr_rank:
     type: upload
     default: ""
     client: true
-  pte_gnr_rank:
+  project_uniform_pte_gnr_rank:
     type: upload
     default: ""
     client: true
-  rec_rank:
+  project_uniform_rec_rank:
     type: upload
     default: ""
     client: true
 
   # RAF Ranks
-  sqn_ldr_rank:
+  project_uniform_sqn_ldr_rank:
     type: upload
     default: ""
     client: true
-  flt_lt_rank:
+  project_uniform_flt_lt_rank:
     type: upload
     default: ""
     client: true
-  fg_off_rank:
+  project_uniform_fg_off_rank:
     type: upload
     default: ""
     client: true
-  plt_off_rank:
+  project_uniform_plt_off_rank:
     type: upload
     default: ""
     client: true
-  fsacr_rank:
+  project_uniform_fsacr_rank:
     type: upload
     default: ""
     client: true
-  sacr_rank:
+  project_uniform_sacr_rank:
+    type: upload
+    default: ""
+    client: true
+
+  # Berets
+  project_uniform_para_beret:
+    type: upload
+    default: ""
+    client: true
+  project_uniform_recruit_beret:
     type: upload
     default: ""
     client: true
 
   # Cap Badges
-  para_badge:
+  project_uniform_para_badge:
     type: upload
     default: ""
     client: true
-  ramc_badge:
+  project_uniform_rams_badge:
+    type: upload
+    default: ""
+    client: true
+
+  # Lanyards
+  project_uniform_hq_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_1_platoon_lanyard:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_2_platoon_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_fsg_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_csm_group_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_16csmr_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_216ps_lanyard:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_fst_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_7rha_lanyard:
+    type: upload
+    default: ""
+    client: true
+
+  # Qualifications
+  project_uniform_paratrooper_qualification:
     type: upload
     default: ""
     client: true

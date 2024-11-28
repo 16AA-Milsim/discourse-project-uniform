@@ -2,15 +2,49 @@ import { withPluginApi } from 'discourse/lib/plugin-api';
 
 export default {
   name: 'project-uniform',
-  initialize() {
+  initialize(container) {
     withPluginApi('0.8.26', api => {
+      const siteSettings = container.lookup('site-settings:main');
+
       api.onPageChange(url => {
         if (url && url.includes('/u/') && url.includes('/summary')) {
           const container = document.querySelector('.user-content');
           if (container && !document.querySelector('.project-uniform-placeholder')) {
+            // Check if admin-only mode is enabled
+            if (siteSettings.project_uniform_admin_only) {
+              const currentUser = Discourse.User.current();
+              if (!currentUser || !currentUser.admin) {
+                console.log('Project Uniform: Admin-only mode is enabled. Hiding uniforms for non-admin users.');
+                return; // Do not render anything for non-admin users
+              }
+            }
+
             // Extract username from URL
             const username = url.split('/u/')[1].split('/')[0];
             const apiUrl = `/u/${username}.json`;
+
+            // Define enlisted and officer ranks
+            const enlistedRanks = [
+              'Recruit',
+              'Private',
+              'Acting_Lance_Corporal',
+              'Lance_Corporal',
+              'Acting_Corporal',
+              'Corporal',
+              'Acting_Sergeant',
+              'Sergeant',
+              'Staff_Sergeant',
+              'Colour_Sergeant',
+              'Warrant_Officer_Class_2'
+            ];
+
+            const officerRanks = [
+              'Acting_Second_Lieutenant',
+              'Second_Lieutenant',
+              'Lieutenant',
+              'Captain',
+              'Major'
+            ];
 
             // Fetch user data
             fetch(apiUrl)
@@ -28,24 +62,91 @@ export default {
                   container.prepend(userInfo);
 
                   // Retrieve and format uploaded image URLs
-                  const backgroundImageUrl = formatUrl(Discourse.SiteSettings.ba_enlisted_uniform);
-                  let foregroundImageUrl = '';
+                  let backgroundImageUrl = '';
+                  const foregroundImageUrls = []; // Array to hold multiple foreground images
 
-                  // Conditionally add images based on group membership
-                  if (groups.some(group => group.name === 'Sergeant')) {
-                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.sgt_rank);
-                  } else if (groups.some(group => group.name === 'Corporal')) {
-                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.cpl_bdr_rank);
-                  } else if (groups.some(group => group.name === 'Bombardier')) {
-                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.cpl_bdr_rank);
-                  } else if (groups.some(group => group.name === 'Lance_Corporal')) {
-                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.lcpl_lbdr_rank);
-                  } else if (groups.some(group => group.name === 'Lance_Bombardier')) {
-                    foregroundImageUrl = formatUrl(Discourse.SiteSettings.lcpl_lbdr_rank);
+                  // Determine the background image
+                  if (groups.some(group => enlistedRanks.includes(group.name))) {
+                    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_enlisted_uniform);
+                    console.log('Selected Enlisted Uniform:', backgroundImageUrl);
+                  } else if (groups.some(group => officerRanks.includes(group.name))) {
+                    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_officers_uniform);
+                    console.log('Selected Officer Uniform:', backgroundImageUrl);
+                  } else {
+                    console.warn('User does not belong to enlisted or officer ranks. No uniform assigned.');
                   }
 
+                  // Add foreground images for berets and ranks
+                  if (groups.some(group => group.name === 'Recruit')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_recruit_beret));
+                  } else if (
+                    groups.some(group =>
+                      enlistedRanks.includes(group.name) && group.name !== 'Recruit' ||
+                      officerRanks.includes(group.name)
+                    )
+                  ) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_para_beret));
+                  }
+
+                  // Add rank-specific images
+                  if (groups.some(group => group.name === 'Sergeant')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_sgt_rank));
+                  }
+                  if (groups.some(group => group.name === 'Corporal')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_cpl_bdr_rank));
+                  }
+                  if (groups.some(group => group.name === 'Lance_Corporal')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_lcpl_lbdr_rank));
+                  }
+                  if (groups.some(group => group.name === 'Major')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_maj_rank));
+                  }
+
+                  // Add qualification-specific images
+                  if (user_badges.some(ub => badges.find(b => b.id === ub.badge_id)?.name === 'Paratrooper')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_paratrooper_qualification));
+                  }
+
+                  // Add lanyard-specific images based on groups
+                  if (
+                    groups.some(group =>
+                      [
+                        "1_Platoon_IC",
+                        "1_Platoon_2IC",
+                        "1-1_Section",
+                        "1-2_Section",
+                        "1-3_Section"
+                      ].includes(group.name)
+                    )
+                  ) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_1_platoon_lanyard));
+                  }
+
+                  if (
+                    groups.some(group =>
+                      [
+                        "Fire_Support_Group_IC",
+                        "Fire_Support_Group_2IC",
+                        "Fire_Support_Group"
+                      ].includes(group.name)
+                    )
+                  ) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_fsg_lanyard));
+                  }
+
+                  // Filter out invalid URLs
+                  const validForegroundImageUrls = foregroundImageUrls.filter(url => url);
+
+                  // Log selected images for debugging
+                  console.log('Background Image URL:', backgroundImageUrl);
+                  console.log('Foreground Image URLs:', validForegroundImageUrls);
+
                   // Create and merge images on a canvas
-                  mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl);
+                  if (backgroundImageUrl && validForegroundImageUrls.length > 0) {
+                    mergeImagesOnCanvas(container, backgroundImageUrl, validForegroundImageUrls);
+                  } else {
+                    console.warn('No valid images found to render.');
+                  }
                 }
               })
               .catch(error => console.error('Error fetching user data:', error));
@@ -75,40 +176,40 @@ function createUserInfo(groups, badgeNames) {
 }
 
 function formatUrl(url) {
-  return url?.startsWith('/') ? `${window.location.origin}${url}` : url;
+  if (!url) return ''; // Handle undefined or null URLs
+  return url.startsWith('http') || url.startsWith('/')
+    ? url
+    : `${window.location.origin}/${url}`;
 }
 
-function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl) {
+function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
 
   const bgImage = new Image();
-  const fgImage = new Image();
+  const fgImages = foregroundImageUrls.map(url => new Image());
   let imagesLoaded = 0;
 
   const onImageLoad = () => {
     imagesLoaded++;
-    if (imagesLoaded === 2 || (imagesLoaded === 1 && !foregroundImageUrl)) {
+    if (imagesLoaded === 1 + fgImages.length) {
       // Set canvas size and draw images
       canvas.width = bgImage.naturalWidth || 1;
       canvas.height = bgImage.naturalHeight || 1;
 
-      // Add shadow for background image
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'; // Shadow color
+      // Add drop shadow for the background image
+      ctx.save(); // Save the current canvas state
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'; // Shadow color
       ctx.shadowBlur = 10; // Shadow blur radius
-      ctx.shadowOffsetX = 0; // Horizontal offset
-      ctx.shadowOffsetY = 0; // Vertical offset
+      ctx.shadowOffsetX = 1; // Horizontal shadow offset
+      ctx.shadowOffsetY = 1; // Vertical shadow offset
 
       // Draw the background image with shadow
       ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+      ctx.restore(); // Restore canvas state to prevent shadow on other drawings
 
-      // Reset shadow settings to prevent it from affecting the foreground image
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-
-      if (foregroundImageUrl) {
+      // Draw foreground images
+      fgImages.forEach(fgImage => {
         const fgWidth = fgImage.naturalWidth || 0;
         const fgHeight = fgImage.naturalHeight || 0;
         const fgX = (canvas.width - fgWidth) / 2;
@@ -116,7 +217,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl) 
         if (fgWidth > 0 && fgHeight > 0) {
           ctx.drawImage(fgImage, fgX, fgY, fgWidth, fgHeight);
         }
-      }
+      });
 
       // Display the merged image
       const mergedImage = createImageElement(canvas.toDataURL('image/png'), 'Merged Project Uniform Image');
@@ -125,13 +226,12 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl) 
   };
 
   bgImage.onload = onImageLoad;
-  fgImage.onload = onImageLoad;
-  bgImage.onerror = onImageLoad;
-  fgImage.onerror = onImageLoad;
+  fgImages.forEach(fgImage => (fgImage.onload = onImageLoad));
 
   bgImage.src = backgroundImageUrl || '';
-  fgImage.src = foregroundImageUrl || '';
+  fgImages.forEach((fgImage, index) => (fgImage.src = foregroundImageUrls[index] || ''));
 }
+
 
 function createImageElement(src, alt) {
   const img = document.createElement('img');
@@ -139,74 +239,5 @@ function createImageElement(src, alt) {
   img.alt = alt;
   img.style.display = 'block';
   img.style.margin = '0 auto';
-  img.style.position = 'relative';
   return img;
-}
-
-function createTooltip(element, fgX, fgY, fgWidth, fgHeight, fgImage) {
-  const tooltip = document.createElement('div');
-  const tooltipText = Discourse.SiteSettings.project_uniform_tooltip_text || 'Center foreground image tooltip';
-  tooltip.textContent = tooltipText;
-  tooltip.style.position = 'absolute';
-  tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  tooltip.style.color = '#fff';
-  tooltip.style.padding = '5px';
-  tooltip.style.borderRadius = '3px';
-  tooltip.style.whiteSpace = 'nowrap';
-  tooltip.style.visibility = 'hidden';
-  tooltip.style.zIndex = '1000';
-  tooltip.style.transition = 'opacity 0.05s';
-  tooltip.style.opacity = '0';
-  tooltip.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.5)';
-
-  // Add an optional tooltip image
-  const tooltipImageUrl = Discourse.SiteSettings.project_uniform_tooltip_image;
-  if (tooltipImageUrl) {
-    const tooltipImage = document.createElement('img');
-    tooltipImage.src = tooltipImageUrl.startsWith('/')
-      ? `${window.location.origin}${tooltipImageUrl}`
-      : tooltipImageUrl;
-    tooltipImage.style.display = 'block';
-    tooltipImage.style.maxWidth = '100px'; // Adjust as needed
-    tooltipImage.style.marginTop = '5px';
-    tooltip.appendChild(tooltipImage);
-  }
-
-  document.body.appendChild(tooltip);
-
-  // Add event listeners for tooltip visibility
-  element.addEventListener('mousemove', (e) => {
-    const rect = element.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left - fgX;
-    const mouseY = e.clientY - rect.top - fgY;
-
-    if (isMouseOverVisiblePixel(fgImage, mouseX, mouseY, fgWidth, fgHeight)) {
-      tooltip.style.left = `${e.pageX + 10}px`;
-      tooltip.style.top = `${e.pageY + 10}px`;
-      tooltip.style.visibility = 'visible';
-      tooltip.style.opacity = '1';
-    } else {
-      tooltip.style.visibility = 'hidden';
-      tooltip.style.opacity = '0';
-    }
-  });
-
-  element.addEventListener('mouseleave', () => {
-    tooltip.style.visibility = 'hidden';
-    tooltip.style.opacity = '0';
-  });
-}
-
-function isMouseOverVisiblePixel(image, x, y, width, height) {
-  if (x < 0 || y < 0 || x >= width || y >= height) return false;
-
-  // Create an off-screen canvas to get image pixel data
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  canvas.width = width;
-  canvas.height = height;
-  context.drawImage(image, 0, 0, width, height);
-
-  const pixel = context.getImageData(x, y, 1, 1).data; // Get the pixel data at (x, y)
-  return pixel[3] !== 0; // Check if the alpha channel is non-transparent
 }

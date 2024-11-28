@@ -1,3 +1,4 @@
 en:
   project_uniform:
-    description: "A plugin to add a Service Uniform to user Summary pages"
+    title: "Project Uniform"
+    description: "Configure settings for the Project Uniform plugin."
