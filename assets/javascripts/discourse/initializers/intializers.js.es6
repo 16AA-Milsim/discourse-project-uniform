@@ -1,4 +1,7 @@
+// initializers.js.es6
+
 import { withPluginApi } from 'discourse/lib/plugin-api';
+import { ranks, officerRanks, enlistedRanks, lanyardGroups, lanyardToImageMap, qualifications, rankToImageMap, qualificationToImageMap, awards } from 'discourse/plugins/project-uniform/discourse/uniform-data';
 
 export default {
   name: 'project-uniform',
@@ -15,36 +18,13 @@ export default {
               const currentUser = Discourse.User.current();
               if (!currentUser || !currentUser.admin) {
                 console.log('Project Uniform: Admin-only mode is enabled. Hiding uniforms for non-admin users.');
-                return; // Do not render anything for non-admin users
+                return;
               }
             }
 
             // Extract username from URL
             const username = url.split('/u/')[1].split('/')[0];
             const apiUrl = `/u/${username}.json`;
-
-            // Define enlisted and officer ranks
-            const enlistedRanks = [
-              'Recruit',
-              'Private',
-              'Acting_Lance_Corporal',
-              'Lance_Corporal',
-              'Acting_Corporal',
-              'Corporal',
-              'Acting_Sergeant',
-              'Sergeant',
-              'Staff_Sergeant',
-              'Colour_Sergeant',
-              'Warrant_Officer_Class_2'
-            ];
-
-            const officerRanks = [
-              'Acting_Second_Lieutenant',
-              'Second_Lieutenant',
-              'Lieutenant',
-              'Captain',
-              'Major'
-            ];
 
             // Fetch user data
             fetch(apiUrl)
@@ -65,74 +45,59 @@ export default {
                   let backgroundImageUrl = '';
                   const foregroundImageUrls = []; // Array to hold multiple foreground images
 
-                  // Determine the background image
-                  if (groups.some(group => enlistedRanks.includes(group.name))) {
-                    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_enlisted_uniform);
-                    console.log('Selected Enlisted Uniform:', backgroundImageUrl);
-                  } else if (groups.some(group => officerRanks.includes(group.name))) {
+                  // Determine the background image based on the highest priority rank
+                  if (groups.some(group => officerRanks.includes(group.name))) {
                     backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_officers_uniform);
-                    console.log('Selected Officer Uniform:', backgroundImageUrl);
-                  } else {
-                    console.warn('User does not belong to enlisted or officer ranks. No uniform assigned.');
+                  } else if (groups.some(group => enlistedRanks.includes(group.name))) {
+                    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_enlisted_uniform);
                   }
 
-                  // Add foreground images for berets and ranks
+                  // Add beret images
                   if (groups.some(group => group.name === 'Recruit')) {
                     foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_recruit_beret));
-                  } else if (
-                    groups.some(group =>
-                      enlistedRanks.includes(group.name) && group.name !== 'Recruit' ||
-                      officerRanks.includes(group.name)
-                    )
-                  ) {
+                  } else if (groups.some(group => enlistedRanks.includes(group.name) || officerRanks.includes(group.name))) {
                     foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_para_beret));
                   }
 
-                  // Add rank-specific images
-                  if (groups.some(group => group.name === 'Sergeant')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_sgt_rank));
-                  }
-                  if (groups.some(group => group.name === 'Corporal')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_cpl_bdr_rank));
-                  }
-                  if (groups.some(group => group.name === 'Lance_Corporal')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_lcpl_lbdr_rank));
-                  }
-                  if (groups.some(group => group.name === 'Major')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_maj_rank));
+                  // Add rank image
+                  const highestRank = ranks.find(rank => groups.some(group => group.name === rank.name));
+                  if (highestRank) {
+                    const imageKey = highestRank.imageKey;
+                    if (imageKey) {
+                      foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
+                    }
                   }
 
-                  // Add qualification-specific images
-                  if (user_badges.some(ub => badges.find(b => b.id === ub.badge_id)?.name === 'Paratrooper')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_paratrooper_qualification));
-                  }
+                  // Add lanyard-specific images using lanyardToImageMap
+                  groups.forEach(group => {
+                    const imageKey = lanyardToImageMap[group.name];
+                    if (imageKey) {
+                      foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
+                    }
+                  });
 
-                  // Add lanyard-specific images based on groups
-                  if (
-                    groups.some(group =>
-                      [
-                        "1_Platoon_IC",
-                        "1_Platoon_2IC",
-                        "1-1_Section",
-                        "1-2_Section",
-                        "1-3_Section"
-                      ].includes(group.name)
-                    )
-                  ) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_1_platoon_lanyard));
-                  }
+                  // Add qualification-specific images, checking restricted ranks
+                  user_badges.forEach(ub => {
+                    const badgeName = badges.find(b => b.id === ub.badge_id)?.name;
+                    const qualification = qualifications.find(q => q.name === badgeName);
+                    const imageKey = qualification?.imageKey;
 
-                  if (
-                    groups.some(group =>
-                      [
-                        "Fire_Support_Group_IC",
-                        "Fire_Support_Group_2IC",
-                        "Fire_Support_Group"
-                      ].includes(group.name)
-                    )
-                  ) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_fsg_lanyard));
-                  }
+                    if (imageKey) {
+                      const isRestricted = qualification?.restrictedRanks?.includes(highestRank?.name);
+                      if (!isRestricted) {
+                        foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
+                      }
+                    }
+                  });
+
+                  // Add awards
+                  user_badges.forEach(ub => {
+                    const badgeName = badges.find(b => b.id === ub.badge_id)?.name;
+                    const award = awards.find(a => a.name === badgeName);
+                    if (award) {
+                      foregroundImageUrls.push(formatUrl(siteSettings[award.imageKey]));
+                    }
+                  });
 
                   // Filter out invalid URLs
                   const validForegroundImageUrls = foregroundImageUrls.filter(url => url);
@@ -144,8 +109,6 @@ export default {
                   // Create and merge images on a canvas
                   if (backgroundImageUrl && validForegroundImageUrls.length > 0) {
                     mergeImagesOnCanvas(container, backgroundImageUrl, validForegroundImageUrls);
-                  } else {
-                    console.warn('No valid images found to render.');
                   }
                 }
               })

@@ -173,3 +173,144 @@ plugins:
     type: upload
     default: ""
     client: true
+
+  project_uniform_sniper_qualification:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_sharpshooter_qualification:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_1st_class_marksman_qualification:
+    type: upload
+    default: ""
+    client: true
+
+  # Awards
+  project_uniform_meritorious_service_medal:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_most_valuable_soldier:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_5:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_4:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_3:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_2:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_1:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_significant_effort_gold:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_significant_effort:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_long_service_10_years:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_long_service_5_years:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_long_service:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mission_maker_first_class:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mission_maker_second_class:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mission_maker_third_class:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_technical_excellence:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_rro_excellence:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_recruiter_medal:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_esprit_de_corps_gold:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_esprit_de_corps:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_5:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_4:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_3:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_2:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_1:
+    type: upload
+    default: ""
+    client: true

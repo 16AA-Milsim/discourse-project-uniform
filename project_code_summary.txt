@@ -19,8 +19,8 @@ end
 ==== FILE: ./config/locales/en.yml ====
 en:
   project_uniform:
-    description: "A plugin to add a Service Uniform to user Summary pages"
-
+    title: "Project Uniform"
+    description: "Configure settings for the Project Uniform plugin."
 
 
 ==== FILE: ./config/locales/server.en.yml ====
@@ -28,16 +28,64 @@ en:
   site_settings:
     project_uniform_enabled: "Enable Project Uniform"
     project_uniform_admin_only: "Restrict Project Uniform output visibility to Admins Only"
-    project_uniform_image_upload: "Upload an image for Project Uniform"
-    project_uniform_overlay_image_upload: "Upload an overlay image for Project Uniform"
+
+    # Uniforms
+    project_uniform_ba_officers_uniform: "BA Officers Uniform"
+    project_uniform_ba_enlisted_uniform: "BA Enlisted Uniform"
+    project_uniform_raf_officers_uniform: "RAF Officers Uniform"
+    project_uniform_raf_enlisted_uniform: "RAF Enlisted Uniform"
+
+    # British Army Ranks
+    project_uniform_maj_rank: "Major"
+    project_uniform_capt_rank: "Captain"
+    project_uniform_lt_rank: "Lieutenant"
+    project_uniform_2lt_rank: "Second Lieutenant"
+    project_uniform_wo1_rank: "Warrant Officer Class 1"
+    project_uniform_wo2_rank: "Warrant Officer Class 2"
+    project_uniform_csgt_ssgt_rank: "Colour Sergeant / Staff Sergeant"
+    project_uniform_sgt_rank: "Sergeant"
+    project_uniform_cpl_bdr_rank: "Corporal / Bombardier"
+    project_uniform_lcpl_lbdr_rank: "Lance Corporal / Lance Bombardier"
+    project_uniform_pte_gnr_rank: "Private / Gunner"
+    project_uniform_rec_rank: "Recruit"
+
+    # RAF Ranks
+    project_uniform_sqn_ldr_rank: "Squadron Leader"
+    project_uniform_flt_lt_rank: "Flight Lieutenant"
+    project_uniform_fg_off_rank: "Flying Officer"
+    project_uniform_plt_off_rank: "Pilot Officer"
+    project_uniform_fsacr_rank: "Flight Sergeant Aircrew"
+    project_uniform_sacr_rank: "Sergeant Aircrew"
+
+    # Berets
+    project_uniform_para_beret: "Parachute Regiment Beret"
+    project_uniform_recruit_beret: "Recruit Beret"
+
+    # Cap Badges
+    project_uniform_para_badge: "Parachute Regiment Badge"
+    project_uniform_ramc_badge: "Royal Army Medical Corps Badge"
+
+    # Lanyards
+    project_uniform_hq_lanyard: "HQ Lanyard"
+    project_uniform_1_platoon_lanyard: "1 Platoon Lanyard"
+    project_uniform_2_platoon_lanyard: "2 Platoon Lanyard"
+    project_uniform_fsg_lanyard: "FSG Lanyard"
+    project_uniform_csm_group_lanyard: "CSM Group Lanyard"
+    project_uniform_16csmr_lanyard: "16CSMR Lanyard"
+    project_uniform_216ps_lanyard: "216PS Lanyard"
+    project_uniform_fst_lanyard: "FST Lanyard"
+    project_uniform_7rha_lanyard: "7RHA Lanyard"
+
+    # Qualifications
+    project_uniform_paratrooper_qualification: "Paratrooper Qualification"
+
   js:
     project_uniform:
       title: "Project Uniform"
 
 
-==== FILE: ./config/locales/client.en.yml ====
-# config/locales/client.en.yml
 
+==== FILE: ./config/locales/client.en.yml ====
 en:
   js:
     project_uniform:
@@ -51,127 +99,176 @@ plugins:
     type: boolean
     default: true
     client: true
-  project_uniform_image_upload:
-    type: upload
-    default: ""
-    client: true
-  project_uniform_foreground_image_upload:
-    type: upload
-    default: ""
-    client: true
-  project_uniform_tooltip_text:
-    type: string
-    default: "Center foreground image tooltip"
-    client: true
-  project_uniform_tooltip_image:
-    type: upload
-    default: ""
+  project_uniform_admin_only:
+    type: boolean
+    default: false
     client: true
 
   # Uniforms
-  ba_officers:
+  project_uniform_ba_officers_uniform:
     type: upload
     default: ""
     client: true
-  ba_enlisted:
+  project_uniform_ba_enlisted_uniform:
     type: upload
     default: ""
     client: true
-  raf_officers:
+  project_uniform_raf_officers_uniform:
     type: upload
     default: ""
     client: true
-  raf_enlisted:
+  project_uniform_raf_enlisted_uniform:
     type: upload
     default: ""
     client: true
 
   # British Army Ranks
-  maj:
+  project_uniform_maj_rank:
     type: upload
     default: ""
     client: true
-  capt:
+  project_uniform_capt_rank:
     type: upload
     default: ""
     client: true
-  lt:
+  project_uniform_lt_rank:
     type: upload
     default: ""
     client: true
-  2lt:
+  project_uniform_2lt_rank:
     type: upload
     default: ""
     client: true
-  wo1:
+  project_uniform_wo1_rank:
     type: upload
     default: ""
     client: true
-  wo2:
+  project_uniform_wo2_rank:
     type: upload
     default: ""
     client: true
-  csjt_ssjt:
+  project_uniform_csgt_ssgt_rank:
     type: upload
     default: ""
     client: true
-  sgt:
+  project_uniform_sgt_rank:
     type: upload
     default: ""
     client: true
-  cpl_bdr:
+  project_uniform_cpl_bdr_rank:
     type: upload
     default: ""
     client: true
-  lcpl_lbdr:
+  project_uniform_lcpl_lbdr_rank:
     type: upload
     default: ""
     client: true
-  pte_gnr:
+  project_uniform_pte_gnr_rank:
     type: upload
     default: ""
     client: true
-  rec:
+  project_uniform_rec_rank:
     type: upload
     default: ""
     client: true
 
   # RAF Ranks
-  sqn_ldr:
+  project_uniform_sqn_ldr_rank:
     type: upload
     default: ""
     client: true
-  flt_lt:
+  project_uniform_flt_lt_rank:
     type: upload
     default: ""
     client: true
-  fg_off:
+  project_uniform_fg_off_rank:
     type: upload
     default: ""
     client: true
-  plt_off:
+  project_uniform_plt_off_rank:
     type: upload
     default: ""
     client: true
-  fsacr:
+  project_uniform_fsacr_rank:
     type: upload
     default: ""
     client: true
-  sacr:
+  project_uniform_sacr_rank:
+    type: upload
+    default: ""
+    client: true
+
+  # Berets
+  project_uniform_para_beret:
+    type: upload
+    default: ""
+    client: true
+  project_uniform_recruit_beret:
     type: upload
     default: ""
     client: true
 
   # Cap Badges
-  para:
+  project_uniform_para_badge:
     type: upload
     default: ""
     client: true
-  ramc:
+  project_uniform_rams_badge:
     type: upload
     default: ""
     client: true
 
+  # Lanyards
+  project_uniform_hq_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_1_platoon_lanyard:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_2_platoon_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_fsg_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_csm_group_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_16csmr_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_216ps_lanyard:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_fst_lanyard:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_7rha_lanyard:
+    type: upload
+    default: ""
+    client: true
+
+  # Qualifications
+  project_uniform_paratrooper_qualification:
+    type: upload
+    default: ""
+    client: true
 
 
 ==== FILE: ./assets/stylesheets/project-uniform.scss ====
@@ -273,262 +370,15 @@ plugins:
 
 
 
-==== FILE: ./assets/javascripts/discourse/components/image-container.js ====
-import Component from '@glimmer/component';
-import { action } from '@ember/object';
-import { tracked } from '@glimmer/tracking';
-
-export default class ImageContainerComponent extends Component {
-  @tracked imagePreview = null;
-
-  constructor() {
-    super(...arguments);
-    // Initialize image preview from a passed argument or fallback
-    this.imagePreview = this.args.initialPreview || null;
-  }
-
-  @action
-  triggerFileUpload() {
-    document.getElementById(this.args.inputId).click();
-  }
-
-  @action
-  handleImageUpload(event) {
-    if (typeof this.args.onFileUpload === 'function') {
-      // Delegate the upload handling to the provided action
-      this.args.onFileUpload(event, this.args.imageKey);
-    } else {
-      console.error("No 'onFileUpload' action provided.");
-    }
-  }
-
-  @action
-  deleteImage() {
-    this.imagePreview = null;
-    if (typeof this.args.onDeleteImage === 'function') {
-      this.args.onDeleteImage(this.args.imageKey);
-    }
-  }
-}
-
-
-
-==== FILE: ./assets/javascripts/discourse/templates/components/image-container.hbs ====
-<div class="image-container">
-  <h4>{{@title}}</h4>
-  <div class="image-wrapper">
-    <div class="image-preview" style="background-color: {{if this.imagePreview '#909090' 'rgba(255, 100, 100, 0.2)'}};">
-      {{#if this.imagePreview}}
-        <img src="{{this.imagePreview}}" alt="{{@title}} Image" class="image-preview__img">
-      {{else}}
-        <div class="image-preview__placeholder">No image uploaded.</div>
-      {{/if}}
-      <button class="btn no-text btn-icon btn-default image-upload-btn" title="Upload Image" type="button" {{on "click" this.triggerFileUpload}}>
-        <svg class="fa d-icon d-icon-far-image svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#far-image"></use></svg>
-      </button>
-      <input type="file" id="{{@inputId}}" accept="image/*" class="hidden-upload-field" {{on "change" this.handleImageUpload}}>
-      <div class="image-upload-controls">
-        <button class="btn btn-danger no-text btn-icon" title="Delete" type="button" {{on "click" this.deleteImage}}>
-          <svg class="fa d-icon d-icon-trash-can svg-icon svg-string" xmlns="http://www.w3.org/2000/svg"><use href="#trash-can"></use></svg>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-
-==== FILE: ./assets/javascripts/discourse/templates/admin/plugins-project-uniform.hbs ====
-<h1>Project Uniform Settings</h1>
-
-<h2>Uniforms</h2>
-<div class="image-row-container">
-  {{#each this.uniforms as |uniform|}}
-    <ImageContainer 
-      @title={{uniform.name}} 
-      @imageKey={{uniform.key}} 
-      @inputId="image-upload-{{uniform.key}}"
-      @initialPreview={{get this.imagePreviews uniform.key}}
-      @onFileUpload={{this.handleFileUpload}}
-      @onDeleteImage={{this.deleteImage}}
-    />
-  {{/each}}
-</div>
-
-<h2>Cap Badges</h2>
-<div class="image-row-container">
-  {{#each this.capBadges as |badge|}}
-    <ImageContainer 
-      @title={{badge.name}} 
-      @imageKey={{badge.key}} 
-      @inputId="image-upload-{{badge.key}}"
-      @initialPreview={{get this.imagePreviews badge.key}}
-      @onFileUpload={{this.handleFileUpload}}
-      @onDeleteImage={{this.deleteImage}}
-    />
-  {{/each}}
-</div>
-
-<h2>Ranks - British Army</h2>
-<div class="image-row-container">
-  {{#each this.britishArmyRanks as |rank|}}
-    <ImageContainer 
-      @title={{rank.name}} 
-      @imageKey={{rank.key}} 
-      @inputId="image-upload-{{rank.key}}"
-      @initialPreview={{get this.imagePreviews rank.key}}
-      @onFileUpload={{this.handleFileUpload}}
-      @onDeleteImage={{this.deleteImage}}
-    />
-  {{/each}}
-</div>
-
-<h2>Ranks - Royal Air Force</h2>
-<div class="image-row-container">
-  {{#each this.rafRanks as |rank|}}
-    <ImageContainer 
-      @title={{rank.name}} 
-      @imageKey={{rank.key}} 
-      @inputId="image-upload-{{rank.key}}"
-      @initialPreview={{get this.imagePreviews rank.key}}
-      @onFileUpload={{this.handleFileUpload}}
-      @onDeleteImage={{this.deleteImage}}
-    />
-  {{/each}}
-</div>
-
-
-
-==== FILE: ./assets/javascripts/discourse/controllers/admin-plugins-project-uniform.js.es6 ====
-import Controller from "@ember/controller";
-import { action } from "@ember/object";
-import { tracked } from "@glimmer/tracking";
-import { ajax } from "discourse/lib/ajax";
-
-export default class AdminPluginsProjectUniformController extends Controller {
-  // Uniforms and ranks definitions as data arrays
-  uniforms = [
-    { name: 'BA Officers', key: 'ba_officers' },
-    { name: 'BA Enlisted', key: 'ba_enlisted' },
-    { name: 'RAF Officers', key: 'raf_officers' },
-    { name: 'RAF Enlisted', key: 'raf_enlisted' }
-  ];
-
-  britishArmyRanks = [
-    { name: 'Maj', key: 'maj' },
-    { name: 'Capt', key: 'capt' },
-    { name: 'Lt', key: 'lt' },
-    { name: '2Lt', key: '2lt' },
-    { name: 'WO1', key: 'wo1' },
-    { name: 'WO2', key: 'wo2' },
-    { name: 'CSgt/SSgt', key: 'csjt_ssjt' },
-    { name: 'Sgt', key: 'sgt' },
-    { name: 'Cpl/Bdr', key: 'cpl_bdr' },
-    { name: 'LCpl/LBdr', key: 'lcpl_lbdr' },
-    { name: 'Pte/Gnr', key: 'pte_gnr' },
-    { name: 'Rec', key: 'rec' }
-  ];
-
-  rafRanks = [
-    { name: 'Sqn Ldr', key: 'sqn_ldr' },
-    { name: 'Flt Lt', key: 'flt_lt' },
-    { name: 'Fg Off', key: 'fg_off' },
-    { name: 'Plt Off', key: 'plt_off' },
-    { name: 'FSAcr', key: 'fsacr' },
-    { name: 'SAcr', key: 'sacr' }
-  ];
-
-  capBadges = [
-    { name: 'Para', key: 'para' },
-    { name: 'RAMC', key: 'ramc' }
-  ];
-
-  // Tracked properties for image previews
-  @tracked imagePreviews = {};
-
-  // Fetch stored images when the controller initializes
-  constructor() {
-    super(...arguments);
-    this.loadStoredImages();
-  }
-
-  loadStoredImages() {
-    const allKeys = [
-      ...this.uniforms.map((item) => item.key),
-      ...this.britishArmyRanks.map((item) => item.key),
-      ...this.rafRanks.map((item) => item.key),
-      ...this.capBadges.map((item) => item.key)
-    ];
-    allKeys.forEach((key) => {
-      // Try without .json if not working
-      ajax(`/admin/site_settings/${key}`, { method: "GET" })
-        .then((response) => {
-          if (response && (response.value || typeof response === 'string')) {
-            this.imagePreviews[key] = response.value || response;
-          } else {
-            console.warn(`No valid value for key ${key}`);
-            this.imagePreviews[key] = null;
-          }
-        })
-        .catch((error) => {
-          console.error(`Failed to load image for ${key}:`, error);
-        });
-    });
-  }
-
-  @action
-  handleFileUpload(event, imageKey) {
-    const file = event.target.files[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_type", "site_setting");
-      formData.append("for_site_setting", "true");
-      formData.append("client_id", "yourClientID");  
-      ajax("/uploads.json", {
-        method: "POST",
-        data: formData,
-        processData: false,
-        contentType: false
-      })
-      .then((response) => {
-        if (response && response.url) {
-          const imageUrl = response.url.startsWith("//")
-            ? `${window.location.protocol}${response.url}`
-            : response.url;
-  
-          // Save the URL to the relevant site setting for persistence
-          return ajax(`/admin/site_settings/${imageKey}`, {
-            method: "PUT",
-            data: { value: imageUrl }
-          }).then(() => {
-            console.log(`Image for ${imageKey} saved successfully.`);
-            this.imagePreviews[imageKey] = imageUrl;
-            console.log(`Image URL saved successfully for ${imageKey}:`, imageUrl);
-          }).catch((error) => {
-            console.error(`Failed to save site setting for ${imageKey}:`, error);
-          });
-        } else {
-          throw new Error("Image upload failed.");
-        }
-      })
-      .catch((error) => {
-        console.error("Image upload failed:", error);
-      });
-    }
-  }  
-}
-
-
 ==== FILE: ./assets/javascripts/discourse/project-uniform-route-map.js ====
 export default {
-    resource: 'admin.adminPlugins',
-    path: '/plugins',
-    map() {
-      this.route('project-uniform');
-    }
-  };
-  
+  resource: 'admin.adminPlugins',
+  path: '/plugins',
+  map() {
+    // No routes defined since we are removing the admin page for project-uniform
+  }
+};
+
 
 
 ==== FILE: ./assets/javascripts/discourse/initializers/intializers.js.es6 ====
@@ -536,15 +386,49 @@ import { withPluginApi } from 'discourse/lib/plugin-api';
 
 export default {
   name: 'project-uniform',
-  initialize() {
+  initialize(container) {
     withPluginApi('0.8.26', api => {
+      const siteSettings = container.lookup('site-settings:main');
+
       api.onPageChange(url => {
         if (url && url.includes('/u/') && url.includes('/summary')) {
           const container = document.querySelector('.user-content');
           if (container && !document.querySelector('.project-uniform-placeholder')) {
+            // Check if admin-only mode is enabled
+            if (siteSettings.project_uniform_admin_only) {
+              const currentUser = Discourse.User.current();
+              if (!currentUser || !currentUser.admin) {
+                console.log('Project Uniform: Admin-only mode is enabled. Hiding uniforms for non-admin users.');
+                return; // Do not render anything for non-admin users
+              }
+            }
+
             // Extract username from URL
             const username = url.split('/u/')[1].split('/')[0];
             const apiUrl = `/u/${username}.json`;
+
+            // Define enlisted and officer ranks
+            const enlistedRanks = [
+              'Recruit',
+              'Private',
+              'Acting_Lance_Corporal',
+              'Lance_Corporal',
+              'Acting_Corporal',
+              'Corporal',
+              'Acting_Sergeant',
+              'Sergeant',
+              'Staff_Sergeant',
+              'Colour_Sergeant',
+              'Warrant_Officer_Class_2'
+            ];
+
+            const officerRanks = [
+              'Acting_Second_Lieutenant',
+              'Second_Lieutenant',
+              'Lieutenant',
+              'Captain',
+              'Major'
+            ];
 
             // Fetch user data
             fetch(apiUrl)
@@ -562,11 +446,91 @@ export default {
                   container.prepend(userInfo);
 
                   // Retrieve and format uploaded image URLs
-                  const backgroundImageUrl = formatUrl(Discourse.SiteSettings.project_uniform_image_upload);
-                  const foregroundImageUrl = formatUrl(Discourse.SiteSettings.project_uniform_foreground_image_upload);
+                  let backgroundImageUrl = '';
+                  const foregroundImageUrls = []; // Array to hold multiple foreground images
+
+                  // Determine the background image
+                  if (groups.some(group => enlistedRanks.includes(group.name))) {
+                    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_enlisted_uniform);
+                    console.log('Selected Enlisted Uniform:', backgroundImageUrl);
+                  } else if (groups.some(group => officerRanks.includes(group.name))) {
+                    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_officers_uniform);
+                    console.log('Selected Officer Uniform:', backgroundImageUrl);
+                  } else {
+                    console.warn('User does not belong to enlisted or officer ranks. No uniform assigned.');
+                  }
+
+                  // Add foreground images for berets and ranks
+                  if (groups.some(group => group.name === 'Recruit')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_recruit_beret));
+                  } else if (
+                    groups.some(group =>
+                      enlistedRanks.includes(group.name) && group.name !== 'Recruit' ||
+                      officerRanks.includes(group.name)
+                    )
+                  ) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_para_beret));
+                  }
+
+                  // Add rank-specific images
+                  if (groups.some(group => group.name === 'Sergeant')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_sgt_rank));
+                  }
+                  if (groups.some(group => group.name === 'Corporal')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_cpl_bdr_rank));
+                  }
+                  if (groups.some(group => group.name === 'Lance_Corporal')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_lcpl_lbdr_rank));
+                  }
+                  if (groups.some(group => group.name === 'Major')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_maj_rank));
+                  }
+
+                  // Add qualification-specific images
+                  if (user_badges.some(ub => badges.find(b => b.id === ub.badge_id)?.name === 'Paratrooper')) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_paratrooper_qualification));
+                  }
+
+                  // Add lanyard-specific images based on groups
+                  if (
+                    groups.some(group =>
+                      [
+                        "1_Platoon_IC",
+                        "1_Platoon_2IC",
+                        "1-1_Section",
+                        "1-2_Section",
+                        "1-3_Section"
+                      ].includes(group.name)
+                    )
+                  ) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_1_platoon_lanyard));
+                  }
+
+                  if (
+                    groups.some(group =>
+                      [
+                        "Fire_Support_Group_IC",
+                        "Fire_Support_Group_2IC",
+                        "Fire_Support_Group"
+                      ].includes(group.name)
+                    )
+                  ) {
+                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_fsg_lanyard));
+                  }
+
+                  // Filter out invalid URLs
+                  const validForegroundImageUrls = foregroundImageUrls.filter(url => url);
+
+                  // Log selected images for debugging
+                  console.log('Background Image URL:', backgroundImageUrl);
+                  console.log('Foreground Image URLs:', validForegroundImageUrls);
 
                   // Create and merge images on a canvas
-                  mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl);
+                  if (backgroundImageUrl && validForegroundImageUrls.length > 0) {
+                    mergeImagesOnCanvas(container, backgroundImageUrl, validForegroundImageUrls);
+                  } else {
+                    console.warn('No valid images found to render.');
+                  }
                 }
               })
               .catch(error => console.error('Error fetching user data:', error));
@@ -596,52 +560,62 @@ function createUserInfo(groups, badgeNames) {
 }
 
 function formatUrl(url) {
-  return url?.startsWith('/') ? `${window.location.origin}${url}` : url;
+  if (!url) return ''; // Handle undefined or null URLs
+  return url.startsWith('http') || url.startsWith('/')
+    ? url
+    : `${window.location.origin}/${url}`;
 }
 
-function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrl) {
+function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
 
   const bgImage = new Image();
-  const fgImage = new Image();
+  const fgImages = foregroundImageUrls.map(url => new Image());
   let imagesLoaded = 0;
 
   const onImageLoad = () => {
     imagesLoaded++;
-    if (imagesLoaded === 2) {
+    if (imagesLoaded === 1 + fgImages.length) {
       // Set canvas size and draw images
       canvas.width = bgImage.naturalWidth || 1;
       canvas.height = bgImage.naturalHeight || 1;
-      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
-      const fgWidth = fgImage.naturalWidth || 0;
-      const fgHeight = fgImage.naturalHeight || 0;
-      const fgX = (canvas.width - fgWidth) / 2;
-      const fgY = (canvas.height - fgHeight) / 2;
-      if (fgWidth > 0 && fgHeight > 0) {
-        ctx.drawImage(fgImage, fgX, fgY, fgWidth, fgHeight);
-      }
+      // Add drop shadow for the background image
+      ctx.save(); // Save the current canvas state
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'; // Shadow color
+      ctx.shadowBlur = 10; // Shadow blur radius
+      ctx.shadowOffsetX = 1; // Horizontal shadow offset
+      ctx.shadowOffsetY = 1; // Vertical shadow offset
+
+      // Draw the background image with shadow
+      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+      ctx.restore(); // Restore canvas state to prevent shadow on other drawings
+
+      // Draw foreground images
+      fgImages.forEach(fgImage => {
+        const fgWidth = fgImage.naturalWidth || 0;
+        const fgHeight = fgImage.naturalHeight || 0;
+        const fgX = (canvas.width - fgWidth) / 2;
+        const fgY = (canvas.height - fgHeight) / 2;
+        if (fgWidth > 0 && fgHeight > 0) {
+          ctx.drawImage(fgImage, fgX, fgY, fgWidth, fgHeight);
+        }
+      });
 
       // Display the merged image
       const mergedImage = createImageElement(canvas.toDataURL('image/png'), 'Merged Project Uniform Image');
       container.prepend(mergedImage);
-
-      // Add tooltip if foreground image is present
-      if (fgWidth > 0 && fgHeight > 0) {
-        createTooltip(mergedImage, fgX, fgY, fgWidth, fgHeight);
-      }
     }
   };
 
   bgImage.onload = onImageLoad;
-  fgImage.onload = onImageLoad;
-  bgImage.onerror = onImageLoad;
-  fgImage.onerror = onImageLoad;
+  fgImages.forEach(fgImage => (fgImage.onload = onImageLoad));
 
   bgImage.src = backgroundImageUrl || '';
-  fgImage.src = foregroundImageUrl || '';
+  fgImages.forEach((fgImage, index) => (fgImage.src = foregroundImageUrls[index] || ''));
 }
+
 
 function createImageElement(src, alt) {
   const img = document.createElement('img');
@@ -649,62 +623,7 @@ function createImageElement(src, alt) {
   img.alt = alt;
   img.style.display = 'block';
   img.style.margin = '0 auto';
-  img.style.position = 'relative';
   return img;
 }
-
-function createTooltip(element, fgX, fgY, fgWidth, fgHeight) {
-  const tooltip = document.createElement('div');
-  const tooltipText = Discourse.SiteSettings.project_uniform_tooltip_text || 'Center foreground image tooltip';
-  tooltip.textContent = tooltipText;
-  tooltip.style.position = 'absolute';
-  tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  tooltip.style.color = '#fff';
-  tooltip.style.padding = '5px';
-  tooltip.style.borderRadius = '3px';
-  tooltip.style.whiteSpace = 'nowrap';
-  tooltip.style.visibility = 'hidden';
-  tooltip.style.zIndex = '1000';
-  tooltip.style.transition = 'opacity 0.2s';
-  tooltip.style.opacity = '0';
-
-  // Optionally add an image to the tooltip if provided
-  const tooltipImageUrl = Discourse.SiteSettings.project_uniform_tooltip_image;
-  if (tooltipImageUrl) {
-    const tooltipImage = document.createElement('img');
-    tooltipImage.src = tooltipImageUrl.startsWith('/')
-      ? `${window.location.origin}${tooltipImageUrl}`
-      : tooltipImageUrl;
-    tooltipImage.style.display = 'block';
-    tooltipImage.style.maxWidth = '100px'; // Adjust the size as needed
-    tooltipImage.style.marginTop = '5px';
-    tooltip.appendChild(tooltipImage);
-  }
-
-  document.body.appendChild(tooltip);
-
-  element.addEventListener('mousemove', (e) => {
-    const rect = element.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    if (mouseX >= fgX && mouseX <= fgX + fgWidth && mouseY >= fgY && mouseY <= fgY + fgHeight) {
-      tooltip.style.left = `${e.pageX + 10}px`;
-      tooltip.style.top = `${e.pageY + 10}px`;
-      tooltip.style.visibility = 'visible';
-      tooltip.style.opacity = '1';
-    } else {
-      tooltip.style.visibility = 'hidden';
-      tooltip.style.opacity = '0';
-    }
-  });
-
-  element.addEventListener('mouseleave', () => {
-    tooltip.style.visibility = 'hidden';
-    tooltip.style.opacity = '0';
-  });
-}
-
-
 
 

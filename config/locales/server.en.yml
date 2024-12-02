@@ -36,8 +36,9 @@ en:
     project_uniform_recruit_beret: "Recruit Beret"
 
     # Cap Badges
-    project_uniform_para_badge: "Parachute Regiment Badge"
-    project_uniform_ramc_badge: "Royal Army Medical Corps Badge"
+    project_uniform_para_badge: "Parachute Regiment Cap Badge"
+    project_uniform_ramc_badge: "Royal Army Medical Corps Cap Badge"
+    project_uniform_rams_badge: "Royal Army Medical Services Cap Badge"
 
     # Lanyards
     project_uniform_hq_lanyard: "HQ Lanyard"
@@ -52,6 +53,36 @@ en:
 
     # Qualifications
     project_uniform_paratrooper_qualification: "Paratrooper Qualification"
+    project_uniform_sniper_qualification: "Sniper Qualification"
+    project_uniform_sharpshooter_qualification: "Sharpshooter Qualification"
+    project_uniform_1st_class_marksman_qualification: "1st Class Marksman Qualification"
+
+    # Awards
+    project_uniform_meritorious_service_medal: "Meritorious Service Medal"
+    project_uniform_most_valuable_soldier: "Most Valuable Soldier"
+    project_uniform_mention_in_dispatches_5: "Mention in Dispatches 5"
+    project_uniform_mention_in_dispatches_4: "Mention in Dispatches 4"
+    project_uniform_mention_in_dispatches_3: "Mention in Dispatches 3"
+    project_uniform_mention_in_dispatches_2: "Mention in Dispatches 2"
+    project_uniform_mention_in_dispatches_1: "Mention in Dispatches 1"
+    project_uniform_significant_effort_gold: "Significant Effort Gold"
+    project_uniform_significant_effort: "Significant Effort"
+    project_uniform_long_service_10_years: "Long Service and Good Conduct Medal - 10 Years"
+    project_uniform_long_service_5_years: "Long Service and Good Conduct Medal - 5 Years"
+    project_uniform_long_service: "Long Service and Good Conduct Medal"
+    project_uniform_mission_maker_first_class: "Mission Maker First Class"
+    project_uniform_mission_maker_second_class: "Mission Maker Second Class"
+    project_uniform_mission_maker_third_class: "Mission Maker Third Class"
+    project_uniform_technical_excellence: "Technical Excellence"
+    project_uniform_rro_excellence: "RRO Excellence"
+    project_uniform_recruiter_medal: "Recruiter Medal"
+    project_uniform_esprit_de_corps_gold: "Esprit de Corps Gold"
+    project_uniform_esprit_de_corps: "Esprit de Corps"
+    project_uniform_citation_5: "Citation 5"
+    project_uniform_citation_4: "Citation 4"
+    project_uniform_citation_3: "Citation 3"
+    project_uniform_citation_2: "Citation 2"
+    project_uniform_citation_1: "Citation 1"
 
   js:
     project_uniform:
