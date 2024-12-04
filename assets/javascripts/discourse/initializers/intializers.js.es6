@@ -219,8 +219,8 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       scaledAwardsCtx.drawImage(awardsCanvas, 0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
 
       // Define the position, rotation, skew, and curvature for the awards canvas
-      const awardsX = 384; // Adjust this value to control the horizontal position
-      const awardsY = 272; // Adjust this value to control the vertical position
+      const awardsX = 383; // Adjust this value to control the horizontal position
+      const awardsY = 274; // Adjust this value to control the vertical position
       const rotationAngle = -2 * Math.PI / 180; // Adjust this value to control the rotation angle (in radians)
       const skewX = -0 * Math.PI / 180; // Adjust this value to control the skew angle along the x-axis (in radians)
       const skewY = -4 * Math.PI / 180; // Adjust this value to control the skew angle along the y-axis (in radians)
@@ -235,9 +235,9 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
 
       // Apply shadow to the awards canvas
       ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; // Shadow color
-      ctx.shadowBlur = 2; // Shadow blur radius
-      ctx.shadowOffsetX = -2; // Horizontal shadow offset
-      ctx.shadowOffsetY = -1; // Vertical shadow offset
+      ctx.shadowBlur = 1; // Shadow blur radius
+      ctx.shadowOffsetX = -1; // Horizontal shadow offset
+      ctx.shadowOffsetY = 1; // Vertical shadow offset
 
       // Apply curvature
       const imageData = scaledAwardsCtx.getImageData(0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
