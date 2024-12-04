@@ -234,10 +234,10 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       ctx.transform(1, Math.tan(skewY), Math.tan(skewX), 1, 0, 0); // Apply skew
 
       // Apply shadow to the awards canvas
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; // Shadow color
-      ctx.shadowBlur = 1; // Shadow blur radius
-      ctx.shadowOffsetX = -1; // Horizontal shadow offset
-      ctx.shadowOffsetY = 1; // Vertical shadow offset
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)'; // Shadow color
+      ctx.shadowBlur = 2; // Shadow blur radius
+      ctx.shadowOffsetX = -0.5 ; // Horizontal shadow offset
+      ctx.shadowOffsetY = 0; // Vertical shadow offset
 
       // Apply curvature
       const imageData = scaledAwardsCtx.getImageData(0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
