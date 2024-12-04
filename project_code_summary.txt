@@ -1,3 +1,87 @@
+Directory Tree Overview:
+.
+├── admin
+├── app
+│   └── controllers
+│       └── admin
+│           └── plugins
+├── assets
+│   ├── images
+│   │   ├── berets
+│   │   │   ├── Para_Beret.png
+│   │   │   └── Recruit_Beret.png
+│   │   ├── lanyards
+│   │   │   ├── 1_platoon_lanyard.png
+│   │   │   └── fsg_lanyard.png
+│   │   ├── medals
+│   │   ├── qualifications
+│   │   │   ├── 1st_class_marksman.png
+│   │   │   ├── paratrooper.png
+│   │   │   └── sniper.png
+│   │   ├── ranks
+│   │   │   ├── cpl.png
+│   │   │   ├── lcpl.png
+│   │   │   └── sgt.png
+│   │   ├── ribbons
+│   │   │   ├── citation_1.png
+│   │   │   ├── citation_2.png
+│   │   │   ├── citation_3.png
+│   │   │   ├── citation_4.png
+│   │   │   ├── citation_5.png
+│   │   │   ├── esprit_de_corps_gold.png
+│   │   │   ├── esprit_de_corps.png
+│   │   │   ├── long_service_medal_10_years.png
+│   │   │   ├── long_service_medal_5_years.png
+│   │   │   ├── long_service_medal.png
+│   │   │   ├── mention_in_dispatches_1.png
+│   │   │   ├── mention_in_dispatches_2.png
+│   │   │   ├── mention_in_dispatches_3.png
+│   │   │   ├── mention_in_dispatches_4.png
+│   │   │   ├── mention_in_dispatches_5.png
+│   │   │   ├── meritorious_service_medal.png
+│   │   │   ├── mission_maker_first_class.png
+│   │   │   ├── mission_maker_second_class.png
+│   │   │   ├── mission_maker_third_class.png
+│   │   │   ├── most_valuable_soldier.png
+│   │   │   ├── recruiter_medal.png
+│   │   │   ├── rro_excellence.png
+│   │   │   ├── significant_effort_gold.png
+│   │   │   ├── significant_effort.png
+│   │   │   └── technical_excellence.png
+│   │   └── uniforms
+│   │       ├── ba_enlisted_uniform.png
+│   │       └── ba_officer_uniform.png
+│   ├── javascripts
+│   │   ├── admin
+│   │   └── discourse
+│   │       ├── controllers
+│   │       ├── initializers
+│   │       │   └── intializers.js.es6
+│   │       ├── project-uniform-route-map.js
+│   │       ├── routes
+│   │       ├── templates
+│   │       │   └── admin
+│   │       └── uniform-data.js
+│   └── stylesheets
+│       └── project-uniform.scss
+├── config
+│   ├── locales
+│   │   ├── client.en.yml
+│   │   ├── en.yml
+│   │   └── server.en.yml
+│   └── settings.yml
+├── generate_code_summary.sh
+├── plugin.rb
+├── project_code_summary.txt
+├── README.md
+└── views
+    └── admin
+        └── project_uniform
+
+29 directories, 49 files
+
+
+
 ==== FILE: ./plugin.rb ====
 # name: project-uniform
 # about: Adds a placeholder image to the user's summary page
@@ -62,8 +146,9 @@ en:
     project_uniform_recruit_beret: "Recruit Beret"
 
     # Cap Badges
-    project_uniform_para_badge: "Parachute Regiment Badge"
-    project_uniform_ramc_badge: "Royal Army Medical Corps Badge"
+    project_uniform_para_badge: "Parachute Regiment Cap Badge"
+    project_uniform_ramc_badge: "Royal Army Medical Corps Cap Badge"
+    project_uniform_rams_badge: "Royal Army Medical Services Cap Badge"
 
     # Lanyards
     project_uniform_hq_lanyard: "HQ Lanyard"
@@ -78,6 +163,36 @@ en:
 
     # Qualifications
     project_uniform_paratrooper_qualification: "Paratrooper Qualification"
+    project_uniform_sniper_qualification: "Sniper Qualification"
+    project_uniform_sharpshooter_qualification: "Sharpshooter Qualification"
+    project_uniform_1st_class_marksman_qualification: "1st Class Marksman Qualification"
+
+    # Awards
+    project_uniform_meritorious_service_medal: "Meritorious Service Medal"
+    project_uniform_most_valuable_soldier: "Most Valuable Soldier"
+    project_uniform_mention_in_dispatches_5: "Mention in Dispatches 5"
+    project_uniform_mention_in_dispatches_4: "Mention in Dispatches 4"
+    project_uniform_mention_in_dispatches_3: "Mention in Dispatches 3"
+    project_uniform_mention_in_dispatches_2: "Mention in Dispatches 2"
+    project_uniform_mention_in_dispatches_1: "Mention in Dispatches 1"
+    project_uniform_significant_effort_gold: "Significant Effort Gold"
+    project_uniform_significant_effort: "Significant Effort"
+    project_uniform_long_service_10_years: "Long Service and Good Conduct Medal - 10 Years"
+    project_uniform_long_service_5_years: "Long Service and Good Conduct Medal - 5 Years"
+    project_uniform_long_service: "Long Service and Good Conduct Medal"
+    project_uniform_mission_maker_first_class: "Mission Maker First Class"
+    project_uniform_mission_maker_second_class: "Mission Maker Second Class"
+    project_uniform_mission_maker_third_class: "Mission Maker Third Class"
+    project_uniform_technical_excellence: "Technical Excellence"
+    project_uniform_rro_excellence: "RRO Excellence"
+    project_uniform_recruiter_medal: "Recruiter Medal"
+    project_uniform_esprit_de_corps_gold: "Esprit de Corps Gold"
+    project_uniform_esprit_de_corps: "Esprit de Corps"
+    project_uniform_citation_5: "Citation 5"
+    project_uniform_citation_4: "Citation 4"
+    project_uniform_citation_3: "Citation 3"
+    project_uniform_citation_2: "Citation 2"
+    project_uniform_citation_1: "Citation 1"
 
   js:
     project_uniform:
@@ -270,6 +385,147 @@ plugins:
     default: ""
     client: true
 
+  project_uniform_sniper_qualification:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_sharpshooter_qualification:
+    type: upload
+    default: ""
+    client: true
+  
+  project_uniform_1st_class_marksman_qualification:
+    type: upload
+    default: ""
+    client: true
+
+  # Awards
+  project_uniform_meritorious_service_medal:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_most_valuable_soldier:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_5:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_4:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_3:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_2:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mention_in_dispatches_1:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_significant_effort_gold:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_significant_effort:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_long_service_10_years:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_long_service_5_years:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_long_service:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mission_maker_first_class:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mission_maker_second_class:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_mission_maker_third_class:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_technical_excellence:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_rro_excellence:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_recruiter_medal:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_esprit_de_corps_gold:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_esprit_de_corps:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_5:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_4:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_3:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_2:
+    type: upload
+    default: ""
+    client: true
+
+  project_uniform_citation_1:
+    type: upload
+    default: ""
+    client: true
+
 
 ==== FILE: ./assets/stylesheets/project-uniform.scss ====
 .image-row-container {
@@ -370,6 +626,92 @@ plugins:
 
 
 
+==== FILE: ./assets/javascripts/discourse/uniform-data.js ====
+// uniform-data.js
+
+export const ranks = [
+  { name: 'Major', category: 'officer', imageKey: 'project_uniform_maj_rank' },
+  { name: 'Captain', category: 'officer', imageKey: 'project_uniform_capt_rank' },
+  { name: 'Lieutenant', category: 'officer', imageKey: 'project_uniform_lt_rank' },
+  { name: 'Second_Lieutenant', category: 'officer', imageKey: 'project_uniform_2lt_rank' },
+  { name: 'Acting_Second_Lieutenant', category: 'officer', imageKey: 'project_uniform_act_2lt_rank' },
+  { name: 'Warrant_Officer_Class_1', category: 'enlisted', imageKey: 'project_uniform_wo1_rank' },
+  { name: 'Warrant_Officer_Class_2', category: 'enlisted', imageKey: 'project_uniform_wo2_rank' },
+  { name: 'Colour_Sergeant', category: 'enlisted', imageKey: 'project_uniform_csgt_rank' },
+  { name: 'Staff_Sergeant', category: 'enlisted', imageKey: 'project_uniform_ssgt_rank' },
+  { name: 'Sergeant', category: 'enlisted', imageKey: 'project_uniform_sgt_rank' },
+  { name: 'Corporal', category: 'enlisted', imageKey: 'project_uniform_cpl_bdr_rank' },
+  { name: 'Lance_Corporal', category: 'enlisted', imageKey: 'project_uniform_lcpl_lbdr_rank' },
+  { name: 'Private', category: 'enlisted', imageKey: 'project_uniform_pte_rank' },
+  { name: 'Recruit', category: 'enlisted', imageKey: 'project_uniform_rec_rank' }
+];
+
+// Derived Data
+export const officerRanks = ranks.filter(rank => rank.category === 'officer').map(rank => rank.name);
+export const enlistedRanks = ranks.filter(rank => rank.category === 'enlisted').map(rank => rank.name);
+
+// Rank to Image Mapping
+export const rankToImageMap = Object.fromEntries(
+  ranks.map(rank => [rank.name, rank.imageKey])
+);
+
+export const lanyardGroups = [
+  { name: '1_Platoon_IC', imageKey: 'project_uniform_1_platoon_lanyard' },
+  { name: '1_Platoon_2IC', imageKey: 'project_uniform_1_platoon_lanyard' },
+  { name: '1-1_Section', imageKey: 'project_uniform_1_platoon_lanyard' },
+  { name: '1-2_Section', imageKey: 'project_uniform_1_platoon_lanyard' },
+  { name: '1-3_Section', imageKey: 'project_uniform_1_platoon_lanyard' },
+  { name: 'Fire_Support_Group_IC', imageKey: 'project_uniform_fsg_lanyard' },
+  { name: 'Fire_Support_Group_2IC', imageKey: 'project_uniform_fsg_lanyard' },
+  { name: 'Fire_Support_Group', imageKey: 'project_uniform_fsg_lanyard' }
+];
+
+// Lanyard to Image Mapping
+export const lanyardToImageMap = Object.fromEntries(
+  lanyardGroups.map(group => [group.name, group.imageKey])
+);
+
+export const qualifications = [
+  { name: 'Paratrooper', imageKey: 'project_uniform_paratrooper_qualification', restrictedRanks: [] },
+  { name: 'Sniper', imageKey: 'project_uniform_sniper_qualification', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
+  { name: 'Sharpshooter', imageKey: 'project_uniform_sharpshooter_qualification', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
+  { name: '1st Class Marksman', imageKey: 'project_uniform_1st_class_marksman_qualification', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] }
+];
+
+// Qualifications to Image Mapping
+export const qualificationToImageMap = Object.fromEntries(
+  qualifications.map(qualification => [qualification.name, qualification.imageKey])
+);
+
+export const awards = [
+  { name: "Meritorious Service Medal", imageKey: "project_uniform_meritorious_service_medal" },
+  { name: "Most Valuable Soldier", imageKey: "project_uniform_most_valuable_soldier" },
+  { name: "Mention in Dispatches 5", imageKey: "project_uniform_mention_in_dispatches_5" },
+  { name: "Mention in Dispatches 4", imageKey: "project_uniform_mention_in_dispatches_4" },
+  { name: "Mention in Dispatches 3", imageKey: "project_uniform_mention_in_dispatches_3" },
+  { name: "Mention in Dispatches 2", imageKey: "project_uniform_mention_in_dispatches_2" },
+  { name: "Mention in Dispatches 1", imageKey: "project_uniform_mention_in_dispatches_1" },
+  { name: "Significant Effort Gold", imageKey: "project_uniform_significant_effort_gold" },
+  { name: "Significant Effort", imageKey: "project_uniform_significant_effort" },
+  { name: "Long Service and Good Conduct Medal 10 Years", imageKey: "project_uniform_long_service_10_years" },
+  { name: "Long Service and Good Conduct Medal 5 Years", imageKey: "project_uniform_long_service_5_years" },
+  { name: "Long Service and Good Conduct Medal", imageKey: "project_uniform_long_service" },
+  { name: "Mission Maker First Class", imageKey: "project_uniform_mission_maker_first_class" },
+  { name: "Mission Maker Second Class", imageKey: "project_uniform_mission_maker_second_class" },
+  { name: "Mission Maker Third Class", imageKey: "project_uniform_mission_maker_third_class" },
+  { name: "Technical Excellence", imageKey: "project_uniform_technical_excellence" },
+  { name: "RRO Excellence", imageKey: "project_uniform_rro_excellence" },
+  { name: "Recruiter Medal", imageKey: "project_uniform_recruiter_medal" },
+  { name: "Esprit de Corps Gold", imageKey: "project_uniform_esprit_de_corps_gold" },
+  { name: "Esprit de Corps", imageKey: "project_uniform_esprit_de_corps" },
+  { name: "Citation 5", imageKey: "project_uniform_citation_5" },
+  { name: "Citation 4", imageKey: "project_uniform_citation_4" },
+  { name: "Citation 3", imageKey: "project_uniform_citation_3" },
+  { name: "Citation 2", imageKey: "project_uniform_citation_2" },
+  { name: "Citation 1", imageKey: "project_uniform_citation_1" } 
+];
+
+
 ==== FILE: ./assets/javascripts/discourse/project-uniform-route-map.js ====
 export default {
   resource: 'admin.adminPlugins',
@@ -382,7 +724,10 @@ export default {
 
 
 ==== FILE: ./assets/javascripts/discourse/initializers/intializers.js.es6 ====
+// initializers.js.es6
+
 import { withPluginApi } from 'discourse/lib/plugin-api';
+import { ranks, officerRanks, enlistedRanks, lanyardGroups, lanyardToImageMap, qualifications, rankToImageMap, qualificationToImageMap, awards } from 'discourse/plugins/project-uniform/discourse/uniform-data';
 
 export default {
   name: 'project-uniform',
@@ -399,138 +744,38 @@ export default {
               const currentUser = Discourse.User.current();
               if (!currentUser || !currentUser.admin) {
                 console.log('Project Uniform: Admin-only mode is enabled. Hiding uniforms for non-admin users.');
-                return; // Do not render anything for non-admin users
+                return;
               }
             }
 
             // Extract username from URL
             const username = url.split('/u/')[1].split('/')[0];
-            const apiUrl = `/u/${username}.json`;
 
-            // Define enlisted and officer ranks
-            const enlistedRanks = [
-              'Recruit',
-              'Private',
-              'Acting_Lance_Corporal',
-              'Lance_Corporal',
-              'Acting_Corporal',
-              'Corporal',
-              'Acting_Sergeant',
-              'Sergeant',
-              'Staff_Sergeant',
-              'Colour_Sergeant',
-              'Warrant_Officer_Class_2'
-            ];
-
-            const officerRanks = [
-              'Acting_Second_Lieutenant',
-              'Second_Lieutenant',
-              'Lieutenant',
-              'Captain',
-              'Major'
-            ];
-
-            // Fetch user data
-            fetch(apiUrl)
-              .then(response => response.ok ? response.json() : Promise.reject(response.statusText))
-              .then(userData => {
-                if (userData?.user) {
-                  const { user, user_badges = [], badges = [] } = userData;
+            // Fetch data from both APIs
+            Promise.all([
+              fetch(`/u/${username}.json`).then(response => response.ok ? response.json() : Promise.reject(response.statusText)),
+              fetch(`/user-badges/${username}.json`).then(response => response.ok ? response.json() : Promise.reject(response.statusText))
+            ])
+              .then(([userSummaryData, badgeData]) => {
+                console.log('Fetched user data:', userSummaryData);
+                console.log('Fetched badge data:', badgeData);
+            
+                if (userSummaryData?.user && badgeData?.user_badges) {
+                  const { user } = userSummaryData;
                   const groups = user.groups || [];
-
-                  // Extract badge names
-                  const badgeNames = user_badges.map(ub => badges.find(b => b.id === ub.badge_id)?.name || 'Unnamed Badge');
-
+                  const badgeNames = badgeData.user_badges
+                    .map(ub => {
+                      const badge = badgeData.badges.find(b => b.id === ub.badge_id);
+                      return badge ? badge.name : null;
+                    })
+                    .filter(name => name); // Filter out invalid badge names
+            
                   // Display user information
                   const userInfo = createUserInfo(groups, badgeNames);
                   container.prepend(userInfo);
-
-                  // Retrieve and format uploaded image URLs
-                  let backgroundImageUrl = '';
-                  const foregroundImageUrls = []; // Array to hold multiple foreground images
-
-                  // Determine the background image
-                  if (groups.some(group => enlistedRanks.includes(group.name))) {
-                    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_enlisted_uniform);
-                    console.log('Selected Enlisted Uniform:', backgroundImageUrl);
-                  } else if (groups.some(group => officerRanks.includes(group.name))) {
-                    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_officers_uniform);
-                    console.log('Selected Officer Uniform:', backgroundImageUrl);
-                  } else {
-                    console.warn('User does not belong to enlisted or officer ranks. No uniform assigned.');
-                  }
-
-                  // Add foreground images for berets and ranks
-                  if (groups.some(group => group.name === 'Recruit')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_recruit_beret));
-                  } else if (
-                    groups.some(group =>
-                      enlistedRanks.includes(group.name) && group.name !== 'Recruit' ||
-                      officerRanks.includes(group.name)
-                    )
-                  ) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_para_beret));
-                  }
-
-                  // Add rank-specific images
-                  if (groups.some(group => group.name === 'Sergeant')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_sgt_rank));
-                  }
-                  if (groups.some(group => group.name === 'Corporal')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_cpl_bdr_rank));
-                  }
-                  if (groups.some(group => group.name === 'Lance_Corporal')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_lcpl_lbdr_rank));
-                  }
-                  if (groups.some(group => group.name === 'Major')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_maj_rank));
-                  }
-
-                  // Add qualification-specific images
-                  if (user_badges.some(ub => badges.find(b => b.id === ub.badge_id)?.name === 'Paratrooper')) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_paratrooper_qualification));
-                  }
-
-                  // Add lanyard-specific images based on groups
-                  if (
-                    groups.some(group =>
-                      [
-                        "1_Platoon_IC",
-                        "1_Platoon_2IC",
-                        "1-1_Section",
-                        "1-2_Section",
-                        "1-3_Section"
-                      ].includes(group.name)
-                    )
-                  ) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_1_platoon_lanyard));
-                  }
-
-                  if (
-                    groups.some(group =>
-                      [
-                        "Fire_Support_Group_IC",
-                        "Fire_Support_Group_2IC",
-                        "Fire_Support_Group"
-                      ].includes(group.name)
-                    )
-                  ) {
-                    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_fsg_lanyard));
-                  }
-
-                  // Filter out invalid URLs
-                  const validForegroundImageUrls = foregroundImageUrls.filter(url => url);
-
-                  // Log selected images for debugging
-                  console.log('Background Image URL:', backgroundImageUrl);
-                  console.log('Foreground Image URLs:', validForegroundImageUrls);
-
-                  // Create and merge images on a canvas
-                  if (backgroundImageUrl && validForegroundImageUrls.length > 0) {
-                    mergeImagesOnCanvas(container, backgroundImageUrl, validForegroundImageUrls);
-                  } else {
-                    console.warn('No valid images found to render.');
-                  }
+            
+                  // Prepare images for rendering
+                  prepareAndRenderImages(groups, badgeData.user_badges, badgeData.badges, siteSettings, container);
                 }
               })
               .catch(error => console.error('Error fetching user data:', error));
@@ -557,6 +802,82 @@ function createUserInfo(groups, badgeNames) {
   userInfo.appendChild(badgesElement);
 
   return userInfo;
+}
+
+function prepareAndRenderImages(groups, userBadges, badges, siteSettings, container) {
+  let backgroundImageUrl = '';
+  const foregroundImageUrls = []; // Array to hold multiple foreground images
+
+  // Determine the background image based on the highest priority rank
+  if (groups.some(group => officerRanks.includes(group.name))) {
+    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_officers_uniform);
+  } else if (groups.some(group => enlistedRanks.includes(group.name))) {
+    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_enlisted_uniform);
+  }
+
+  // Add beret images
+  if (groups.some(group => group.name === 'Recruit')) {
+    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_recruit_beret));
+  } else if (groups.some(group => enlistedRanks.includes(group.name) || officerRanks.includes(group.name))) {
+    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_para_beret));
+  }
+
+  // Add rank image
+  const highestRank = ranks.find(rank => groups.some(group => group.name === rank.name));
+  if (highestRank) {
+    const imageKey = highestRank.imageKey;
+    if (imageKey) {
+      foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
+    }
+  }
+
+  // Add lanyard-specific images using lanyardToImageMap
+  groups.forEach(group => {
+    const imageKey = lanyardToImageMap[group.name];
+    if (imageKey) {
+      foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
+    }
+  });
+
+  // Add qualification-specific images and awards using badge matching
+  userBadges.forEach(ub => {
+    const badge = badges.find(b => b.id === ub.badge_id); // Match badge_id
+    if (!badge) {
+      console.warn('Skipping invalid badge:', ub);
+      return; // Skip if no matching badge found
+    }
+
+    const badgeName = badge.name;
+
+    // Add qualifications
+    const qualification = qualifications.find(q => q.name === badgeName);
+    const imageKey = qualification?.imageKey;
+
+    if (imageKey) {
+      const isRestricted = qualification?.restrictedRanks?.includes(highestRank?.name);
+      if (!isRestricted) {
+        foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
+      }
+    }
+
+    // Add awards
+    const award = awards.find(a => a.name === badgeName);
+    if (award) {
+      foregroundImageUrls.push(formatUrl(siteSettings[award.imageKey]));
+    }
+  });
+
+  // Filter out invalid URLs
+  const validForegroundImageUrls = foregroundImageUrls.filter(url => url);
+
+  // Log selected images for debugging
+  console.log('Background Image URL:', backgroundImageUrl);
+  console.log('Foreground Image URLs:', validForegroundImageUrls);
+
+  // Create and merge images on a canvas
+  if (backgroundImageUrl && validForegroundImageUrls.length > 0) {
+    mergeImagesOnCanvas(container, backgroundImageUrl, validForegroundImageUrls);
+  }
 }
 
 function formatUrl(url) {
@@ -616,7 +937,6 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls)
   fgImages.forEach((fgImage, index) => (fgImage.src = foregroundImageUrls[index] || ''));
 }
 
-
 function createImageElement(src, alt) {
   const img = document.createElement('img');
   img.src = src;
@@ -625,5 +945,6 @@ function createImageElement(src, alt) {
   img.style.margin = '0 auto';
   return img;
 }
+
 
 

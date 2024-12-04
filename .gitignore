@@ -1,0 +1,51 @@
+# Node modules
+node_modules/
+
+# Log files
+*.log
+log/
+
+# Ruby-related files
+*.gem
+*.rbc
+.bundle/
+vendor/bundle/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+Icon?
+ehthumbs.db
+
+# Temporary files
+tmp/
+*.swp
+*~
+*.bak
+*.tmp
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# Coverage reports
+coverage/
+.simplecov
+.rspec_status
+
+# Cache files
+.cache/
+yarn.lock
+npm-debug.log*
+yarn-error.log
+package-lock.json
+
+# Asset pipeline
+public/assets/
+public/packs/
+public/packs-test/
+webpacker-dev-server.log
+
+# Generated files
+discourse/config/locales/generated.client.yml
+project_code_summary.txt
