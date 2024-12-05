@@ -126,7 +126,8 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
     // Add awards
     const award = awards.find(a => a.name === badgeName);
     if (award) {
-      awardImageUrls.push(formatUrl(siteSettings[award.imageKey]));
+      const imageUrl = siteSettings[award.imageKey] || `/assets/images/ribbons/${award.imageKey}.png`;
+      awardImageUrls.push(formatUrl(imageUrl));
     }
   });
 
@@ -170,7 +171,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       canvas.width = bgImage.naturalWidth || 1;
       canvas.height = bgImage.naturalHeight || 1;
 
-      // Enable image smoothing for anti-aliasing
+      // Ensure image smoothing for anti-aliasing is enabled in all browsers(for resizing service ribbons)
       ctx.imageSmoothingEnabled = true;
 
       // Add drop shadow for the background image
@@ -193,9 +194,6 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       awardsCanvas.width = canvas.width;
       awardsCanvas.height = canvas.height;
 
-      // Enable image smoothing for anti-aliasing on awards canvas
-      awardsCtx.imageSmoothingEnabled = false;
-
       // Draw award images on the separate canvas
       drawAwards(awardsCtx, awardImages, awardsCanvas);
 
@@ -205,9 +203,6 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       const scaleFactor = 0.28;
       scaledAwardsCanvas.width = awardsCanvas.width * scaleFactor;
       scaledAwardsCanvas.height = awardsCanvas.height * scaleFactor;
-
-      // Enable image smoothing for anti-aliasing on scaled awards canvas
-      scaledAwardsCtx.imageSmoothingEnabled = false;
 
       // Draw the awards canvas onto the new canvas with the desired scale
       scaledAwardsCtx.drawImage(awardsCanvas, 0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
