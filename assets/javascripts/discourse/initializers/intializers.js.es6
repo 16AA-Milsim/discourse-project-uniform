@@ -219,13 +219,13 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       scaledAwardsCtx.drawImage(awardsCanvas, 0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
 
       // Define the position, rotation, skew, and curvature for the awards canvas
-      const awardsX = 383; // Adjust this value to control the horizontal position
+      const awardsX = 382; // Adjust this value to control the horizontal position
       const awardsY = 274; // Adjust this value to control the vertical position
       const rotationAngle = -2 * Math.PI / 180; // Adjust this value to control the rotation angle (in radians)
       const skewX = -0 * Math.PI / 180; // Adjust this value to control the skew angle along the x-axis (in radians)
-      const skewY = -4 * Math.PI / 180; // Adjust this value to control the skew angle along the y-axis (in radians)
-      const curvatureX = 0; // Adjust this value to control the curvature along the x-axis
-      const curvatureY = 0; // Adjust this value to control the curvature along the y-axis
+      const skewY = -3 * Math.PI / 180; // Adjust this value to control the skew angle along the y-axis (in radians)
+      const curvatureX = 0; // Adjust this value to control the curvature along the x-axis - EXPERIMENTAL, USE MINIMAL VALUES
+      const curvatureY = 0; // Adjust this value to control the curvature along the y-axis - EXPERIMENTAL, USE MINIMAL VALUES
 
       // Apply rotation, skew, and curvature, then draw the scaled awards back onto the main canvas at the specified position
       ctx.save(); // Save the current canvas state
