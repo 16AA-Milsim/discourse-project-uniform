@@ -44,7 +44,10 @@ export const lanyardGroups = [
   { name: '1-3_Section', imageKey: '/assets/images/lanyards/1_platoon_lanyard.png' },
   { name: 'Fire_Support_Group_IC', imageKey: '/assets/images/lanyards/fsg_lanyard.png' },
   { name: 'Fire_Support_Group_2IC', imageKey: '/assets/images/lanyards/fsg_lanyard.png' },
-  { name: 'Fire_Support_Group', imageKey: '/assets/images/lanyards/fsg_lanyard.png' }
+  { name: 'Fire_Support_Group', imageKey: '/assets/images/lanyards/fsg_lanyard.png' },
+  { name: '16CSMR_IC', imageKey: '/assets/images/lanyards/16csmr_lanyard.png' },
+  { name: '16CSMR_2IC', imageKey: '/assets/images/lanyards/16csmr_lanyard.png' },
+  { name: '16CSMR', imageKey: '/assets/images/lanyards/16csmr_lanyard.png' }
 ];
 
 // Lanyard to Image Mapping

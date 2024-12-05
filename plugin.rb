@@ -24,6 +24,7 @@ register_asset "images/berets/recruit_beret.png", :server_side
 # Lanyards
 register_asset "images/lanyards/1_platoon_lanyard.png", :server_side
 register_asset "images/lanyards/fsg_lanyard.png", :server_side
+register_asset "images/lanyards/16csmr_lanyard.png", :server_side
 
 # Qualifications
 register_asset "images/qualifications/1st_class_marksman.png", :server_side
