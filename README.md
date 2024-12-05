@@ -1,4 +1,4 @@
 # discourse-project-uniform
-This plugin will show a dynamically updating uniform for the 16AA member showing group membership lanyard, correct beret, rank, qualifications and awards.
+This plugin shows a dynamically updating uniform for the 16AA member showing group membership lanyard, correct beret, rank, qualifications and awards.
 
 ![Showcase Image](./assets/showcase.jpg)
