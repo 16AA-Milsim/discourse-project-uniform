@@ -57,19 +57,12 @@ export default {
 
 function createUserInfo(groups, badgeNames) {
   const userInfo = document.createElement('div');
-  userInfo.style.textAlign = 'center';
-  userInfo.style.marginBottom = '10px';
   userInfo.className = 'project-uniform-user-info';
-
-  const groupsElement = document.createElement('p');
-  groupsElement.textContent = `Groups: ${groups.map(group => group.name).join(', ') || 'None'}`;
-
-  const badgesElement = document.createElement('p');
-  badgesElement.textContent = `Badges: ${badgeNames.length > 0 ? badgeNames.join(', ') : 'None'}`;
-
-  userInfo.appendChild(groupsElement);
-  userInfo.appendChild(badgesElement);
-
+  userInfo.style.cssText = 'text-align: center; margin-bottom: 10px;';
+  userInfo.innerHTML = `
+    <p>Groups: ${groups.map(group => group.name).join(', ') || 'None'}</p>
+    <p>Badges: ${badgeNames.length ? badgeNames.join(', ') : 'None'}</p>
+  `;
   return userInfo;
 }
 
@@ -167,6 +160,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
     img.alt = awards.find(award => formatUrl(siteSettings[award.imageKey]) === url)?.name || '';
     return img;
   });
+
   let imagesLoaded = 0;
 
   const onImageLoad = () => {
@@ -181,10 +175,10 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
 
       // Add drop shadow for the background image
       ctx.save(); // Save the current canvas state
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)'; // Shadow color
-      ctx.shadowBlur = 10; // Shadow blur radius
-      ctx.shadowOffsetX = 1; // Horizontal shadow offset
-      ctx.shadowOffsetY = 1; // Vertical shadow offset
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
 
       // Draw the background image with shadow
       ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
@@ -208,7 +202,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       // Create a new canvas with scaled dimensions for awards
       const scaledAwardsCanvas = document.createElement('canvas');
       const scaledAwardsCtx = scaledAwardsCanvas.getContext('2d');
-      const scaleFactor = 0.28; // Adjust this factor to control the size of the awards canvas
+      const scaleFactor = 0.28;
       scaledAwardsCanvas.width = awardsCanvas.width * scaleFactor;
       scaledAwardsCanvas.height = awardsCanvas.height * scaleFactor;
 
@@ -218,52 +212,33 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       // Draw the awards canvas onto the new canvas with the desired scale
       scaledAwardsCtx.drawImage(awardsCanvas, 0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
 
-      // Define the position, rotation, skew, and curvature for the awards canvas
-      const awardsX = 382; // Adjust this value to control the horizontal position
-      const awardsY = 274; // Adjust this value to control the vertical position
-      const rotationAngle = -2 * Math.PI / 180; // Adjust this value to control the rotation angle (in radians)
-      const skewX = -0 * Math.PI / 180; // Adjust this value to control the skew angle along the x-axis (in radians)
-      const skewY = -3 * Math.PI / 180; // Adjust this value to control the skew angle along the y-axis (in radians)
-      const curvatureX = 0; // Adjust this value to control the curvature along the x-axis - EXPERIMENTAL, USE MINIMAL VALUES
-      const curvatureY = 0; // Adjust this value to control the curvature along the y-axis - EXPERIMENTAL, USE MINIMAL VALUES
+      // Define the position, rotation, and skew for the awards canvas
+      const awardsX = 382;
+      const awardsY = 274;
+      const rotationAngle = -2 * Math.PI / 180;
+      const skewX = -0 * Math.PI / 180;
+      const skewY = -3 * Math.PI / 180;
 
-      // Apply rotation, skew, and curvature, then draw the scaled awards back onto the main canvas at the specified position
+      // Apply rotation and skew, then draw the scaled awards back onto the main canvas at the specified position
       ctx.save(); // Save the current canvas state
       ctx.translate(awardsX + scaledAwardsCanvas.width / 2, awardsY + scaledAwardsCanvas.height / 2); // Move to the center of the awards canvas
-      ctx.rotate(rotationAngle); // Apply rotation
-      ctx.transform(1, Math.tan(skewY), Math.tan(skewX), 1, 0, 0); // Apply skew
+      ctx.rotate(rotationAngle);
+      ctx.transform(1, Math.tan(skewY), Math.tan(skewX), 1, 0, 0);
 
       // Apply shadow to the awards canvas
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)'; // Shadow color
-      ctx.shadowBlur = 2; // Shadow blur radius
-      ctx.shadowOffsetX = -0.5 ; // Horizontal shadow offset
-      ctx.shadowOffsetY = 0; // Vertical shadow offset
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 2;
+      ctx.shadowOffsetX = -0.5;
+      ctx.shadowOffsetY = 0;
 
-      // Apply curvature
-      const imageData = scaledAwardsCtx.getImageData(0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
-      const data = imageData.data;
-      const width = imageData.width;
-      const height = imageData.height;
-      const curvedImageData = scaledAwardsCtx.createImageData(width, height);
-
-      for (let y = 0; y < height; y++) {
-        const offsetX = Math.sin((y / height) * Math.PI) * curvatureX * width;
-        for (let x = 0; x < width; x++) {
-          const offsetY = Math.sin((x / width) * Math.PI) * curvatureY * height;
-          const srcIndex = (y * width + x) * 4;
-          const dstIndex = ((y + Math.round(offsetY)) * width + Math.round(x + offsetX)) * 4;
-          if (dstIndex >= 0 && dstIndex < data.length) {
-            curvedImageData.data[dstIndex] = data[srcIndex];
-            curvedImageData.data[dstIndex + 1] = data[srcIndex + 1];
-            curvedImageData.data[dstIndex + 2] = data[srcIndex + 2];
-            curvedImageData.data[dstIndex + 3] = data[srcIndex + 3];
-          }
-        }
-      }
-
-      scaledAwardsCtx.putImageData(curvedImageData, 0, 0);
-
-      ctx.drawImage(scaledAwardsCanvas, -scaledAwardsCanvas.width / 2, -scaledAwardsCanvas.height / 2, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
+      // Draw the scaled awards canvas onto the main canvas
+      ctx.drawImage(
+        scaledAwardsCanvas,
+        -scaledAwardsCanvas.width / 2,
+        -scaledAwardsCanvas.height / 2,
+        scaledAwardsCanvas.width,
+        scaledAwardsCanvas.height
+      );
       ctx.restore(); // Restore canvas state to prevent rotation and skew on other drawings
 
       // Display the merged image
@@ -273,22 +248,20 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
   };
 
   bgImage.onload = onImageLoad;
-  fgImages.forEach(fgImage => (fgImage.onload = onImageLoad));
-  awardImages.forEach(awardImage => (awardImage.onload = onImageLoad));
-
+  fgImages.forEach((fgImage, index) => (fgImage.onload = onImageLoad));
+  awardImages.forEach((awardImage, index) => (awardImage.onload = onImageLoad));
   bgImage.src = backgroundImageUrl || '';
   fgImages.forEach((fgImage, index) => (fgImage.src = foregroundImageUrls[index] || ''));
   awardImages.forEach((awardImage, index) => (awardImage.src = awardImageUrls[index] || ''));
 }
 
 function drawImages(ctx, images, canvas) {
-  images.forEach(image => {
-    const width = image.naturalWidth || 0;
-    const height = image.naturalHeight || 0;
-    const x = (canvas.width - width) / 2;
-    const y = (canvas.height - height) / 2;
-    if (width > 0 && height > 0) {
-      ctx.drawImage(image, x, y, width, height);
+  images.forEach((image) => {
+    const { naturalWidth = 0, naturalHeight = 0 } = image;
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      const x = (canvas.width - naturalWidth) / 2;
+      const y = (canvas.height - naturalHeight) / 2;
+      ctx.drawImage(image, x, y, naturalWidth, naturalHeight);
     }
   });
 }
@@ -316,32 +289,30 @@ function drawAwards(ctx, awardImages, canvas) {
   const totalRows = Math.ceil(totalAwards / maxAwardsPerRow);
 
   reversedAwardImages.forEach((awardImage, index) => {
-    const awardWidth = awardImage.naturalWidth || 0;
-    const awardHeight = awardImage.naturalHeight || 0;
-    const row = Math.floor(index / maxAwardsPerRow);
-    const col = index % maxAwardsPerRow;
-
-    // Calculate the number of awards in the current row
-    const awardsInRow = row === totalRows - 1 ? totalAwards % maxAwardsPerRow || maxAwardsPerRow : maxAwardsPerRow;
-
-    // Calculate the starting x position for the current row to center-align the awards
-    const startX = (canvas.width - (awardsInRow * awardWidth + (awardsInRow - 1) * 1)) / 2;
-
-    // Adjust placement logic to start from the right and move left
-    const awardX = startX + (awardsInRow - col - 1) * (awardWidth + 1);
-    const awardY = canvas.height - (row + 1) * (awardHeight + 1);
-
+    const { naturalWidth: awardWidth = 0, naturalHeight: awardHeight = 0 } = awardImage;
+  
     if (awardWidth > 0 && awardHeight > 0) {
+      const row = Math.floor(index / maxAwardsPerRow);
+      const col = index % maxAwardsPerRow;
+  
+      // Calculate the number of awards in the current row
+      const awardsInRow = row === totalRows - 1 ? totalAwards % maxAwardsPerRow || maxAwardsPerRow : maxAwardsPerRow;
+  
+      // Center-align awards in the current row
+      const startX = (canvas.width - awardsInRow * (awardWidth + 1)) / 2;
+  
+      // Reverse column placement for the row
+      const awardX = startX + (awardsInRow - col - 1) * (awardWidth + 1);
+      const awardY = canvas.height - (row + 1) * (awardHeight + 1);
+  
       ctx.drawImage(awardImage, awardX, awardY, awardWidth, awardHeight);
     }
-  });
+  });  
 }
 
 function createImageElement(src, alt) {
-  const img = document.createElement('img');
-  img.src = src;
-  img.alt = alt;
-  img.style.display = 'block';
-  img.style.margin = '0 auto';
+  const img = Object.assign(document.createElement('img'), {
+    src, alt, style: 'display: block; margin: 0 auto;',
+  });
   return img;
 }
