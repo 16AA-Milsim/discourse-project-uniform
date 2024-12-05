@@ -1,2 +1,2 @@
 # discourse-project-uniform
-This plugin will show a uniform for the member with rank, group membership, qualifications and awards
+This plugin will show a uniform for the 16AA member with group membership lanyard, beret, rank, qualifications and awards.

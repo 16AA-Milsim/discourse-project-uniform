@@ -1,20 +1,30 @@
 // uniform-data.js
 
+export const backgroundImages = {
+  officer: '/assets/images/uniforms/ba_officers_uniform.png',
+  enlisted: '/assets/images/uniforms/ba_enlisted_uniform.png',
+};
+
+export const beretImages = {
+  recruit: '/assets/images/berets/recruit_beret.png',
+  para: '/assets/images/berets/para_beret.png',
+};
+
 export const ranks = [
-  { name: 'Major', category: 'officer', imageKey: 'project_uniform_maj_rank' },
-  { name: 'Captain', category: 'officer', imageKey: 'project_uniform_capt_rank' },
-  { name: 'Lieutenant', category: 'officer', imageKey: 'project_uniform_lt_rank' },
-  { name: 'Second_Lieutenant', category: 'officer', imageKey: 'project_uniform_2lt_rank' },
-  { name: 'Acting_Second_Lieutenant', category: 'officer', imageKey: 'project_uniform_act_2lt_rank' },
-  { name: 'Warrant_Officer_Class_1', category: 'enlisted', imageKey: 'project_uniform_wo1_rank' },
-  { name: 'Warrant_Officer_Class_2', category: 'enlisted', imageKey: 'project_uniform_wo2_rank' },
-  { name: 'Colour_Sergeant', category: 'enlisted', imageKey: 'project_uniform_csgt_rank' },
-  { name: 'Staff_Sergeant', category: 'enlisted', imageKey: 'project_uniform_ssgt_rank' },
-  { name: 'Sergeant', category: 'enlisted', imageKey: 'project_uniform_sgt_rank' },
-  { name: 'Corporal', category: 'enlisted', imageKey: 'project_uniform_cpl_bdr_rank' },
-  { name: 'Lance_Corporal', category: 'enlisted', imageKey: 'project_uniform_lcpl_lbdr_rank' },
-  { name: 'Private', category: 'enlisted', imageKey: 'project_uniform_pte_rank' },
-  { name: 'Recruit', category: 'enlisted', imageKey: 'project_uniform_rec_rank' }
+  { name: 'Major', category: 'officer', imageKey: '/assets/images/ranks/maj.png' },
+  { name: 'Captain', category: 'officer', imageKey: '/assets/images/ranks/capt.png' },
+  { name: 'Lieutenant', category: 'officer', imageKey: '/assets/images/ranks/lt.png' },
+  { name: 'Second_Lieutenant', category: 'officer', imageKey: '/assets/images/ranks/2lt.png' },
+  { name: 'Acting_Second_Lieutenant', category: 'officer', imageKey: '/assets/images/ranks/act_2lt.png' },
+  { name: 'Warrant_Officer_Class 1', category: 'enlisted', imageKey: '/assets/images/ranks/wo1.png' },
+  { name: 'Warrant_Officer_Class 2', category: 'enlisted', imageKey: '/assets/images/ranks/wo2.png' },
+  { name: 'Colour_Sergeant', category: 'enlisted', imageKey: '/assets/images/ranks/csgt.png' },
+  { name: 'Staff_Sergeant', category: 'enlisted', imageKey: '/assets/images/ranks/ssgt.png' },
+  { name: 'Sergeant', category: 'enlisted', imageKey: '/assets/images/ranks/sgt.png' },
+  { name: 'Corporal', category: 'enlisted', imageKey: '/assets/images/ranks/cpl.png' },
+  { name: 'Lance_Corporal', category: 'enlisted', imageKey: '/assets/images/ranks/lcpl.png' },
+  { name: 'Private', category: 'enlisted', imageKey: '/assets/images/ranks/pte.png' },
+  { name: 'Recruit', category: 'enlisted', imageKey: '/assets/images/ranks/rec.png' }
 ];
 
 // Derived Data
@@ -27,14 +37,14 @@ export const rankToImageMap = Object.fromEntries(
 );
 
 export const lanyardGroups = [
-  { name: '1_Platoon_IC', imageKey: 'project_uniform_1_platoon_lanyard' },
-  { name: '1_Platoon_2IC', imageKey: 'project_uniform_1_platoon_lanyard' },
-  { name: '1-1_Section', imageKey: 'project_uniform_1_platoon_lanyard' },
-  { name: '1-2_Section', imageKey: 'project_uniform_1_platoon_lanyard' },
-  { name: '1-3_Section', imageKey: 'project_uniform_1_platoon_lanyard' },
-  { name: 'Fire_Support_Group_IC', imageKey: 'project_uniform_fsg_lanyard' },
-  { name: 'Fire_Support_Group_2IC', imageKey: 'project_uniform_fsg_lanyard' },
-  { name: 'Fire_Support_Group', imageKey: 'project_uniform_fsg_lanyard' }
+  { name: '1_Platoon_IC', imageKey: '/assets/images/lanyards/1_platoon_lanyard.png' },
+  { name: '1_Platoon_2IC', imageKey: '/assets/images/lanyards/1_platoon_lanyard.png' },
+  { name: '1-1_Section', imageKey: '/assets/images/lanyards/1_platoon_lanyard.png' },
+  { name: '1-2_Section', imageKey: '/assets/images/lanyards/1_platoon_lanyard.png' },
+  { name: '1-3_Section', imageKey: '/assets/images/lanyards/1_platoon_lanyard.png' },
+  { name: 'Fire_Support_Group_IC', imageKey: '/assets/images/lanyards/fsg_lanyard.png' },
+  { name: 'Fire_Support_Group_2IC', imageKey: '/assets/images/lanyards/fsg_lanyard.png' },
+  { name: 'Fire_Support_Group', imageKey: '/assets/images/lanyards/fsg_lanyard.png' }
 ];
 
 // Lanyard to Image Mapping
@@ -43,10 +53,10 @@ export const lanyardToImageMap = Object.fromEntries(
 );
 
 export const qualifications = [
-  { name: 'Paratrooper', imageKey: 'project_uniform_paratrooper_qualification', restrictedRanks: [] },
-  { name: 'Sniper', imageKey: 'project_uniform_sniper_qualification', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
-  { name: 'Sharpshooter', imageKey: 'project_uniform_sharpshooter_qualification', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
-  { name: '1st Class Marksman', imageKey: 'project_uniform_1st_class_marksman_qualification', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] }
+  { name: 'Paratrooper', imageKey: '/assets/images/qualifications/paratrooper.png', restrictedRanks: [] },
+  { name: 'Sniper', imageKey: '/assets/images/qualifications/sniper.png', restrictedRanks: ['Warrant Officer Class 2', 'Warrant Officer Class 1', ...officerRanks] },
+  { name: 'Sharpshooter', imageKey: '/assets/images/qualifications/sharpshooter.png', restrictedRanks: ['Warrant Officer Class 2', 'Warrant Officer Class 1', ...officerRanks] },
+  { name: '1st Class Marksman', imageKey: '/assets/images/qualifications/1st_class_marksman.png', restrictedRanks: ['Warrant Officer Class 2', 'Warrant Officer Class 1', ...officerRanks] }
 ];
 
 // Qualifications to Image Mapping
@@ -55,29 +65,29 @@ export const qualificationToImageMap = Object.fromEntries(
 );
 
 export const awards = [
-  { name: "Meritorious Service Medal", imageKey: "project_uniform_meritorious_service_medal" },
-  { name: "Most Valuable Soldier", imageKey: "project_uniform_most_valuable_soldier" },
-  { name: "Mention in Dispatches with Four Oak Leaves", imageKey: "project_uniform_mention_in_dispatches_5" },
-  { name: "Mention in Dispatches with Three Oak Leaves", imageKey: "project_uniform_mention_in_dispatches_4" },
-  { name: "Mention in Dispatches with Two Oak Leaves", imageKey: "project_uniform_mention_in_dispatches_3" },
-  { name: "Mention in Dispatches with Oak Leaf", imageKey: "project_uniform_mention_in_dispatches_2" },
-  { name: "Mention in Dispatches", imageKey: "project_uniform_mention_in_dispatches_1" },
-  { name: "Significant Effort Gold", imageKey: "project_uniform_significant_effort_gold" },
-  { name: "Significant Effort", imageKey: "project_uniform_significant_effort" },
-  { name: "Long Service and Good Conduct Medal with Two Silver Clasps", imageKey: "project_uniform_long_service_10_years" },
-  { name: "Long Service and Good Conduct Medal with Silver Clasp", imageKey: "project_uniform_long_service_5_years" },
-  { name: "Long Service and Good Conduct Medal", imageKey: "project_uniform_long_service" },
-  { name: "Mission Maker First Class", imageKey: "project_uniform_mission_maker_first_class" },
-  { name: "Mission Maker Second Class", imageKey: "project_uniform_mission_maker_second_class" },
-  { name: "Mission Maker Third Class", imageKey: "project_uniform_mission_maker_third_class" },
-  { name: "Technical Excellence", imageKey: "project_uniform_technical_excellence" },
-  { name: "RRO Excellence", imageKey: "project_uniform_rro_excellence" },
-  { name: "Recruiter Medal", imageKey: "project_uniform_recruiter_medal" },
-  { name: "Esprit de Corps with Gold Clasp", imageKey: "project_uniform_esprit_de_corps_gold" },
-  { name: "Esprit de Corps", imageKey: "project_uniform_esprit_de_corps" },
-  { name: "Citation with Four Oak Leaves", imageKey: "project_uniform_citation_5" },
-  { name: "Citation with Three Oak Leaves", imageKey: "project_uniform_citation_4" },
-  { name: "Citation with Two Oak Leaves", imageKey: "project_uniform_citation_3" },
-  { name: "Citation with Oak Leaf", imageKey: "project_uniform_citation_2" },
-  { name: "Citation", imageKey: "project_uniform_citation_1" } 
+  { name: "Meritorious Service Medal", imageKey: "/assets/images/ribbons/meritorious_service_medal.png" },
+  { name: "Most Valuable Soldier", imageKey: "/assets/images/ribbons/most_valuable_soldier.png" },
+  { name: "Mention in Dispatches with Four Oak Leaves", imageKey: "/assets/images/ribbons/mention_in_dispatches_5.png" },
+  { name: "Mention in Dispatches with Three Oak Leaves", imageKey: "/assets/images/ribbons/mention_in_dispatches_4.png" },
+  { name: "Mention in Dispatches with Two Oak Leaves", imageKey: "/assets/images/ribbons/mention_in_dispatches_3.png" },
+  { name: "Mention in Dispatches with Oak Leaf", imageKey: "/assets/images/ribbons/mention_in_dispatches_2.png" },
+  { name: "Mention in Dispatches", imageKey: "/assets/images/ribbons/mention_in_dispatches_1.png" },
+  { name: "Significant Effort Gold", imageKey: "/assets/images/ribbons/significant_effort_gold.png" },
+  { name: "Significant Effort", imageKey: "/assets/images/ribbons/significant_effort.png" },
+  { name: "Long Service and Good Conduct Medal with Two Silver Clasps", imageKey: "/assets/images/ribbons/long_service_medal_10_years.png" },
+  { name: "Long Service and Good Conduct Medal with Silver Clasp", imageKey: "/assets/images/ribbons/long_service_medal_5_years.png" },
+  { name: "Long Service and Good Conduct Medal", imageKey: "/assets/images/ribbons/long_service_medal.png" },
+  { name: "Mission Maker First Class", imageKey: "/assets/images/ribbons/mission_maker_first_class.png" },
+  { name: "Mission Maker Second Class", imageKey: "/assets/images/ribbons/mission_maker_second_class.png" },
+  { name: "Mission Maker Third Class", imageKey: "/assets/images/ribbons/mission_maker_third_class.png" },
+  { name: "Technical Excellence", imageKey: "/assets/images/ribbons/technical_excellence.png" },
+  { name: "RRO Excellence", imageKey: "/assets/images/ribbons/rro_excellence.png" },
+  { name: "Recruiter Medal", imageKey: "/assets/images/ribbons/recruiter_medal.png" },
+  { name: "Esprit de Corps with Gold Clasp", imageKey: "/assets/images/ribbons/esprit_de_corps_gold.png" },
+  { name: "Esprit de Corps", imageKey: "/assets/images/ribbons/esprit_de_corps.png" },
+  { name: "Citation with Four Oak Leaves", imageKey: "/assets/images/ribbons/citation_5.png" },
+  { name: "Citation with Three Oak Leaves", imageKey: "/assets/images/ribbons/citation_4.png" },
+  { name: "Citation with Two Oak Leaves", imageKey: "/assets/images/ribbons/citation_3.png" },
+  { name: "Citation with Oak Leaf", imageKey: "/assets/images/ribbons/citation_2.png" },
+  { name: "Citation", imageKey: "/assets/images/ribbons/citation_1.png" }
 ];

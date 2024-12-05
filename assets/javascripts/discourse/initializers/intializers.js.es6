@@ -1,5 +1,5 @@
 import { withPluginApi } from 'discourse/lib/plugin-api';
-import { ranks, officerRanks, enlistedRanks, lanyardGroups, lanyardToImageMap, qualifications, rankToImageMap, qualificationToImageMap, awards } from 'discourse/plugins/project-uniform/discourse/uniform-data';
+import { backgroundImages, beretImages, ranks, officerRanks, enlistedRanks, lanyardGroups, lanyardToImageMap, qualifications, rankToImageMap, qualificationToImageMap, awards } from 'discourse/plugins/project-uniform/discourse/uniform-data';
 
 export default {
   name: 'project-uniform',
@@ -73,33 +73,32 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
 
   // Determine the background image based on the highest priority rank
   if (groups.some(group => officerRanks.includes(group.name))) {
-    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_officers_uniform);
+    backgroundImageUrl = backgroundImages.officer;
   } else if (groups.some(group => enlistedRanks.includes(group.name))) {
-    backgroundImageUrl = formatUrl(siteSettings.project_uniform_ba_enlisted_uniform);
+    backgroundImageUrl = backgroundImages.enlisted;
   }
 
   // Add beret images
   if (groups.some(group => group.name === 'Recruit')) {
-    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_recruit_beret));
+    foregroundImageUrls.push(beretImages.recruit);
   } else if (groups.some(group => enlistedRanks.includes(group.name) || officerRanks.includes(group.name))) {
-    foregroundImageUrls.push(formatUrl(siteSettings.project_uniform_para_beret));
+    foregroundImageUrls.push(beretImages.para);
   }
 
   // Add rank image
   const highestRank = ranks.find(rank => groups.some(group => group.name === rank.name));
   if (highestRank) {
-    const imageKey = highestRank.imageKey;
-    if (imageKey) {
-      foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
-    }
+    if (highestRank?.imageKey) {
+      foregroundImageUrls.push(highestRank.imageKey);
+    }    
   }
 
   // Add lanyard-specific images using lanyardToImageMap
   groups.forEach(group => {
     const imageKey = lanyardToImageMap[group.name];
     if (imageKey) {
-      foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
-    }
+      foregroundImageUrls.push(imageKey);
+    }    
   });
 
   // Add qualification-specific images and awards using badge matching
@@ -119,16 +118,15 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
     if (imageKey) {
       const isRestricted = qualification?.restrictedRanks?.includes(highestRank?.name);
       if (!isRestricted) {
-        foregroundImageUrls.push(formatUrl(siteSettings[imageKey]));
+        foregroundImageUrls.push(imageKey);
       }
     }
 
     // Add awards
     const award = awards.find(a => a.name === badgeName);
-    if (award) {
-      const imageUrl = siteSettings[award.imageKey] || `/assets/images/ribbons/${award.imageKey}.png`;
-      awardImageUrls.push(formatUrl(imageUrl));
-    }
+    if (award?.imageKey) {
+      awardImageUrls.push(award.imageKey);
+    }    
   });
 
   // Filter out invalid URLs
@@ -146,10 +144,6 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
   }
 }
 
-function formatUrl(url) {
-  return url ? (url.startsWith('http') || url.startsWith('/') ? url : `${window.location.origin}/${url}`) : '';
-}
-
 function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls, awardImageUrls, siteSettings) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -158,7 +152,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
   const fgImages = foregroundImageUrls.map(url => new Image());
   const awardImages = awardImageUrls.map(url => {
     const img = new Image();
-    img.alt = awards.find(award => formatUrl(siteSettings[award.imageKey]) === url)?.name || '';
+    img.alt = awards.find(award => award.imageKey === url)?.name || '';     
     return img;
   });
 
