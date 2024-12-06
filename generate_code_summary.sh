@@ -5,6 +5,10 @@ output_file="project_code_summary.txt"
 # Clear the output file if it exists
 > "$output_file"
 
+# Add date and time stamp at the top of the file
+echo "Generated on: $(date)" >> "$output_file"
+echo -e "\n" >> "$output_file"
+
 # Add directory tree overview at the beginning (no depth limit)
 echo "Directory Tree Overview:" >> "$output_file"
 tree >> "$output_file"  # No -L option to remove depth limit

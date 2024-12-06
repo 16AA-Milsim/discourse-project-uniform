@@ -152,7 +152,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
   const fgImages = foregroundImageUrls.map(url => new Image());
   const awardImages = awardImageUrls.map(url => {
     const img = new Image();
-    img.alt = awards.find(award => award.imageKey === url)?.name || '';     
+    img.alt = awards.find(award => award.imageKey === url)?.name || '';
     return img;
   });
 
@@ -169,7 +169,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       ctx.imageSmoothingEnabled = true;
 
       // Add drop shadow for the background image
-      ctx.save(); // Save the current canvas state
+      ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
       ctx.shadowBlur = 10;
       ctx.shadowOffsetX = 1;
@@ -177,7 +177,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
 
       // Draw the background image with shadow
       ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
-      ctx.restore(); // Restore canvas state to prevent shadow on other drawings
+      ctx.restore();
 
       // Draw foreground images
       drawImages(ctx, fgImages, canvas);
@@ -198,29 +198,41 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       scaledAwardsCanvas.width = awardsCanvas.width * scaleFactor;
       scaledAwardsCanvas.height = awardsCanvas.height * scaleFactor;
 
-      // Draw the awards canvas onto the new canvas with the desired scale
       scaledAwardsCtx.drawImage(awardsCanvas, 0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
 
-      // Define the position, rotation, and skew for the awards canvas
-      const awardsX = 382;
-      const awardsY = 274;
-      const rotationAngle = -2 * Math.PI / 180;
+      // Define custom placement based on the number of awards
+      let awardsX, awardsY;
+      const totalAwards = awardImages.length;
+
+      if (totalAwards === 1) {
+        awardsX = 388; // Example custom x-coordinate for 1 award
+        awardsY = 274; // Example custom y-coordinate for 1 award
+      } else if (totalAwards === 2) {
+        awardsX = 387; // Example custom x-coordinate for 2 awards
+        awardsY = 274; // Example custom y-coordinate for 2 awards
+      } else if (totalAwards === 3) {
+        awardsX = 386; // Example custom x-coordinate for 3 awards
+        awardsY = 274; // Example custom y-coordinate for 3 awards
+      } else {
+        awardsX = 380; // Default x-coordinate for 4 or more awards
+        awardsY = 274; // Default y-coordinate for 4 or more awards
+      }
+
+      const rotationAngle = -3 * Math.PI / 180;
       const skewX = -0 * Math.PI / 180;
       const skewY = -3 * Math.PI / 180;
 
-      // Apply rotation and skew, then draw the scaled awards back onto the main canvas at the specified position
-      ctx.save(); // Save the current canvas state
-      ctx.translate(awardsX + scaledAwardsCanvas.width / 2, awardsY + scaledAwardsCanvas.height / 2); // Move to the center of the awards canvas
+      // Apply rotation and skew, then draw the scaled awards canvas at the specified position
+      ctx.save();
+      ctx.translate(awardsX + scaledAwardsCanvas.width / 2, awardsY + scaledAwardsCanvas.height / 2);
       ctx.rotate(rotationAngle);
       ctx.transform(1, Math.tan(skewY), Math.tan(skewX), 1, 0, 0);
 
-      // Apply shadow to the awards canvas
       ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
       ctx.shadowBlur = 2;
       ctx.shadowOffsetX = -0.5;
       ctx.shadowOffsetY = 0;
 
-      // Draw the scaled awards canvas onto the main canvas
       ctx.drawImage(
         scaledAwardsCanvas,
         -scaledAwardsCanvas.width / 2,
@@ -228,7 +240,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
         scaledAwardsCanvas.width,
         scaledAwardsCanvas.height
       );
-      ctx.restore(); // Restore canvas state to prevent rotation and skew on other drawings
+      ctx.restore();
 
       // Display the merged image
       const mergedImage = createImageElement(canvas.toDataURL('image/png'), 'Merged Project Uniform Image');
