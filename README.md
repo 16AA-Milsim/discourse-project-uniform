@@ -6,7 +6,6 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 ## To-Do
 - [ ] Add Recruit graphics
 - [ ] Add remaining ranks graphics
-- [ ] Add remaining qualifications graphics
-- [ ] Add curvature for awards canvas (maybe)
+- [ ] Add and organise implementation of remaining qualifications graphics
 - [ ] Royal Air Force Officers & Enlisted uniforms
 - [ ] Implement tooltips with more detailed info and image for all dynamically added elements

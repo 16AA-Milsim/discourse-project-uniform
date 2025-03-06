@@ -198,14 +198,14 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       const totalAwards = awardImages.length;
 
       if (totalAwards === 1) {
-        awardsX = 388; // Example custom x-coordinate for 1 award
-        awardsY = 46; // Example custom y-coordinate for 1 award
+        awardsX = 385; // Example custom x-coordinate for 1 award
+        awardsY = 45; // Example custom y-coordinate for 1 award
       } else if (totalAwards === 2) {
-        awardsX = 387; // Example custom x-coordinate for 2 awards
-        awardsY = 46; // Example custom y-coordinate for 2 awards
+        awardsX = 382; // Example custom x-coordinate for 2 awards
+        awardsY = 45; // Example custom y-coordinate for 2 awards
       } else if (totalAwards === 3) {
-        awardsX = 386; // Example custom x-coordinate for 3 awards
-        awardsY = 46; // Example custom y-coordinate for 3 awards
+        awardsX = 384; // Example custom x-coordinate for 3 awards
+        awardsY = 44; // Example custom y-coordinate for 3 awards
       } else {
         awardsX = 380; // Default x-coordinate for 4 or more awards
         awardsY = 46; // Default y-coordinate for 4 or more awards
@@ -261,47 +261,73 @@ function drawImages(ctx, images, canvas) {
 }
 
 function drawAwards(ctx, awardImages, canvas) {
-  // Create a mapping of award names to their indices in the awards array
+  // Map award names to their indices for sorting by seniority
   const awardNameToIndex = Object.fromEntries(awards.map((award, index) => [award.name, index]));
 
-  // Sort the awardImages array based on the seniority mapping
+  // Sort awards based on seniority mapping
   const sortedAwardImages = awardImages.sort((a, b) => {
-    const aIndex = awardNameToIndex[a.alt];
-    const bIndex = awardNameToIndex[b.alt];
+    const aIndex = awardNameToIndex[a.alt] ?? Infinity;
+    const bIndex = awardNameToIndex[b.alt] ?? Infinity;
     return aIndex - bIndex;
   });
 
-  // Reverse the sorted array to display from least to most senior
+  // Reverse order so highest priority awards appear first
   const reversedAwardImages = sortedAwardImages.reverse();
+  const maxAwardsToDisplay = 22;
+  const finalAwardImages = reversedAwardImages.slice(-maxAwardsToDisplay);
 
-  // Log the sorted order of awards for debugging
-  console.log('Sorted Award Images:', reversedAwardImages.map(img => img.alt));
+  // **Set max awards per row (fixed structure)**
+  const maxAwardsPerRowArray = [4, 4, 4, 4, 3, 2, 1];
 
-  // Custom placement logic for awards
-  const maxAwardsPerRow = 4;
-  const totalAwards = reversedAwardImages.length;
-  const totalRows = Math.ceil(totalAwards / maxAwardsPerRow);
+  let rowAwardCounts = Array(maxAwardsPerRowArray.length).fill(0);
+  let rowAssignments = [];
+  let currentRow = 0;
 
-  reversedAwardImages.forEach((awardImage, index) => {
+  // Assign awards to rows respecting the max per row
+  finalAwardImages.forEach((awardImage, index) => {
+    while (rowAwardCounts[currentRow] >= maxAwardsPerRowArray[currentRow]) {
+      currentRow++;
+    }
+    rowAssignments.push(currentRow);
+    rowAwardCounts[currentRow]++;
+  });
+
+  // **Log row assignments for debugging**
+  console.log("Row Assignments:", rowAssignments);
+
+  // Place awards on the canvas based on row assignments
+  finalAwardImages.forEach((awardImage, index) => {
     const { naturalWidth: awardWidth = 0, naturalHeight: awardHeight = 0 } = awardImage;
-  
+
     if (awardWidth > 0 && awardHeight > 0) {
-      const row = Math.floor(index / maxAwardsPerRow);
-      const col = index % maxAwardsPerRow;
-  
-      // Calculate the number of awards in the current row
-      const awardsInRow = row === totalRows - 1 ? totalAwards % maxAwardsPerRow || maxAwardsPerRow : maxAwardsPerRow;
-  
-      // Center-align awards in the current row
-      const startX = (canvas.width - awardsInRow * (awardWidth + 1)) / 2;
-  
-      // Reverse column placement for the row
-      const awardX = startX + (awardsInRow - col - 1) * (awardWidth + 1);
-      const awardY = canvas.height - (row + 1) * (awardHeight + 1);
-  
+      const row = rowAssignments[index];
+      const awardsInRow = rowAwardCounts[row];
+      let col = index - rowAssignments.findIndex(r => r === row); // Correct col position per row
+
+      let startX;
+
+      // **Aligning Rows**
+      if (row <= 3) { // **Rows 1-4 (Centered)**
+        startX = (canvas.width - (awardsInRow * (awardWidth + 1))) / 2;
+      } else if (row === 4) { // **Row 5 (Special Case)**
+        startX = awardsInRow === 1
+            ? (canvas.width - awardWidth) / 2  // **If 1 award, center it**
+            : canvas.width - (maxAwardsPerRowArray[row] * (awardWidth + 1)) - 146; // **Else, right-align**
+      } else if (row === 5) { // **Row 6 (Max 2, Right-Aligned)**
+        startX = canvas.width - (maxAwardsPerRowArray[row] * (awardWidth + 1)) - 150;
+      } else if (row === 6) { // **Row 7 (Max 1, Right-Aligned)**
+        startX = canvas.width - awardWidth - 155;
+      } else { // **Failsafe: Center alignment**
+        startX = (canvas.width - (awardsInRow * (awardWidth + 1))) / 2;
+      }
+
+// **Calculate final position**
+      const awardX = startX + ((awardsInRow - 1 - col) * (awardWidth + 1));
+      const awardY = canvas.height - ((row + 1) * (awardHeight + 1));
+
       ctx.drawImage(awardImage, awardX, awardY, awardWidth, awardHeight);
     }
-  });  
+  });
 }
 
 function createImageElement(src, alt) {
