@@ -32,35 +32,35 @@ export const rankToImageMap = Object.fromEntries(
 );
 
 const lanyardGroupsConfig = {
-  '/assets/images/lanyards/hq_lanyard.png': [
+  '/assets/images/lanyards/lightblue_and_maroon_lanyard.png': [
     'Coy_IC', 'Coy_2IC', 'Coy_Sergeant_Major'
   ],
-  '/assets/images/lanyards/1_platoon_lanyard.png': [
+  '/assets/images/lanyards/red_lanyard.png': [
     '1_Platoon_IC', '1_Platoon_2IC', '1-1_Section_IC', '1-1_Section_2IC', '1-1_Section',
     '1-2_Section_IC', '1-2_Section_2IC', '1-2_Section', '1-3_Section_IC', '1-3_Section_2IC', '1-3_Section'
   ],
-  '/assets/images/lanyards/2_platoon_lanyard.png': [
+  '/assets/images/lanyards/green_lanyard.png': [
     '2_Platoon_IC', '2_Platoon_2IC', '2-1_Section_IC', '2-1_Section_2IC', '2-1_Section',
     '2-2_Section_IC', '2-2_Section_2IC', '2-2_Section', '2-3_Section_IC', '2-3_Section_2IC', '2-3_Section'
   ],
-  '/assets/images/lanyards/fire_support_group_lanyard.png': [
+  '/assets/images/lanyards/black_lanyard.png': [
     '3_Platoon_IC', '3_Platoon_2IC', '3-1_Section_IC', '3-1_Section_2IC', '3-1_Section',
     '3-2_Section_IC', '3-2_Section_2IC', '3-2_Section', 'FSG_HQ_IC', 'FSG_HQ_2IC',
     'Fire_Support_Group_IC', 'Fire_Support_Group_2IC', 'Fire_Support_Group'
   ],
-  '/assets/images/lanyards/force_protection_lanyard.png': [
+  '/assets/images/lanyards/black_lanyard.png': [
     '4-1_Section_IC', '4-1_Section_2IC', '4-1_Section'
   ],
-  '/assets/images/lanyards/13_air_assault_support_regiment_lanyard.png': [
+  '/assets/images/lanyards/black_lanyard.png': [
     '13AASR_IC', '13AASR_2IC', '13AASR'
   ],
-  '/assets/images/lanyards/16_close_support_medical_regiment_lanyard.png': [
+  '/assets/images/lanyards/black_lanyard.png': [
     '16CSMR_IC', '16CSMR_2IC', '16CSMR'
   ],
-  '/assets/images/lanyards/216_para_signals_lanyard.png': [
+  '/assets/images/lanyards/black_lanyard.png': [
     '216_Para_Signals_IC', '216_Para_Signals_2IC', '216_Para_Signals'
   ],
-  '/assets/images/lanyards/fire_support_team_lanyard.png': [
+  '/assets/images/lanyards/black_and_olive_lanyard.png': [
     'Fire_Support_Team_IC', 'Fire_Support_Team_2IC', 'Fire_Support_Team'
   ]
 };
