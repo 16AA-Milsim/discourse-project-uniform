@@ -5,11 +5,6 @@ export const backgroundImages = {
   enlisted: '/assets/images/uniforms/ba_enlisted_uniform.png',
 };
 
-export const beretImages = {
-  recruit: '/assets/images/berets/recruit_beret.png',
-  para: '/assets/images/berets/para_beret.png',
-};
-
 export const ranks = [
   { name: 'Major', category: 'officer', imageKey: '/assets/images/ranks/maj.png' },
   { name: 'Captain', category: 'officer', imageKey: '/assets/images/ranks/capt.png' },

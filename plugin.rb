@@ -17,10 +17,6 @@ register_asset "images/ranks/cpl.png", :server_side
 register_asset "images/ranks/lcpl.png", :server_side
 register_asset "images/ranks/sgt.png", :server_side
 
-# Berets
-register_asset "images/berets/para_beret.png", :server_side
-register_asset "images/berets/recruit_beret.png", :server_side
-
 # Lanyards
 register_asset "images/lanyards/1_platoon_lanyard.png", :server_side
 register_asset "images/lanyards/fsg_lanyard.png", :server_side

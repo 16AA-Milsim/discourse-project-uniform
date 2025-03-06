@@ -1,5 +1,5 @@
 import { withPluginApi } from 'discourse/lib/plugin-api';
-import { backgroundImages, beretImages, ranks, officerRanks, enlistedRanks, lanyardGroups, lanyardToImageMap, qualifications, rankToImageMap, qualificationToImageMap, awards } from 'discourse/plugins/project-uniform/discourse/uniform-data';
+import { backgroundImages, ranks, officerRanks, enlistedRanks, lanyardGroups, lanyardToImageMap, qualifications, rankToImageMap, qualificationToImageMap, awards } from 'discourse/plugins/project-uniform/discourse/uniform-data';
 
 export default {
   name: 'project-uniform',
@@ -76,13 +76,6 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
     backgroundImageUrl = backgroundImages.officer;
   } else if (groups.some(group => enlistedRanks.includes(group.name))) {
     backgroundImageUrl = backgroundImages.enlisted;
-  }
-
-  // Add beret images
-  if (groups.some(group => group.name === 'Recruit')) {
-    foregroundImageUrls.push(beretImages.recruit);
-  } else if (groups.some(group => enlistedRanks.includes(group.name) || officerRanks.includes(group.name))) {
-    foregroundImageUrls.push(beretImages.para);
   }
 
   // Add rank image
@@ -194,7 +187,7 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       // Create a new canvas with scaled dimensions for awards
       const scaledAwardsCanvas = document.createElement('canvas');
       const scaledAwardsCtx = scaledAwardsCanvas.getContext('2d');
-      const scaleFactor = 0.28;
+      const scaleFactor = 0.29;
       scaledAwardsCanvas.width = awardsCanvas.width * scaleFactor;
       scaledAwardsCanvas.height = awardsCanvas.height * scaleFactor;
 
@@ -206,16 +199,16 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
 
       if (totalAwards === 1) {
         awardsX = 388; // Example custom x-coordinate for 1 award
-        awardsY = 274; // Example custom y-coordinate for 1 award
+        awardsY = 46; // Example custom y-coordinate for 1 award
       } else if (totalAwards === 2) {
         awardsX = 387; // Example custom x-coordinate for 2 awards
-        awardsY = 274; // Example custom y-coordinate for 2 awards
+        awardsY = 46; // Example custom y-coordinate for 2 awards
       } else if (totalAwards === 3) {
         awardsX = 386; // Example custom x-coordinate for 3 awards
-        awardsY = 274; // Example custom y-coordinate for 3 awards
+        awardsY = 46; // Example custom y-coordinate for 3 awards
       } else {
         awardsX = 380; // Default x-coordinate for 4 or more awards
-        awardsY = 274; // Default y-coordinate for 4 or more awards
+        awardsY = 46; // Default y-coordinate for 4 or more awards
       }
 
       const rotationAngle = -3 * Math.PI / 180;
