@@ -322,8 +322,8 @@ function drawAwards(ctx, awardImages, canvas) {
       }
 
 // **Calculate final position**
-      const awardX = startX + ((awardsInRow - 1 - col) * (awardWidth + 1));
-      const awardY = canvas.height - ((row + 1) * (awardHeight + 1));
+      const awardX = startX + ((awardsInRow - 1 - col) * (awardWidth));
+      const awardY = canvas.height - ((row + 1) * (awardHeight));
 
       ctx.drawImage(awardImage, awardX, awardY, awardWidth, awardHeight);
     }
