@@ -1,5 +1,5 @@
 import { withPluginApi } from 'discourse/lib/plugin-api';
-import { backgroundImages, ranks, officerRanks, enlistedRanks, lanyardGroups, lanyardToImageMap, qualifications, rankToImageMap, qualificationToImageMap, awards } from 'discourse/plugins/project-uniform/discourse/uniform-data';
+import { backgroundImages, ranks, officerRanks, enlistedRanks, lanyardGroups, lanyardToImageMap, groupToImageMap, qualifications, rankToImageMap, qualificationToImageMap, awards } from 'discourse/plugins/project-uniform/discourse/uniform-data';
 
 export default {
   name: 'project-uniform',
@@ -70,6 +70,7 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
   let backgroundImageUrl = '';
   const foregroundImageUrls = []; // Array to hold multiple foreground images
   const awardImageUrls = []; // Array to hold award images
+  const is16CSMR = groups.some(group => ["16CSMR", "16CSMR_IC", "16CSMR_2IC"].includes(group.name));
 
   // Determine the background image based on the highest priority rank
   if (groups.some(group => officerRanks.includes(group.name))) {
@@ -86,6 +87,14 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
     }    
   }
 
+  // Add group-specific images using groupToImageMap
+  groups.forEach(group => {
+    const groupImage = groupToImageMap[group.name];
+    if (groupImage) {
+      foregroundImageUrls.push(groupImage);
+    }
+  });
+
   // Add lanyard-specific images using lanyardToImageMap
   groups.forEach(group => {
     const imageKey = lanyardToImageMap[group.name];
@@ -96,30 +105,43 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
 
   // Add qualification-specific images and awards using badge matching
   userBadges.forEach(ub => {
-    const badge = badges.find(b => b.id === ub.badge_id); // Match badge_id
+    const badge = badges.find(b => b.id === ub.badge_id);
     if (!badge) {
       console.warn('Skipping invalid badge:', ub);
-      return; // Skip if no matching badge found
+      return;
     }
-
+  
     const badgeName = badge.name;
-
-    // Add qualifications
+  
+    // Skip 1st Class Marksman and Sniper for 16CSMR members
+    if (is16CSMR && (badgeName === "1st Class Marksman" || badgeName === "Sniper")) {
+      return; // Do not display these qualifications for 16CSMR members
+    }
+  
+    // Special handling for CMT qualification (using both possible names)
+    if (badgeName === "CMT" || badgeName === "Combat Medical Technician") {
+      if (is16CSMR) {
+        // Only add the CMT image if the user is in a 16CSMR group
+        foregroundImageUrls.push('/assets/images/qualifications/cmt.png');
+      }
+      return; // Skip further processing of this badge
+    }
+  
+    // Normal processing for other qualifications
     const qualification = qualifications.find(q => q.name === badgeName);
     const imageKey = qualification?.imageKey;
-
     if (imageKey) {
       const isRestricted = qualification?.restrictedRanks?.includes(highestRank?.name);
       if (!isRestricted) {
         foregroundImageUrls.push(imageKey);
       }
     }
-
-    // Add awards
+  
+    // Process awards as usual
     const award = awards.find(a => a.name === badgeName);
     if (award?.imageKey) {
       awardImageUrls.push(award.imageKey);
-    }    
+    }
   });
 
   // Filter out invalid URLs

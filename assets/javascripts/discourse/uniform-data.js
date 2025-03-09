@@ -31,6 +31,12 @@ export const rankToImageMap = Object.fromEntries(
   ranks.map(rank => [rank.name, rank.imageKey])
 );
 
+export const groupToImageMap = {
+  '16CSMR': '/assets/images/groups/16csmr.png',
+  '16CSMR_IC': '/assets/images/groups/16csmr.png',
+  '16CSMR_2IC': '/assets/images/groups/16csmr.png'
+};
+
 const lanyardGroupsConfig = {
   '/assets/images/lanyards/lightblue_and_maroon_lanyard.png': [
     'Coy_IC', 'Coy_2IC', 'Coy_Sergeant_Major'
@@ -75,6 +81,7 @@ export const lanyardToImageMap = Object.fromEntries(
 );
 
 export const qualifications = [
+  { name: 'CMT', imageKey: '/assets/images/qualifications/cmt.png', restrictedRanks: [] },
   { name: 'Paratrooper', imageKey: '/assets/images/qualifications/paratrooper.png', restrictedRanks: [] },
   { name: 'Sniper', imageKey: '/assets/images/qualifications/sniper.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
   { name: 'Sharpshooter', imageKey: '/assets/images/qualifications/sharpshooter.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
