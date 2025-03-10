@@ -81,11 +81,16 @@ export const lanyardToImageMap = Object.fromEntries(
 );
 
 export const qualifications = [
+  { name: '1st Class Marksman', imageKey: '/assets/images/qualifications/1st_class_marksman.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
   { name: 'CMT', imageKey: '/assets/images/qualifications/cmt.png', restrictedRanks: [] },
+  { name: 'FTCC', imageKey: '/assets/images/qualifications/ftcc.png', restrictedRanks: [] },
   { name: 'Paratrooper', imageKey: '/assets/images/qualifications/paratrooper.png', restrictedRanks: [] },
+  { name: 'PCBC', imageKey: '/assets/images/qualifications/pcbc.png', restrictedRanks: [] },
+  { name: 'PSBC', imageKey: '/assets/images/qualifications/psbc.png', restrictedRanks: [] },
+  { name: 'SCBC', imageKey: '/assets/images/qualifications/scbc.png', restrictedRanks: [] },
   { name: 'Sniper', imageKey: '/assets/images/qualifications/sniper.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
-  { name: 'Sharpshooter', imageKey: '/assets/images/qualifications/sharpshooter.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
-  { name: '1st Class Marksman', imageKey: '/assets/images/qualifications/1st_class_marksman.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] }
+  { name: 'Sharpshooter', imageKey: '/assets/images/qualifications/sharpshooter.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] }
+  
 ];
 
 // Qualifications to Image Mapping
