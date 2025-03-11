@@ -99,29 +99,154 @@ export const qualificationToImageMap = Object.fromEntries(
 );
 
 export const awards = [
-  { name: "Meritorious Service Medal", imageKey: "/assets/images/ribbons/meritorious_service_medal.png" },
-  { name: "Most Valuable Soldier", imageKey: "/assets/images/ribbons/most_valuable_soldier.png" },
-  { name: "Mention in Dispatches with Four Oak Leaves", imageKey: "/assets/images/ribbons/mention_in_dispatches_5.png" },
-  { name: "Mention in Dispatches with Three Oak Leaves", imageKey: "/assets/images/ribbons/mention_in_dispatches_4.png" },
-  { name: "Mention in Dispatches with Two Oak Leaves", imageKey: "/assets/images/ribbons/mention_in_dispatches_3.png" },
-  { name: "Mention in Dispatches with Oak Leaf", imageKey: "/assets/images/ribbons/mention_in_dispatches_2.png" },
-  { name: "Mention in Dispatches", imageKey: "/assets/images/ribbons/mention_in_dispatches_1.png" },
-  { name: "Significant Effort Gold", imageKey: "/assets/images/ribbons/significant_effort_gold.png" },
-  { name: "Significant Effort", imageKey: "/assets/images/ribbons/significant_effort.png" },
-  { name: "Long Service and Good Conduct Medal with Two Silver Clasps", imageKey: "/assets/images/ribbons/long_service_medal_10_years.png" },
-  { name: "Long Service and Good Conduct Medal with Silver Clasp", imageKey: "/assets/images/ribbons/long_service_medal_5_years.png" },
-  { name: "Long Service and Good Conduct Medal", imageKey: "/assets/images/ribbons/long_service_medal.png" },
-  { name: "Mission Maker First Class", imageKey: "/assets/images/ribbons/mission_maker_first_class.png" },
-  { name: "Mission Maker Second Class", imageKey: "/assets/images/ribbons/mission_maker_second_class.png" },
-  { name: "Mission Maker Third Class", imageKey: "/assets/images/ribbons/mission_maker_third_class.png" },
-  { name: "Technical Excellence", imageKey: "/assets/images/ribbons/technical_excellence.png" },
-  { name: "RRO Excellence", imageKey: "/assets/images/ribbons/rro_excellence.png" },
-  { name: "Recruiter Medal", imageKey: "/assets/images/ribbons/recruiter_medal.png" },
-  { name: "Esprit de Corps with Gold Clasp", imageKey: "/assets/images/ribbons/esprit_de_corps_gold.png" },
-  { name: "Esprit de Corps", imageKey: "/assets/images/ribbons/esprit_de_corps.png" },
-  { name: "Citation with Four Oak Leaves", imageKey: "/assets/images/ribbons/citation_5.png" },
-  { name: "Citation with Three Oak Leaves", imageKey: "/assets/images/ribbons/citation_4.png" },
-  { name: "Citation with Two Oak Leaves", imageKey: "/assets/images/ribbons/citation_3.png" },
-  { name: "Citation with Oak Leaf", imageKey: "/assets/images/ribbons/citation_2.png" },
-  { name: "Citation", imageKey: "/assets/images/ribbons/citation_1.png" }
+  { 
+    name: "Meritorious Service Medal", 
+    imageKey: "/assets/images/ribbons/meritorious_service_medal.png",
+    tooltipImage: "/assets/images/medals/meritorious_service_medal.png",
+    tooltipText: "<center><b>Meritorious Service Medal</b></center><br>Awarded to Troopers with the rank of JNCO or above who have previously received the Long Service and Good Conduct Medal. Presented in recognition of sustained reliability, professionalism, and dedication on and off the battlefield over a prolonged period, with consistent performance of duties to the highest standard."
+  },
+  { 
+    name: "Most Valuable Soldier", 
+    imageKey: "/assets/images/ribbons/most_valuable_soldier.png",
+    tooltipImage: "/assets/images/medals/most_valuable_soldier.png",
+    tooltipText: "<center><b>Most Valuable Soldier</b></center><br>Awarded to the soldier who produces the goods when it counts. The soldier who holds the objective, makes the final shot or who just presents themselves as the one the team could not have done without."
+  },
+  { 
+    name: "Mention in Dispatches with Four Oak Leaves", 
+    imageKey: "/assets/images/ribbons/mention_in_dispatches_5.png",
+    tooltipImage: "/assets/images/medals/mention_in_dispatches.png",
+    tooltipText: "<center><b>5 x Mention in Dispatches</b></center><br>Awarded five times for bravery, selfless service and dedication to task during an engagement with the enemy or in a dangerous situation."
+  },
+  { 
+    name: "Mention in Dispatches with Three Oak Leaves", 
+    imageKey: "/assets/images/ribbons/mention_in_dispatches_4.png",
+    tooltipImage: "/assets/images/medals/mention_in_dispatches.png",
+    tooltipText: "<center><b>4 x Mention in Dispatches</b></center><br>Awarded four times for bravery, selfless service and dedication to task during an engagement with the enemy or in a dangerous situation."
+  },
+  { 
+    name: "Mention in Dispatches with Two Oak Leaves", 
+    imageKey: "/assets/images/ribbons/mention_in_dispatches_3.png",
+    tooltipImage: "/assets/images/medals/mention_in_dispatches.png",
+    tooltipText: "<center><b>3 x Mention in Dispatches</b></center><br>Awarded three times for bravery, selfless service and dedication to task during an engagement with the enemy or in a dangerous situation."
+  },
+  { 
+    name: "Mention in Dispatches with Oak Leaf", 
+    imageKey: "/assets/images/ribbons/mention_in_dispatches_2.png",
+    tooltipImage: "/assets/images/medals/mention_in_dispatches.png",
+    tooltipText: "<center><b>2 x Mention in Dispatches</b></center><br>Awarded two times for bravery, selfless service and dedication to task during an engagement with the enemy or in a dangerous situation."
+  },
+  { 
+    name: "Mention in Dispatches", 
+    imageKey: "/assets/images/ribbons/mention_in_dispatches_1.png",
+    tooltipImage: "/assets/images/medals/mention_in_dispatches.png",
+    tooltipText: "<center><b>Mention in Dispatches</b></center><br>Awarded for bravery, selfless service and dedication to task during an engagement with the enemy or in a dangerous situation."
+  },
+  { 
+    name: "Significant Effort Gold", 
+    imageKey: "/assets/images/ribbons/significant_effort_gold.png",
+    tooltipImage: "/assets/images/medals/significant_effort_gold.png",
+    tooltipText: "<center><b>Significant Effort Gold</b></center><br>Awarded for continued significant and outstanding effort to making 16AA better as a whole."
+  },
+  { 
+    name: "Significant Effort", 
+    imageKey: "/assets/images/ribbons/significant_effort.png",
+    tooltipImage: "/assets/images/medals/significant_effort.png",
+    tooltipText: "<center><b>Significant Effort</b></center><br>Awarded to those who are making a significant effort to making 16AA better as a whole."
+  },
+  { 
+    name: "Long Service and Good Conduct Medal with Two Silver Clasps", 
+    imageKey: "/assets/images/ribbons/long_service_medal_10_years.png",
+    tooltipImage: "/assets/images/medals/long_service_medal_10_years.png",
+    tooltipText: "<center><b>Long Service and Good Conduct Medal with Two Silver Clasps</b></center><br>Awarded to Troopers who have been members of 16AA for more than ten years while proven to be valuable assets to the unit through effort and commitment."
+  },
+  { 
+    name: "Long Service and Good Conduct Medal with Silver Clasp", 
+    imageKey: "/assets/images/ribbons/long_service_medal_5_years.png",
+    tooltipImage: "/assets/images/medals/long_service_medal_5_years.png",
+    tooltipText: "<center><b>Long Service and Good Conduct Medal with Silver Clasp</b></center><br>Awarded to Troopers who have been members of 16AA for more than five years while proven to be valuable assets to the unit through effort and commitment."
+  },
+  { 
+    name: "Long Service and Good Conduct Medal", 
+    imageKey: "/assets/images/ribbons/long_service_medal.png",
+    tooltipImage: "/assets/images/medals/long_service_medal.png",
+    tooltipText: "<center><b>Long Service and Good Conduct Medal</b></center><br>Awarded to Troopers who have been members of 16AA for more than two years while proven to be valuable assets to the unit through effort and commitment."
+  },
+  { 
+    name: "Mission Maker First Class", 
+    imageKey: "/assets/images/ribbons/mission_maker_first_class.png",
+    tooltipImage: "/assets/images/medals/mission_maker_first_class.png",
+    tooltipText: "center><b>Mission Maker First Class</b></center><br>Awarded to Troopers that have worked on the creation of a third Operation."
+  },
+  { 
+    name: "Mission Maker Second Class", 
+    imageKey: "/assets/images/ribbons/mission_maker_second_class.png",
+    tooltipImage: "/assets/images/medals/mission_maker_second_class.png",
+    tooltipText: "<center><b>Mission Maker Second Class</b></center><br>Awarded to Troopers that have worked on the creation of a second Operation."
+  },
+  { 
+    name: "Mission Maker Third Class", 
+    imageKey: "/assets/images/ribbons/mission_maker_third_class.png",
+    tooltipImage: "/assets/images/medals/mission_maker_third_class.png",
+    tooltipText: "<center><b>Mission Maker Third Class</b></center><br>Awarded to Troopers that have worked on a series of missions that were used in an Operation."
+  },
+  { 
+    name: "Technical Excellence", 
+    imageKey: "/assets/images/ribbons/technical_excellence.png",
+    tooltipImage: "/assets/images/medals/technical_excellence.png",
+    tooltipText: "<center><b>Technical Excellence</b></center><br>Awarded to members of REME who have made outstanding contributions for an extended period of time to the technical aspects of the unit. This award recognises those who have worked tirelessly behind the scenes on tasks such as server & forum maintenance and administration, troubleshooting technical issues, and ensuring overall smooth day-to-day operations."
+  },
+  { 
+    name: "RRO Excellence", 
+    imageKey: "/assets/images/ribbons/rro_excellence.png",
+    tooltipImage: "/assets/images/medals/rro_excellence.png",
+    tooltipText: "<center><b>RRO Excellence Award</b></center><br>Awarded to troopers that have shown an excellent level of dedication and have worked tirelessly in RRO to raise the standard of the unit."
+  },
+  { 
+    name: "Recruiter Medal", 
+    imageKey: "/assets/images/ribbons/recruiter_medal.png",
+    tooltipImage: "/assets/images/medals/recruiter_medal.png",
+    tooltipText: "<center><b>Recruiter Medal</b></center><br>Awarded to Troopers that have contributed significantly to the Recruitment efforts of 16AA."
+  },
+  { 
+    name: "Esprit de Corps with Gold Clasp", 
+    imageKey: "/assets/images/ribbons/esprit_de_corps_gold.png",
+    tooltipImage: "/assets/images/medals/esprit_de_corps_gold.png",
+    tooltipText: "<center><b>Esprit de Corps with Gold Clasp</b></center><br>Awarded to troopers who demonstrate sustained commitment to promoting camaraderie, fostering a positive atmosphere, and consistently exemplifying teamwork while upholding the highest standards of the unit’s values."
+  },
+  { 
+    name: "Esprit de Corps", 
+    imageKey: "/assets/images/ribbons/esprit_de_corps.png",
+    tooltipImage: "/assets/images/medals/esprit_de_corps.png",
+    tooltipText: "<center><b>Esprit de Corps</b></center><br>Awarded to troopers who promote camaraderie and a positive atmosphere, while consistently encouraging teamwork and upholding the unit’s values."
+  },
+  { 
+    name: "Citation with Four Oak Leaves", 
+    imageKey: "/assets/images/ribbons/citation_5.png",
+    tooltipImage: "/assets/images/medals/citation.png",
+    tooltipText: "<center><b>5 x Citations</b></center><br>Awarded five times for conspicuous attention to duty on and off the battlefield. Issued at the discretion of the OC."
+  },
+  { 
+    name: "Citation with Three Oak Leaves", 
+    imageKey: "/assets/images/ribbons/citation_4.png",
+    tooltipImage: "/assets/images/medals/citation.png",
+    tooltipText: "<center><b>4 x Citations</b></center><br>Awarded four times for conspicuous attention to duty on and off the battlefield. Issued at the discretion of the OC."
+  },
+  { 
+    name: "Citation with Two Oak Leaves", 
+    imageKey: "/assets/images/ribbons/citation_3.png",
+    tooltipImage: "/assets/images/medals/citation.png",
+    tooltipText: "<center><b>3 x Citations</b></center><br>Awarded three times for conspicuous attention to duty on and off the battlefield. Issued at the discretion of the OC."
+  },
+  { 
+    name: "Citation with Oak Leaf", 
+    imageKey: "/assets/images/ribbons/citation_2.png",
+    tooltipImage: "/assets/images/medals/citation.png",
+    tooltipText: "<center><b>2 x Citations</b></center><br>Awarded two times for conspicuous attention to duty on and off the battlefield. Issued at the discretion of the OC."
+  },
+  { 
+    name: "Citation", 
+    imageKey: "/assets/images/ribbons/citation_1.png",
+    tooltipImage: "/assets/images/medals/citation.png",
+    tooltipText: "<center><b>Citation</b></center><br>Awarded for conspicuous attention to duty on and off the battlefield. Issued at the discretion of the OC."
+  }
 ];
