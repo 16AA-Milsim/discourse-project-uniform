@@ -25,36 +25,40 @@ function registerTooltip(x, y, width, height, content) {
 // Attaches a tooltip element to the canvas container and sets up mouse event handlers.
 function setupTooltips(canvas) {
   const ctx = canvas.getContext('2d');
-  
-  // Draw red debug boxes for tooltip areas
-  // tooltipRegions.forEach(region => {
-  //   ctx.strokeStyle = 'red';
-  //   ctx.lineWidth = 2;
-  //   ctx.strokeRect(region.x, region.y, region.width, region.height);
-  //   console.log(`Drawing debug tooltip box at (${region.x}, ${region.y})`);
-  // });
+
+  tooltipRegions.forEach(region => {
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(region.x, region.y, region.width, region.height);
+    console.log(`Drawing debug tooltip box at (${region.x}, ${region.y})`);
+  });
 
   const tooltip = document.createElement('div');
   tooltip.className = 'canvas-tooltip';
   tooltip.style.position = 'absolute';
-  tooltip.style.display = 'none';
+  tooltip.style.opacity = '0'; 
+  tooltip.style.transition = 'opacity 0.1s ease-in-out'; // SHORTER TRANSITION TIME
   tooltip.style.background = 'rgba(0, 0, 0, 0.85)';
   tooltip.style.color = '#fff';
   tooltip.style.padding = '4px 8px';
   tooltip.style.borderRadius = '4px';
-
-  tooltip.style.fontFamily = 'Roboto, sans-serif'; // Change to your preferred font
-  tooltip.style.fontSize = '16px';                // Change to your preferred font size
+  tooltip.style.fontFamily = 'Roboto, sans-serif';
+  tooltip.style.fontSize = '16px';
+  tooltip.style.pointerEvents = 'none';
 
   canvas.parentElement.style.position = 'relative';
   canvas.parentElement.appendChild(tooltip);
+
+  let activeTooltip = null;
+  let fadeTimeout = null;
 
   canvas.addEventListener("mousemove", (event) => {
     const rect = canvas.getBoundingClientRect();
     const localX = event.clientX - rect.left;
     const localY = event.clientY - rect.top;
     let found = false;
-  
+    let newTooltipContent = null;
+
     for (const region of tooltipRegions) {
       if (
         localX >= region.x &&
@@ -62,50 +66,57 @@ function setupTooltips(canvas) {
         localY >= region.y &&
         localY <= region.y + region.height
       ) {
-        // Check if tooltip contains an image
-        const imgMatch = region.content.match(/<img\s+src="([^"]+)"/);
-        if (imgMatch) {
-          const imgSrc = imgMatch[1]; // Extract image URL
-          const preloadedImage = new Image();
-  
-          preloadedImage.onload = () => {
-            // Only show tooltip after the image has fully loaded
-            tooltip.innerHTML = region.content;
+        newTooltipContent = region.content;
+
+        if (activeTooltip !== newTooltipContent) {
+          activeTooltip = newTooltipContent;
+
+          if (fadeTimeout) {
+            clearTimeout(fadeTimeout);
+          }
+
+          tooltip.style.opacity = "0";
+
+          fadeTimeout = setTimeout(() => {
+            tooltip.innerHTML = newTooltipContent;
             tooltip.style.left = localX + 60 + "px";
             tooltip.style.top = localY + 40 + "px";
-            tooltip.style.display = "block";
-          };
-  
-          preloadedImage.src = imgSrc; // Start loading image
-        } else {
-          // Show tooltip immediately for text-only tooltips
-          tooltip.innerHTML = region.content;
-          tooltip.style.left = localX + 60 + "px";
-          tooltip.style.top = localY + 40 + "px";
-          tooltip.style.display = "block";
+            tooltip.style.opacity = "1"; // QUICKER FADE-IN
+          }, 100); // SHORTER DELAY BEFORE SHOWING NEW TOOLTIP
         }
-  
-        // Apply fixed width for ribbon tooltips
+
         if (region.content.includes("<img")) {
-          tooltip.style.width = "250px"; // Fixed width for ribbon tooltips
-          tooltip.style.whiteSpace = "normal"; // Allow wrapping
-          tooltip.style.textAlign = "center"; // Center-align text
+          tooltip.style.width = "250px";
+          tooltip.style.whiteSpace = "normal";
+          tooltip.style.textAlign = "center";
         } else {
-          tooltip.style.width = "auto"; // Default flexible width for non-ribbons
+          tooltip.style.width = "auto";
         }
-  
+
         found = true;
         break;
       }
     }
-  
+
     if (!found) {
-      tooltip.style.display = "none";
+      activeTooltip = null;
+      if (fadeTimeout) {
+        clearTimeout(fadeTimeout);
+      }
+      fadeTimeout = setTimeout(() => {
+        tooltip.style.opacity = "0"; // QUICKER FADE-OUT
+      }, 50); // SHORTER FADE-OUT DELAY
     }
   });
-  
+
   canvas.addEventListener('mouseout', () => {
-    tooltip.style.display = 'none';
+    activeTooltip = null;
+    if (fadeTimeout) {
+      clearTimeout(fadeTimeout);
+    }
+    fadeTimeout = setTimeout(() => {
+      tooltip.style.opacity = '0';
+    }, 50);
   });
 }
 
@@ -228,7 +239,7 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
       return;
     }
     const badgeName = badge.name;
-    if (is16CSMR && (badgeName === "1st Class Marksman" || badgeName === "Sniper")) return;
+    if (is16CSMR && (badgeName === "1st Class Marksman" || badgeName === "Sharpshooter" || badgeName === "Sniper")) return;
     if (badgeName === "CMT" || badgeName === "Combat Medical Technician") {
       if (is16CSMR) {
         foregroundImageUrls.push('/assets/images/qualifications/cmt.png');
@@ -256,13 +267,13 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
   console.log('Final foreground image URLs:', validForegroundImageUrls);
   console.log('Final award image URLs:', validAwardImageUrls);
   if (backgroundImageUrl && validForegroundImageUrls.length > 0) {
-    mergeImagesOnCanvas(container, backgroundImageUrl, validForegroundImageUrls, validAwardImageUrls, siteSettings);
+    mergeImagesOnCanvas(container, backgroundImageUrl, validForegroundImageUrls, validAwardImageUrls, siteSettings, highestRank);
   } else {
     console.error('Missing required image URLs for composite rendering.');
   }
 }
 
-function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls, awardImageUrls, siteSettings) {
+function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls, awardImageUrls, siteSettings, highestRank) {
   console.log('Starting mergeImagesOnCanvas...');
   const canvas = document.createElement('canvas');
   canvas.style.position = 'relative';
@@ -310,6 +321,30 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
       try {
         drawImages(ctx, fgImages, canvas);
         console.log('Foreground images drawn.');
+        if (highestRank && fgImages.length > 0 && highestRank.tooltipAreas) {
+          const rankImg = fgImages[0]; // assuming rank image is first
+          const x = (canvas.width - rankImg.naturalWidth) / 2;
+          const y = (canvas.height - rankImg.naturalHeight) / 2;
+          const tooltipContent = `<img src="${highestRank.tooltipImage}"> ${highestRank.tooltipText}`;
+          
+          highestRank.tooltipAreas.forEach(area => {
+            // area.x, area.y, area.width, area.height are relative to the rank image
+            registerTooltip(
+              x + area.x,
+              y + area.y,
+              area.width,
+              area.height,
+              tooltipContent
+            );
+            console.log('Registered rank tooltip area:', {
+              x: x + area.x,
+              y: y + area.y,
+              width: area.width,
+              height: area.height,
+              content: tooltipContent
+            });
+          });
+        }
       } catch (e) {
         console.error('Error drawing foreground images:', e);
       }

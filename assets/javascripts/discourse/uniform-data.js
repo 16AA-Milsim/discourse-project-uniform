@@ -6,20 +6,116 @@ export const backgroundImages = {
 };
 
 export const ranks = [
-  { name: 'Major', category: 'officer', imageKey: '/assets/images/ranks/maj.png' },
-  { name: 'Captain', category: 'officer', imageKey: '/assets/images/ranks/capt.png' },
-  { name: 'Lieutenant', category: 'officer', imageKey: '/assets/images/ranks/lt.png' },
-  { name: 'Second_Lieutenant', category: 'officer', imageKey: '/assets/images/ranks/2lt.png' },
-  { name: 'Acting_Second_Lieutenant', category: 'officer', imageKey: '/assets/images/ranks/act_2lt.png' },
-  { name: 'Warrant_Officer_Class_1', category: 'enlisted', imageKey: '/assets/images/ranks/wo1.png' },
-  { name: 'Warrant_Officer_Class_2', category: 'enlisted', imageKey: '/assets/images/ranks/wo2.png' },
-  { name: 'Colour_Sergeant', category: 'enlisted', imageKey: '/assets/images/ranks/csgt.png' },
-  { name: 'Staff_Sergeant', category: 'enlisted', imageKey: '/assets/images/ranks/ssgt.png' },
-  { name: 'Sergeant', category: 'enlisted', imageKey: '/assets/images/ranks/sgt.png' },
-  { name: 'Corporal', category: 'enlisted', imageKey: '/assets/images/ranks/cpl.png' },
-  { name: 'Lance_Corporal', category: 'enlisted', imageKey: '/assets/images/ranks/lcpl.png' },
-  { name: 'Private', category: 'enlisted', imageKey: '/assets/images/ranks/pte.png' },
-  { name: 'Recruit', category: 'enlisted', imageKey: '/assets/images/ranks/rec.png' }
+  { 
+    name: 'Major', 
+    category: 'officer', 
+    imageKey: '/assets/images/ranks/maj.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/maj.jpg',
+    tooltipText: "<center><b>Major</b></center><br>",
+    tooltipAreas: [
+      { x: 80, y: 18, width: 100, height: 52 },
+      { x: 520, y: 18, width: 80, height: 47 }
+    ]
+  },
+  { 
+    name: 'Captain', 
+    category: 'officer', 
+    imageKey: '/assets/images/ranks/capt.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/capt.jpg',
+    tooltipText: "<center><b>Captain</b></center><br>",
+    tooltipAreas: [
+      { x: 80, y: 18, width: 100, height: 52 },
+      { x: 520, y: 18, width: 80, height: 47 }
+    ]
+  },
+  { 
+    name: 'Lieutenant', 
+    category: 'officer', 
+    imageKey: '/assets/images/ranks/lt.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/lt.jpg',
+    tooltipText: "<center><b>Lieutenant</b></center><br>",
+    tooltipAreas: [
+      { x: 80, y: 18, width: 100, height: 52 },
+      { x: 520, y: 18, width: 80, height: 47 }
+    ]
+  },
+  { 
+    name: 'Second_Lieutenant', 
+    category: 'officer', 
+    imageKey: '/assets/images/ranks/2lt.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/2lt.jpg',
+    tooltipText: "<center><b>Second Lieutenant</b></center><br>",
+    tooltipAreas: [
+      { x: 80, y: 18, width: 100, height: 52 },
+      { x: 520, y: 18, width: 80, height: 47 }
+    ]
+  },
+  { 
+    name: 'Warrant_Officer_Class_2', 
+    category: 'enlisted', 
+    imageKey: '/assets/images/ranks/wo2.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/wo2.jpg',
+    tooltipText: "<center><b>Warrant Officer Class 2</b></center><br>",
+    tooltipAreas: [
+      { x: 15, y: 495, width: 45, height: 60 },
+      { x: 635, y: 495, width: 45, height: 58 }
+    ]
+  },
+  { 
+    name: 'Colour_Sergeant', 
+    category: 'enlisted', 
+    imageKey: '/assets/images/ranks/csgt.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/csgt.jpg',
+    tooltipText: "<center><b>Colour Sergeant</b></center><br>",
+    tooltipAreas: [
+      { x: 38, y: 195, width: 52, height: 110 },
+      { x: 607, y: 193, width: 60, height: 105 }
+    ]
+  },
+  { 
+    name: 'Staff_Sergeant', 
+    category: 'enlisted', 
+    imageKey: '/assets/images/ranks/ssgt.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/ssgt.jpg',
+    tooltipText: "<center><b>Staff Sergeant</b></center><br>",
+    tooltipAreas: [
+      { x: 38, y: 195, width: 52, height: 110 },
+      { x: 607, y: 193, width: 58, height: 102 }
+    ]
+  },
+  { 
+    name: 'Sergeant', 
+    category: 'enlisted', 
+    imageKey: '/assets/images/ranks/sgt.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/sgt.jpg',
+    tooltipText: "<center><b>Sergeant</b></center><br>",
+    tooltipAreas: [
+      { x: 38, y: 210, width: 52, height: 90 },
+      { x: 607, y: 208, width: 60, height: 85 }
+    ]
+  },
+  { 
+    name: 'Corporal', 
+    category: 'enlisted', 
+    imageKey: '/assets/images/ranks/cpl.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/cpl.jpg',
+    tooltipText: "<center><b>Corporal</b></center><br>",
+    tooltipAreas: [
+      { x: 38, y: 210, width: 52, height: 75 },
+      { x: 607, y: 208, width: 60, height: 72 }
+    ]
+  },
+  { 
+    name: 'Lance_Corporal', 
+    category: 'enlisted', 
+    imageKey: '/assets/images/ranks/lcpl.png',
+    tooltipImage: '/assets/images/tooltip_rankimages/lcpl.jpg',
+    tooltipText: "<center><b>Lance Corporal</b></center><br>",
+    tooltipAreas: [
+      { x: 40, y: 215, width: 52, height: 55 },
+      { x: 607, y: 208, width: 58, height: 55 }
+    ]
+  }
 ];
 
 // Derived Data
@@ -89,8 +185,7 @@ export const qualifications = [
   { name: 'PSBC', imageKey: '/assets/images/qualifications/psbc.png', restrictedRanks: [] },
   { name: 'SCBC', imageKey: '/assets/images/qualifications/scbc.png', restrictedRanks: [] },
   { name: 'Sniper', imageKey: '/assets/images/qualifications/sniper.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
-  { name: 'Sharpshooter', imageKey: '/assets/images/qualifications/sharpshooter.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] }
-  
+  { name: 'Sharpshooter', imageKey: '/assets/images/qualifications/sharpshooter.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] }  
 ];
 
 // Qualifications to Image Mapping
