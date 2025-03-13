@@ -123,9 +123,7 @@ export const officerRanks = ranks.filter(rank => rank.category === 'officer').ma
 export const enlistedRanks = ranks.filter(rank => rank.category === 'enlisted').map(rank => rank.name);
 
 // Rank to Image Mapping
-export const rankToImageMap = Object.fromEntries(
-  ranks.map(rank => [rank.name, rank.imageKey])
-);
+export const rankToImageMap = Object.fromEntries(ranks.map(rank => [rank.name, rank.imageKey]));
 
 export const groupToImageMap = {
   '16CSMR': '/assets/images/groups/16csmr.png',
@@ -133,45 +131,78 @@ export const groupToImageMap = {
   '16CSMR_2IC': '/assets/images/groups/16csmr.png'
 };
 
-const lanyardGroupsConfig = {
-  '/assets/images/lanyards/lightblue_and_maroon_lanyard.png': [
-    'Coy_IC', 'Coy_2IC', 'Coy_Sergeant_Major'
-  ],
-  '/assets/images/lanyards/red_lanyard.png': [
-    '1_Platoon_IC', '1_Platoon_2IC', '1-1_Section_IC', '1-1_Section_2IC', '1-1_Section',
-    '1-2_Section_IC', '1-2_Section_2IC', '1-2_Section', '1-3_Section_IC', '1-3_Section_2IC', '1-3_Section'
-  ],
-  '/assets/images/lanyards/green_lanyard.png': [
-    '2_Platoon_IC', '2_Platoon_2IC', '2-1_Section_IC', '2-1_Section_2IC', '2-1_Section',
-    '2-2_Section_IC', '2-2_Section_2IC', '2-2_Section', '2-3_Section_IC', '2-3_Section_2IC', '2-3_Section'
-  ],
-  '/assets/images/lanyards/black_lanyard.png': [
-    '3_Platoon_IC', '3_Platoon_2IC', '3-1_Section_IC', '3-1_Section_2IC', '3-1_Section',
-    '3-2_Section_IC', '3-2_Section_2IC', '3-2_Section', 'FSG_HQ_IC', 'FSG_HQ_2IC',
-    'Fire_Support_Group_IC', 'Fire_Support_Group_2IC', 'Fire_Support_Group'
-  ],
-  '/assets/images/lanyards/black_lanyard.png': [
-    '4-1_Section_IC', '4-1_Section_2IC', '4-1_Section'
-  ],
-  '/assets/images/lanyards/black_lanyard.png': [
-    '13AASR_IC', '13AASR_2IC', '13AASR'
-  ],
-  '/assets/images/lanyards/black_lanyard.png': [
-    '16CSMR_IC', '16CSMR_2IC', '16CSMR'
-  ],
-  '/assets/images/lanyards/black_lanyard.png': [
-    '216_Para_Signals_IC', '216_Para_Signals_2IC', '216_Para_Signals'
-  ],
-  '/assets/images/lanyards/black_and_olive_lanyard.png': [
-    'Fire_Support_Team_IC', 'Fire_Support_Team_2IC', 'Fire_Support_Team'
-  ]
+export const lanyardGroupsConfig = [
+  {
+    imageKey: '/assets/images/lanyards/lightblue_and_maroon_lanyard.png',
+    groups: ['Coy_IC', 'Coy_2IC', 'Coy_Sergeant_Major'],
+    tooltipImage: '/assets/images/tooltip_lanyardimages/lightblue_and_maroon_lanyard.png',
+    tooltipText: "<center><b>Lightblue & Maroon Lanyard</b></center><br>Description for Lightblue & Maroon Lanyard."
+  },
+  {
+    imageKey: '/assets/images/lanyards/red_lanyard.png',
+    groups: [
+      '1_Platoon_IC', '1_Platoon_2IC', '1-1_Section_IC', '1-1_Section_2IC', '1-1_Section',
+      '1-2_Section_IC', '1-2_Section_2IC', '1-2_Section', '1-3_Section_IC', '1-3_Section_2IC', '1-3_Section'
+    ],
+    tooltipImage: '/assets/images/tooltip_lanyardimages/red_dzf.png',
+    tooltipText: "<center><b>1 Platoon</b></center><br>The main paratrooper/ground infantry effort of 16AA."
+  },
+  {
+    imageKey: '/assets/images/lanyards/green_lanyard.png',
+    groups: [
+      '2_Platoon_IC', '2_Platoon_2IC', '2-1_Section_IC', '2-1_Section_2IC', '2-1_Section',
+      '2-2_Section_IC', '2-2_Section_2IC', '2-2_Section', '2-3_Section_IC', '2-3_Section_2IC', '2-3_Section'
+    ],
+    tooltipImage: '/assets/images/tooltip_lanyardimages/green_lanyard.png',
+    tooltipText: "<center><b>Green Lanyard</b></center><br>Description for Green Lanyard."
+  },
+  {
+    imageKey: '/assets/images/lanyards/black_lanyard.png',
+    groups: [
+      '3_Platoon_IC', '3_Platoon_2IC', '3-1_Section_IC', '3-1_Section_2IC', '3-1_Section',
+      '3-2_Section_IC', '3-2_Section_2IC', '3-2_Section',
+      'FSG_HQ_IC', 'FSG_HQ_2IC', 'Fire_Support_Group_IC', 'Fire_Support_Group_2IC', 'Fire_Support_Group',
+      '4-1_Section_IC', '4-1_Section_2IC', '4-1_Section',
+      '13AASR_IC', '13AASR_2IC', '13AASR',
+      '16CSMR_IC', '16CSMR_2IC', '16CSMR',
+      '216_Para_Signals_IC', '216_Para_Signals_2IC', '216_Para_Signals'
+    ],
+    tooltipImage: '/assets/images/tooltip_lanyardimages/black_dzf.png',
+    tooltipText: "<center><b>4 Platoon</b></center><br>The main combat services ground support element of 16AA, providing Fire support, Medical support, Logistics support and Explosive Ordnance Disposal service."
+  },
+  {
+    imageKey: '/assets/images/lanyards/black_and_olive_lanyard.png',
+    groups: ['Fire_Support_Team_IC', 'Fire_Support_Team_2IC', 'Fire_Support_Team'],
+    tooltipImage: '/assets/images/tooltip_lanyardimages/black_and_olive_lanyard.png',
+    tooltipText: "<center><b>Black and Olive Lanyard</b></center><br>Description for Black and Olive Lanyard."
+  }
+];
+
+// Tooltip region for lanyards.
+export const lanyardTooltipRegion = {
+  x: 548,
+  y: 60,
+  width: 30,
+  height: 220
 };
 
-export const lanyardGroups = Object.entries(lanyardGroupsConfig).flatMap(([imageKey, names]) =>
-  names.map(name => ({ name, imageKey }))
+// Generate a mapping from group name to its lanyard tooltip data.
+export const lanyardTooltipMap = lanyardGroupsConfig.reduce((acc, config) => {
+  config.groups.forEach(groupName => {
+    acc[groupName] = {
+      tooltipImage: config.tooltipImage,
+      tooltipText: config.tooltipText
+    };
+  });
+  return acc;
+}, {});
+
+// Build lanyard groups array.
+export const lanyardGroups = lanyardGroupsConfig.flatMap(config =>
+  config.groups.map(name => ({ name, imageKey: config.imageKey }))
 );
 
-// Lanyard to Image Mapping
+// Mapping of group name to lanyard image.
 export const lanyardToImageMap = Object.fromEntries(
   lanyardGroups.map(group => [group.name, group.imageKey])
 );
