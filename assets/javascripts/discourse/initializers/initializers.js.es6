@@ -12,11 +12,14 @@ import {
   qualificationToImageMap,
   awards,
   lanyardTooltipRegion,
-  lanyardTooltipMap
+  lanyardTooltipMap,
+  groupTooltipMap
 } from 'discourse/plugins/project-uniform/discourse/uniform-data';
 
 // Global storage for tooltip regions.
 const tooltipRegions = [];
+const DEBUG_TOOLTIPS = false; // Change to true when you want to see red rectangles
+let cachedRect = null; // Will store the latest bounding rect
 
 // Registers a tooltip region with given coordinates and content.
 function registerTooltip(x, y, width, height, content) {
@@ -26,42 +29,52 @@ function registerTooltip(x, y, width, height, content) {
 
 // Attaches a tooltip element to the canvas container and sets up mouse event handlers.
 function setupTooltips(canvas) {
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
 
-  // Draw red debug rectangles
-  tooltipRegions.forEach(region => {
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(region.x, region.y, region.width, region.height);
-    console.log(`Drawing debug tooltip box at (${region.x}, ${region.y})`);
+  if (DEBUG_TOOLTIPS) {
+    tooltipRegions.forEach(region => {
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(region.x, region.y, region.width, region.height);
+      console.log(`Drawing debug tooltip box at (${region.x}, ${region.y})`);
+    });
+  }
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "canvas-tooltip";
+  Object.assign(tooltip.style, {
+    position: "absolute",
+    opacity: "0",
+    transition: "opacity 0.1s ease-in-out",
+    background: "rgba(0,0,0,0.85)",
+    color: "#fff",
+    padding: "4px 8px",
+    borderRadius: "4px",
+    fontFamily: "Roboto, sans-serif",
+    fontSize: "16px",
+    pointerEvents: "none"
   });
 
-  const tooltip = document.createElement('div');
-  tooltip.className = 'canvas-tooltip';
-  tooltip.style.position = 'absolute';
-  tooltip.style.opacity = '0';
-  tooltip.style.transition = 'opacity 0.1s ease-in-out';
-  tooltip.style.background = 'rgba(0, 0, 0, 0.85)';
-  tooltip.style.color = '#fff';
-  tooltip.style.padding = '4px 8px';
-  tooltip.style.borderRadius = '4px';
-  tooltip.style.fontFamily = 'Roboto, sans-serif';
-  tooltip.style.fontSize = '16px';
-  tooltip.style.pointerEvents = 'none';
-
-  canvas.parentElement.style.position = 'relative';
+  canvas.parentElement.style.position = "relative";
   canvas.parentElement.appendChild(tooltip);
 
   let activeTooltip = null;
   let fadeTimeout = null;
 
-  // Cache the canvas bounding rectangle once rendered
-  let cachedRect = canvas.getBoundingClientRect();
-  window.addEventListener('resize', () => {
+  // Compute bounding rect once
+  cachedRect = canvas.getBoundingClientRect();
+
+  // Recompute on scroll or resize
+  window.addEventListener("scroll", () => {
+    cachedRect = canvas.getBoundingClientRect();
+  });
+  window.addEventListener("resize", () => {
     cachedRect = canvas.getBoundingClientRect();
   });
 
   canvas.addEventListener("mousemove", (event) => {
+    if (!cachedRect) return;
+
     const localX = event.clientX - cachedRect.left;
     const localY = event.clientY - cachedRect.top;
     let found = false;
@@ -75,27 +88,48 @@ function setupTooltips(canvas) {
         localY <= region.y + region.height
       ) {
         newTooltipContent = region.content;
+
         if (activeTooltip !== newTooltipContent) {
           activeTooltip = newTooltipContent;
-          if (fadeTimeout) {
-            clearTimeout(fadeTimeout);
-          }
+          if (fadeTimeout) clearTimeout(fadeTimeout);
+
           tooltip.style.opacity = "0";
           fadeTimeout = setTimeout(() => {
             tooltip.innerHTML = newTooltipContent;
-            tooltip.style.left = localX + 60 + "px";
-            tooltip.style.top = localY + 40 + "px";
-            tooltip.style.opacity = "1"; // Fade in
-          }, 100); // Delay before showing new tooltip
+
+            // Place temporarily to measure size
+            tooltip.style.left = "0px";
+            tooltip.style.top = "0px";
+            tooltip.style.visibility = "hidden";
+            tooltip.style.opacity = "0";
+
+            requestAnimationFrame(() => {
+              const canvasRect = canvas.getBoundingClientRect();
+              const parentRect = canvas.parentElement.getBoundingClientRect();
+              const offsetX = canvasRect.left - parentRect.left;
+              const offsetY = canvasRect.top - parentRect.top;
+
+              const tooltipWidth = tooltip.offsetWidth;
+              const tooltipHeight = tooltip.offsetHeight;
+
+              const offsetAdjustX = 0;
+              const offsetAdjustY = 25;
+
+              tooltip.style.left =
+                offsetX + region.x + region.width / 2 + offsetAdjustX + "px";
+              tooltip.style.top =
+                offsetY + region.y + region.height / 2 + offsetAdjustY + "px";
+
+              tooltip.style.visibility = "visible";
+              tooltip.style.opacity = "1";
+            });
+          }, 100);
         }
-        // Adjust styling if content includes an image
-        if (region.content.includes("<img")) {
-          tooltip.style.width = "250px";
-          tooltip.style.whiteSpace = "normal";
-          tooltip.style.textAlign = "center";
-        } else {
-          tooltip.style.width = "auto";
-        }
+
+        tooltip.style.width = region.content.includes("<img") ? "250px" : "auto";
+        tooltip.style.whiteSpace = region.content.includes("<img") ? "normal" : "nowrap";
+        tooltip.style.textAlign = region.content.includes("<img") ? "center" : "left";
+
         found = true;
         break;
       }
@@ -103,22 +137,18 @@ function setupTooltips(canvas) {
 
     if (!found) {
       activeTooltip = null;
-      if (fadeTimeout) {
-        clearTimeout(fadeTimeout);
-      }
+      if (fadeTimeout) clearTimeout(fadeTimeout);
       fadeTimeout = setTimeout(() => {
-        tooltip.style.opacity = "0"; // Fade out
-      }, 50); // Fade-out delay
+        tooltip.style.opacity = "0";
+      }, 50);
     }
   });
 
-  canvas.addEventListener('mouseout', () => {
+  canvas.addEventListener("mouseout", () => {
     activeTooltip = null;
-    if (fadeTimeout) {
-      clearTimeout(fadeTimeout);
-    }
+    if (fadeTimeout) clearTimeout(fadeTimeout);
     fadeTimeout = setTimeout(() => {
-      tooltip.style.opacity = '0';
+      tooltip.style.opacity = "0";
     }, 50);
   });
 }
@@ -209,69 +239,87 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
   let backgroundImageUrl = '';
   const foregroundImageUrls = [];
   const awardImageUrls = [];
-  const is16CSMR = groups.some(g => ["16CSMR", "16CSMR_IC", "16CSMR_2IC"].includes(g.name));
+  const qualificationsToRender = []; // ✅ NEW: track qualification objects
+  const is16CSMR = groups.some(g =>
+    ["16CSMR", "16CSMR_IC", "16CSMR_2IC"].includes(g.name)
+  );
 
-  // Determine uniform (background) based on group membership.
+  // Determine uniform (background) based on group membership
   if (groups.some(g => officerRanks.includes(g.name))) {
     backgroundImageUrl = backgroundImages.officer;
   } else if (groups.some(g => enlistedRanks.includes(g.name))) {
     backgroundImageUrl = backgroundImages.enlisted;
   }
-  console.log('Determined background image URL:', backgroundImageUrl);
 
-  // Find highest rank and add its image if available.
+  // Find highest rank
   const highestRank = ranks.find(r => groups.some(g => g.name === r.name));
   if (highestRank?.imageKey) {
     foregroundImageUrls.push(highestRank.imageKey);
-    console.log('Added rank image:', highestRank.imageKey);
   }
 
-  // Combine adding group images and lanyard images into a single loop.
+  // Add group & lanyard images
   groups.forEach(g => {
     const groupImage = groupToImageMap[g.name];
-    if (groupImage) {
-      foregroundImageUrls.push(groupImage);
-      console.log(`Added group image for ${g.name}:`, groupImage);
-    }
+    if (groupImage) foregroundImageUrls.push(groupImage);
+
     const lanyardImage = lanyardToImageMap[g.name];
-    if (lanyardImage) {
-      foregroundImageUrls.push(lanyardImage);
-      console.log(`Added lanyard image for ${g.name}:`, lanyardImage);
-    }
+    if (lanyardImage) foregroundImageUrls.push(lanyardImage);
   });
 
-  // Process badges.
+  const leadershipQualificationsOrder = ["FTCC", "SCBC", "PSBC", "PCBC"];
+
+  const highestLeadershipQualification = leadershipQualificationsOrder.findLast(q =>
+    userBadges.some(ub => {
+      const badge = badges.find(b => b.id === ub.badge_id);
+      return badge && badge.name === q;
+    })
+  );
+
+  const marksmanshipQualificationsOrder = ["1st Class Marksman","Sharpshooter","Sniper"];
+
+  const highestMarksmanshipQualification = marksmanshipQualificationsOrder.findLast(q =>
+    userBadges.some(ub => {
+      const badge = badges.find(b => b.id === ub.badge_id);
+      return badge && badge.name === q;
+    })
+  );
+
+  // Process badges
   userBadges.forEach(ub => {
     const badge = badges.find(b => b.id === ub.badge_id);
-    if (!badge) {
-      console.warn('Skipping invalid badge:', ub);
-      return;
-    }
+    if (!badge) return;
+
     const badgeName = badge.name;
+
+    // Skip marksmanship qualifications for 16CSMR
     if (is16CSMR && ["1st Class Marksman", "Sharpshooter", "Sniper"].includes(badgeName)) return;
-    if (["CMT", "Combat Medical Technician"].includes(badgeName)) {
-      if (is16CSMR) {
-        foregroundImageUrls.push('/assets/images/qualifications/cmt.png');
-        console.log('Added CMT qualification image for 16CSMR member.');
-      }
-      return;
-    }
+
     const qualification = qualifications.find(q => q.name === badgeName);
+    const isLeadershipQualification = leadershipQualificationsOrder.includes(badgeName);
+    const isMarksmanshipQualification = marksmanshipQualificationsOrder.includes(badgeName);
+
+    // ✅ Skip lower leadership qualifications
+    if (isLeadershipQualification && badgeName !== highestLeadershipQualification) return;
+
+    // ✅ Skip lower marksmanship qualifications
+    if (isMarksmanshipQualification && badgeName !== highestMarksmanshipQualification) return;
+
+    // ✅ Handle qualifications (including CMT automatically)
     if (qualification?.imageKey && !qualification.restrictedRanks?.includes(highestRank?.name)) {
+      // Special rule: Only show CMT if user is in 16CSMR
+      if (badgeName === "CMT" && !is16CSMR) return;
+
       foregroundImageUrls.push(qualification.imageKey);
-      console.log(`Added qualification image for ${badgeName}:`, qualification.imageKey);
+      qualificationsToRender.push(qualification);
     }
+
+    // ✅ Handle awards
     const award = awards.find(a => a.name === badgeName);
-    if (award?.imageKey) {
-      awardImageUrls.push(award.imageKey);
-      console.log(`Added award image for ${badgeName}:`, award.imageKey);
-    }
+    if (award?.imageKey) awardImageUrls.push(award.imageKey);
   });
 
   const validForegroundImageUrls = foregroundImageUrls.filter(Boolean);
   const validAwardImageUrls = awardImageUrls.filter(Boolean);
-  console.log('Final foreground image URLs:', validForegroundImageUrls);
-  console.log('Final award image URLs:', validAwardImageUrls);
 
   if (backgroundImageUrl && validForegroundImageUrls.length > 0) {
     mergeImagesOnCanvas(
@@ -280,16 +328,24 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
       validForegroundImageUrls,
       validAwardImageUrls,
       siteSettings,
-      highestRank
+      highestRank,
+      qualificationsToRender,
+      groups
     );
-    // Call our new function to register lanyard tooltips.
     registerLanyardTooltips(groups);
-  } else {
-    console.error('Missing required image URLs for composite rendering.');
   }
 }
 
-function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls, awardImageUrls, siteSettings, highestRank) {
+function mergeImagesOnCanvas(
+    container,
+    backgroundImageUrl,
+    foregroundImageUrls,
+    awardImageUrls,
+    siteSettings,
+    highestRank,
+    qualificationsToRender,
+    groups
+  ) {
   console.log('Starting mergeImagesOnCanvas...');
   const canvas = document.createElement('canvas');
   Object.assign(canvas.style, {
@@ -311,21 +367,16 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
 
   let imagesLoaded = 0;
   const totalImages = 1 + fgImages.length + awardImages.length;
-  console.log(`Expecting to load ${totalImages} images.`);
 
   const checkAllLoaded = () => {
-    if (imagesLoaded !== totalImages) {
-      console.log(`Images loaded: ${imagesLoaded}/${totalImages}`);
-      return;
-    }
-    console.log('All images loaded successfully.');
-    // Set canvas dimensions based on background image
+    if (imagesLoaded !== totalImages) return;
+
+    // Set canvas dimensions
     canvas.width = bgImage.naturalWidth || 1;
     canvas.height = bgImage.naturalHeight || 1;
-    console.log('Canvas dimensions set to:', canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = true;
 
-    // Draw background with shadow
+    // Draw background
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
     ctx.shadowBlur = 10;
@@ -333,50 +384,74 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
     ctx.shadowOffsetY = 1;
     ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
     ctx.restore();
-    console.log('Background image drawn.');
 
-    // Draw foreground images and register rank tooltips if applicable
-    try {
-      drawImages(ctx, fgImages, canvas);
-      console.log('Foreground images drawn.');
-      if (highestRank && fgImages.length && highestRank.tooltipAreas) {
-        const rankImg = fgImages[0]; // assuming rank image is first
-        const x = (canvas.width - rankImg.naturalWidth) / 2;
-        const y = (canvas.height - rankImg.naturalHeight) / 2;
-        const tooltipContent = `<img src="${highestRank.tooltipImage}"> ${highestRank.tooltipText}`;
-        highestRank.tooltipAreas.forEach(area => {
-          registerTooltip(x + area.x, y + area.y, area.width, area.height, tooltipContent);
-          console.log('Registered rank tooltip area:', {
-            x: x + area.x,
-            y: y + area.y,
-            width: area.width,
-            height: area.height,
-            content: tooltipContent
-          });
+    // Draw foreground (rank, lanyard, qualifications, etc.)
+    drawImages(ctx, fgImages, canvas);
+
+
+    // Register tooltips for any group image
+    groups.forEach((g) => {
+      const data = groupTooltipMap[g.name];
+      if (data && data.tooltipAreas) {
+        data.tooltipAreas.forEach((area) => {
+          registerTooltip(
+            area.x,
+            area.y,
+            area.width,
+            area.height,
+            `<img src="${data.tooltipImage}"> ${data.tooltipText}`
+          );
         });
       }
-    } catch (e) {
-      console.error('Error drawing foreground images:', e);
+    });
+
+    // Register tooltip for rank
+    if (highestRank && fgImages.length && highestRank.tooltipAreas) {
+      const rankImg = fgImages[0]; // assuming first image is rank
+      const x = (canvas.width - rankImg.naturalWidth) / 2;
+      const y = (canvas.height - rankImg.naturalHeight) / 2;
+
+      const tooltipContent = `<img src="${highestRank.tooltipImage}"> ${highestRank.tooltipText}`;
+      highestRank.tooltipAreas.forEach(area => {
+        registerTooltip(x + area.x, y + area.y, area.width, area.height, tooltipContent);
+      });
     }
 
-    // Process awards on a separate canvas, scale and draw them with rotation/skew
+    // ✅ Register tooltips for qualifications
+    qualificationsToRender.forEach(q => {
+      if (!q.tooltipAreas) return;
+
+      q.tooltipAreas.forEach(area => {
+        registerTooltip(
+          area.x,
+          area.y,
+          area.width,
+          area.height,
+          `<img src="${q.tooltipImage}"> ${q.tooltipText}`
+        );
+      });
+    });
+
+    // ✅ Handle awards (draw separately, scale, and register tooltips)
     try {
       const awardsCanvas = document.createElement('canvas');
       awardsCanvas.width = canvas.width;
       awardsCanvas.height = canvas.height;
       const awardsCtx = awardsCanvas.getContext('2d');
       const awardTooltips = drawAwards(awardsCtx, awardImages, awardsCanvas);
-      console.log('Awards drawn on separate canvas, tooltips data:', awardTooltips);
 
       const scaleFactor = 0.29;
       const scaledAwardsCanvas = document.createElement('canvas');
       scaledAwardsCanvas.width = awardsCanvas.width * scaleFactor;
       scaledAwardsCanvas.height = awardsCanvas.height * scaleFactor;
-      const scaledAwardsCtx = scaledAwardsCanvas.getContext('2d');
-      scaledAwardsCtx.drawImage(awardsCanvas, 0, 0, scaledAwardsCanvas.width, scaledAwardsCanvas.height);
-      console.log('Scaled awards canvas created with scale factor:', scaleFactor);
+      scaledAwardsCanvas.getContext('2d').drawImage(
+        awardsCanvas,
+        0,
+        0,
+        scaledAwardsCanvas.width,
+        scaledAwardsCanvas.height
+      );
 
-      // Determine awards placement via an IIFE helper
       const { awardsX, awardsY } = (() => {
         const count = awardImages.length;
         if (count === 1) return { awardsX: 385, awardsY: 45 };
@@ -384,7 +459,6 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
         if (count === 3) return { awardsX: 384, awardsY: 44 };
         return { awardsX: 380, awardsY: 46 };
       })();
-      console.log('Awards placement:', awardsX, awardsY);
 
       const rotationAngle = -3 * Math.PI / 180;
       const skewYValue = -3 * Math.PI / 180;
@@ -404,71 +478,56 @@ function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls,
         scaledAwardsCanvas.height
       );
       ctx.restore();
-      console.log('Scaled awards drawn onto main canvas.');
 
-      // Register tooltip regions for awards
+      // ✅ Register award tooltips
       const tx = awardsX + scaledAwardsCanvas.width / 2;
       const ty = awardsY + scaledAwardsCanvas.height / 2;
       const offsetX = scaledAwardsCanvas.width / 2;
       const offsetY = scaledAwardsCanvas.height / 2;
       const ribbonTooltipRotationOffset = -3 * Math.PI / 180;
+
       awardTooltips.forEach(t => {
         const xScaled = t.x * scaleFactor;
         const yScaled = t.y * scaleFactor;
         const widthScaled = t.width * scaleFactor;
         const heightScaled = t.height * scaleFactor;
         const tanSkewY = Math.tan(skewYValue);
+
         const adjustedRotationAngle = rotationAngle + ribbonTooltipRotationOffset;
         const pointA = transformPoint(xScaled, yScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
         const pointB = transformPoint(xScaled + widthScaled, yScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
         const pointC = transformPoint(xScaled, yScaled + heightScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
         const pointD = transformPoint(xScaled + widthScaled, yScaled + heightScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
+
         const minX = Math.min(pointA.x, pointB.x, pointC.x, pointD.x);
         const minY = Math.min(pointA.y, pointB.y, pointC.y, pointD.y);
         const maxX = Math.max(pointA.x, pointB.x, pointC.x, pointD.x);
         const maxY = Math.max(pointA.y, pointB.y, pointC.y, pointD.y);
+
         registerTooltip(minX, minY, (maxX - minX) - 2, (maxY - minY) - 2, t.content);
-        console.log('Registered award tooltip region:', { minX, minY, width: maxX - minX, height: maxY - minY, content: t.content });
       });
     } catch (e) {
       console.error('Error processing awards:', e);
     }
 
-    try {
-      container.prepend(canvas);
-      setupTooltips(canvas);
-      console.log('Composite canvas prepended and tooltips set up.');
-    } catch (e) {
-      console.error('Error appending canvas or setting up tooltips:', e);
-    }
+    // ✅ Append canvas
+    container.prepend(canvas);
+    setupTooltips(canvas);
   };
 
-  // Helper to attach load and error handlers for an image
-  const attachLoadHandler = (img, src, type, index) => {
-    img.onerror = () => console.error(`Error loading ${type} image ${index}:`, src);
+  // Attach load handlers
+  const attachLoadHandler = (img, src) => {
     img.onload = () => {
       imagesLoaded++;
-      console.log(`${type} image ${index} loaded:`, img.naturalWidth, img.naturalHeight);
       checkAllLoaded();
     };
+    img.onerror = () => console.error(`Error loading image:`, src);
     img.src = src;
   };
 
-  bgImage.onerror = () => console.error('Error loading background image:', backgroundImageUrl);
-  bgImage.onload = () => {
-    imagesLoaded++;
-    console.log('Background image loaded:', bgImage.naturalWidth, bgImage.naturalHeight);
-    checkAllLoaded();
-  };
-  bgImage.src = backgroundImageUrl || '';
-
-  fgImages.forEach((img, i) => {
-    attachLoadHandler(img, foregroundImageUrls[i] || '', 'Foreground', i);
-  });
-
-  awardImages.forEach((img, i) => {
-    attachLoadHandler(img, awardImageUrls[i] || '', 'Award', i);
-  });
+  attachLoadHandler(bgImage, backgroundImageUrl || '');
+  fgImages.forEach((img, i) => attachLoadHandler(img, foregroundImageUrls[i] || ''));
+  awardImages.forEach((img, i) => attachLoadHandler(img, awardImageUrls[i] || ''));
 }
 
 function drawImages(ctx, images, canvas) {

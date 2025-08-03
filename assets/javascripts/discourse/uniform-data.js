@@ -11,7 +11,7 @@ export const ranks = [
     category: 'officer', 
     imageKey: '/assets/images/ranks/maj.png',
     tooltipImage: '/assets/images/tooltip_rankimages/maj.jpg',
-    tooltipText: "<center><b>Major</b></center><br>",
+    tooltipText: "<center><b>Major</b></center>",
     tooltipAreas: [
       { x: 80, y: 18, width: 100, height: 52 },
       { x: 520, y: 18, width: 80, height: 47 }
@@ -22,7 +22,7 @@ export const ranks = [
     category: 'officer', 
     imageKey: '/assets/images/ranks/capt.png',
     tooltipImage: '/assets/images/tooltip_rankimages/capt.jpg',
-    tooltipText: "<center><b>Captain</b></center><br>",
+    tooltipText: "<center><b>Captain</b></center>",
     tooltipAreas: [
       { x: 80, y: 18, width: 100, height: 52 },
       { x: 520, y: 18, width: 80, height: 47 }
@@ -33,7 +33,7 @@ export const ranks = [
     category: 'officer', 
     imageKey: '/assets/images/ranks/lt.png',
     tooltipImage: '/assets/images/tooltip_rankimages/lt.jpg',
-    tooltipText: "<center><b>Lieutenant</b></center><br>",
+    tooltipText: "<center><b>Lieutenant</b></center>",
     tooltipAreas: [
       { x: 80, y: 18, width: 100, height: 52 },
       { x: 520, y: 18, width: 80, height: 47 }
@@ -44,7 +44,7 @@ export const ranks = [
     category: 'officer', 
     imageKey: '/assets/images/ranks/2lt.png',
     tooltipImage: '/assets/images/tooltip_rankimages/2lt.jpg',
-    tooltipText: "<center><b>Second Lieutenant</b></center><br>",
+    tooltipText: "<center><b>Second Lieutenant</b></center>",
     tooltipAreas: [
       { x: 80, y: 18, width: 100, height: 52 },
       { x: 520, y: 18, width: 80, height: 47 }
@@ -55,7 +55,7 @@ export const ranks = [
     category: 'enlisted', 
     imageKey: '/assets/images/ranks/wo2.png',
     tooltipImage: '/assets/images/tooltip_rankimages/wo2.jpg',
-    tooltipText: "<center><b>Warrant Officer Class 2</b></center><br>",
+    tooltipText: "<center><b>Warrant Officer Class 2</b></center>",
     tooltipAreas: [
       { x: 15, y: 495, width: 45, height: 60 },
       { x: 635, y: 495, width: 45, height: 58 }
@@ -66,7 +66,7 @@ export const ranks = [
     category: 'enlisted', 
     imageKey: '/assets/images/ranks/csgt.png',
     tooltipImage: '/assets/images/tooltip_rankimages/csgt.jpg',
-    tooltipText: "<center><b>Colour Sergeant</b></center><br>",
+    tooltipText: "<center><b>Colour Sergeant</b></center>",
     tooltipAreas: [
       { x: 38, y: 195, width: 52, height: 110 },
       { x: 607, y: 193, width: 60, height: 105 }
@@ -77,7 +77,7 @@ export const ranks = [
     category: 'enlisted', 
     imageKey: '/assets/images/ranks/ssgt.png',
     tooltipImage: '/assets/images/tooltip_rankimages/ssgt.jpg',
-    tooltipText: "<center><b>Staff Sergeant</b></center><br>",
+    tooltipText: "<center><b>Staff Sergeant</b></center>",
     tooltipAreas: [
       { x: 38, y: 195, width: 52, height: 110 },
       { x: 607, y: 193, width: 58, height: 102 }
@@ -88,7 +88,7 @@ export const ranks = [
     category: 'enlisted', 
     imageKey: '/assets/images/ranks/sgt.png',
     tooltipImage: '/assets/images/tooltip_rankimages/sgt.jpg',
-    tooltipText: "<center><b>Sergeant</b></center><br>",
+    tooltipText: "<center><b>Sergeant</b></center>",
     tooltipAreas: [
       { x: 38, y: 210, width: 52, height: 90 },
       { x: 607, y: 208, width: 60, height: 85 }
@@ -99,7 +99,7 @@ export const ranks = [
     category: 'enlisted', 
     imageKey: '/assets/images/ranks/cpl.png',
     tooltipImage: '/assets/images/tooltip_rankimages/cpl.jpg',
-    tooltipText: "<center><b>Corporal</b></center><br>",
+    tooltipText: "<center><b>Corporal</b></center>",
     tooltipAreas: [
       { x: 38, y: 210, width: 52, height: 75 },
       { x: 607, y: 208, width: 60, height: 72 }
@@ -110,7 +110,7 @@ export const ranks = [
     category: 'enlisted', 
     imageKey: '/assets/images/ranks/lcpl.png',
     tooltipImage: '/assets/images/tooltip_rankimages/lcpl.jpg',
-    tooltipText: "<center><b>Lance Corporal</b></center><br>",
+    tooltipText: "<center><b>Lance Corporal</b></center>",
     tooltipAreas: [
       { x: 40, y: 215, width: 52, height: 55 },
       { x: 607, y: 208, width: 58, height: 55 }
@@ -131,6 +131,25 @@ export const groupToImageMap = {
   '16CSMR_2IC': '/assets/images/groups/16csmr.png'
 };
 
+const csmrTooltip = {
+  tooltipImage: "/assets/images/groups/ramc.png",
+  tooltipText:
+    "<center><b>Royal Army Medical Corps</b></center><br>The collar badge worn by<br>members of 16 Close Support Medical Regiment.",
+  tooltipAreas: [
+    { x: 183, y: 27, width: 37, height: 35 },
+    { x: 477, y: 27, width: 38, height: 35 }
+  ]
+};
+
+export const groupTooltipMap = [
+  "16CSMR",
+  "16CSMR_IC",
+  "16CSMR_2IC"
+].reduce((acc, key) => {
+  acc[key] = csmrTooltip;
+  return acc;
+}, {});
+
 export const lanyardGroupsConfig = [
   {
     imageKey: '/assets/images/lanyards/lightblue_and_maroon_lanyard.png',
@@ -145,7 +164,7 @@ export const lanyardGroupsConfig = [
       '1-2_Section_IC', '1-2_Section_2IC', '1-2_Section', '1-3_Section_IC', '1-3_Section_2IC', '1-3_Section'
     ],
     tooltipImage: '/assets/images/tooltip_lanyardimages/red_dzf.png',
-    tooltipText: "<center><b>1 Platoon</b></center><br>The main paratrooper/ground infantry effort of 16AA."
+    tooltipText: "<center><b>1 Platoon</b></center><br>The airborne infantry platoons are the main paratrooper/ground infantry efforts of 16AA."
   },
   {
     imageKey: '/assets/images/lanyards/green_lanyard.png',
@@ -207,16 +226,101 @@ export const lanyardToImageMap = Object.fromEntries(
   lanyardGroups.map(group => [group.name, group.imageKey])
 );
 
+export const leadershipQualificationsOrder = ["FTCC", "SCBC", "PSBC", "PCBC"];
+export const marksmanshipQualificationsOrder = ["1st Class Marksman","Sharpshooter","Sniper"];
+
 export const qualifications = [
-  { name: '1st Class Marksman', imageKey: '/assets/images/qualifications/1st_class_marksman.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
-  { name: 'CMT', imageKey: '/assets/images/qualifications/cmt.png', restrictedRanks: [] },
-  { name: 'FTCC', imageKey: '/assets/images/qualifications/ftcc.png', restrictedRanks: [] },
-  { name: 'Paratrooper', imageKey: '/assets/images/qualifications/paratrooper.png', restrictedRanks: [] },
-  { name: 'PCBC', imageKey: '/assets/images/qualifications/pcbc.png', restrictedRanks: [] },
-  { name: 'PSBC', imageKey: '/assets/images/qualifications/psbc.png', restrictedRanks: [] },
-  { name: 'SCBC', imageKey: '/assets/images/qualifications/scbc.png', restrictedRanks: [] },
-  { name: 'Sniper', imageKey: '/assets/images/qualifications/sniper.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] },
-  { name: 'Sharpshooter', imageKey: '/assets/images/qualifications/sharpshooter.png', restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks] }  
+  {
+  name: '1st Class Marksman',
+  imageKey: '/assets/images/qualifications/1st_class_marksman.png',
+  restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks],
+  tooltipImage: '/assets/images/tooltip_qualificationimages/1stclassmarksman.jpg',
+  tooltipText: '<center><b>1st Class Marksman</b></center><br>Awarded for scoring 110/120 or more on the Marksmanship Test. This is a requirement in order to carry the section marksman rifle.',
+  tooltipAreas: [
+    { x: 10, y: 560, width: 46, height: 56 }
+    ]
+  },
+  {
+  name: 'CMT',
+  imageKey: '/assets/images/qualifications/cmt.png',
+  restrictedRanks: [],
+  tooltipImage: '/assets/images/tooltip_qualificationimages/cmt.jpg',
+  tooltipText: '<center><b>Combat Medical Technician (CMT)</b></center><br>Awarded on the successful completion of the Combat Medical Technician Course. Gives the individual knowledge in advanced treatment and medication.',
+  tooltipAreas: [
+    { x: 10, y: 558, width: 42, height: 72 }
+    ]
+  },
+  {
+    name: 'FTCC',
+    imageKey: '/assets/images/qualifications/ftcc.png',
+    restrictedRanks: [],
+    tooltipImage: '/assets/images/tooltip_qualificationimages/ftcc.jpg',
+    tooltipText: "<center><b>FTCC</b></center><br>Fire Team Commanders Course.",
+    tooltipAreas: [
+      { x: 192, y: 206, width: 30, height: 38 }
+    ]
+  },
+  { 
+  name: 'Paratrooper', 
+  imageKey: '/assets/images/qualifications/paratrooper.png', 
+  restrictedRanks: [],
+  tooltipAreas: [
+    { x: 44, y: 116, width: 40, height: 50 }
+  ],
+  tooltipImage: '/assets/images/tooltip_qualificationimages/paratrooper.jpg',
+  tooltipText: "<center><b>Paratrooper</b></center><br>Awarded on the successful completion of the Third static line Parachute Combat Drop."
+  }
+  ,
+  {
+    name: 'PCBC',
+    imageKey: '/assets/images/qualifications/pcbc.png',
+    restrictedRanks: [],
+    tooltipImage: '/assets/images/tooltip_qualificationimages/pcbc.jpg',
+    tooltipText: "<center><b>PCBC</b></center><br>Platoon Commanders Battle Course.",
+    tooltipAreas: [
+      { x: 188, y: 206, width: 36, height: 38 }
+    ]
+  },
+  {
+    name: 'PSBC',
+    imageKey: '/assets/images/qualifications/psbc.png',
+    restrictedRanks: [],
+    tooltipImage: '/assets/images/tooltip_qualificationimages/psbc.jpg',
+    tooltipText: "<center><b>PSBC</b></center><br>Platoon Sergeants Battle Course.",
+    tooltipAreas: [
+      { x: 188, y: 206, width: 36, height: 38 }
+    ]
+  },
+  {
+    name: 'SCBC',
+    imageKey: '/assets/images/qualifications/scbc.png',
+    restrictedRanks: [],
+    tooltipImage: '/assets/images/tooltip_qualificationimages/scbc.jpg',
+    tooltipText: "<center><b>SCBC</b></center><br>Section Commanders Battle Course.",
+    tooltipAreas: [
+      { x: 188, y: 206, width: 36, height: 38 }
+    ]
+  },
+  {
+    name: 'Sniper',
+    imageKey: '/assets/images/qualifications/sniper.png',
+    restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks],
+    tooltipImage: '/assets/images/tooltip_qualificationimages/sniper.jpg',
+    tooltipText: '<center><b>Sniper</b></center><br>Awarded on the successful completion of the Sniper Cadre. Trains the soldier in advanced marksmanship, concealment and operation of the L115A3 Sniper Rifle.',
+    tooltipAreas: [
+      { x: 10, y: 560, width: 46, height: 56 }
+    ]
+  },
+  {
+    name: 'Sharpshooter',
+    imageKey: '/assets/images/qualifications/sharpshooter.png',
+    restrictedRanks: ['Warrant_Officer_Class_2', 'Warrant_Officer_Class_1', ...officerRanks],
+    tooltipImage: '/assets/images/tooltip_qualificationimages/sharpshooter.png',
+    tooltipText: '<center><b>Sharpshooter</b></center><br>Awarded on the successful completion of the L129A1 Sharpshooter Course. Trains the soldier in a higher level of marksmanship with the L129A1 Section Marksman rifle.',
+    tooltipAreas: [
+      { x: 10, y: 560, width: 46, height: 56 }
+    ]
+  }
 ];
 
 // Qualifications to Image Mapping
