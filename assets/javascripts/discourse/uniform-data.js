@@ -36,9 +36,10 @@ const rankAreas = {
   ],
 };
 
-const rank = (name, category, key, tipKey, tipText, areas) => ({
+const rank = (name, category, key, tipKey, tipText, areas, service = "BA") => ({
   name,
-  category,
+  category,         // "officer" | "enlisted"
+  service,          // "BA" | "RAF"
   imageKey: u(`/assets/images/ranks/${key}.png`),
   tooltipImage: u(`/assets/images/tooltip_rankimages/${tipKey}.jpg`),
   tooltipText: tipText,
@@ -52,13 +53,14 @@ const lanyardCfg = (image, groups, tipImage, tipText) => ({
   tooltipText: tipText,
 });
 
-const qual = (name, key, restrictedRanks, tipImg, tipText, areas) => ({
+const qual = (name, key, restrictedRanks, tipImg, tipText, areas, serviceVariants = {}) => ({
   name,
   imageKey: u(`/assets/images/qualifications/${key}.png`),
   restrictedRanks,
   tooltipImage: u(`/assets/images/tooltip_qualificationimages/${tipImg}`),
   tooltipText: tipText,
   tooltipAreas: areas,
+  serviceVariants, // e.g. { RAF: u('/assets/images/qualifications/paratrooper_raf.png') }
 });
 
 const award = (name, ribbonFile, medalFile, tipText) => ({
@@ -72,6 +74,8 @@ const award = (name, ribbonFile, medalFile, tipText) => ({
 export const backgroundImages = deepFreeze({
   officer: u(`/assets/images/uniforms/ba_officers_uniform.png`),
   enlisted: u(`/assets/images/uniforms/ba_enlisted_uniform.png`),
+  rafOfficer: u(`/assets/images/uniforms/raf_officers_uniform.png`),
+  rafEnlisted: u(`/assets/images/uniforms/raf_enlisted_uniform.png`),
 });
 
 // ---------- ranks ----------
@@ -86,9 +90,15 @@ export const ranks = deepFreeze([
   rank("Sergeant", "enlisted", "sgt", "sgt", "<center><b>Sergeant</b></center>", rankAreas.sgtSleeve),
   rank("Corporal", "enlisted", "cpl", "cpl", "<center><b>Corporal</b></center>", rankAreas.cplSleeve),
   rank("Lance_Corporal", "enlisted", "lcpl", "lcpl", "<center><b>Lance Corporal</b></center>", rankAreas.lcplSleeve),
+
+  rank("Squadron_Leader", "officer", "sqnldr", "sqnldr", "<center><b>Squadron Leader</b></center>", rankAreas.officerCollar, "RAF"),
+  rank("Flight_Lieutenant", "officer", "fltlt", "fltlt", "<center><b>Flight Lieutenant</b></center>", rankAreas.officerCollar, "RAF"),
+  rank("Flying_Officer", "officer", "fgoff", "fgoff", "<center><b>Flying Officer</b></center>", rankAreas.officerCollar, "RAF"),
+  rank("Pilot_Officer", "officer", "pltoff", "pltoff", "<center><b>Pilot Officer</b></center>", rankAreas.officerCollar, "RAF"),
+  rank("Flight_Sergeant_Aircrew", "enlisted", "fsacr", "fsacr", "<center><b>Flight Sergeant (Aircrew)</b></center>", rankAreas.ssgtSleeve, "RAF"),
+  rank("Sergeant_Aircrew", "enlisted", "sacr", "sacr", "<center><b>Sergeant (Aircrew)</b></center>", rankAreas.sgtSleeve, "RAF"),
 ]);
 
-// derived
 export const officerRanks = deepFreeze(ranks.filter(r => r.category === "officer").map(r => r.name));
 export const enlistedRanks = deepFreeze(ranks.filter(r => r.category === "enlisted").map(r => r.name));
 export const rankToImageMap = deepFreeze(Object.fromEntries(ranks.map(r => [r.name, r.imageKey])));
@@ -125,8 +135,8 @@ export const lanyardGroupsConfig = deepFreeze([
   lanyardCfg(
     "red_lanyard.png",
     [
-      "1_Platoon_IC","1_Platoon_2IC","1-1_Section_IC","1-1_Section_2IC","1-1_Section",
-      "1-2_Section_IC","1-2_Section_2IC","1-2_Section","1-3_Section_IC","1-3_Section_2IC","1-3_Section",
+      "1_Platoon_IC", "1_Platoon_2IC", "1-1_Section_IC", "1-1_Section_2IC", "1-1_Section",
+      "1-2_Section_IC", "1-2_Section_2IC", "1-2_Section", "1-3_Section_IC", "1-3_Section_2IC", "1-3_Section",
     ],
     "red_dzf.png",
     "<center><b>1 Platoon</b></center><br>The airborne infantry platoons are the main paratrooper/ground infantry efforts of 16AA."
@@ -134,8 +144,8 @@ export const lanyardGroupsConfig = deepFreeze([
   lanyardCfg(
     "green_lanyard.png",
     [
-      "2_Platoon_IC","2_Platoon_2IC","2-1_Section_IC","2-1_Section_2IC","2-1_Section",
-      "2-2_Section_IC","2-2_Section_2IC","2-2_Section","2-3_Section_IC","2-3_Section_2IC","2-3_Section",
+      "2_Platoon_IC", "2_Platoon_2IC", "2-1_Section_IC", "2-1_Section_2IC", "2-1_Section",
+      "2-2_Section_IC", "2-2_Section_2IC", "2-2_Section", "2-3_Section_IC", "2-3_Section_2IC", "2-3_Section",
     ],
     "green_lanyard.png",
     "<center><b>Green Lanyard</b></center><br>Description for Green Lanyard."
@@ -143,13 +153,13 @@ export const lanyardGroupsConfig = deepFreeze([
   lanyardCfg(
     "black_lanyard.png",
     [
-      "3_Platoon_IC","3_Platoon_2IC","3-1_Section_IC","3-1_Section_2IC","3-1_Section",
-      "3-2_Section_IC","3-2_Section_2IC","3-2_Section",
-      "FSG_HQ_IC","FSG_HQ_2IC","Fire_Support_Group_IC","Fire_Support_Group_2IC","Fire_Support_Group",
-      "4-1_Section_IC","4-1_Section_2IC","4-1_Section",
-      "13AASR_IC","13AASR_2IC","13AASR",
-      "16CSMR_IC","16CSMR_2IC","16CSMR",
-      "216_Para_Signals_IC","216_Para_Signals_2IC","216_Para_Signals",
+      "3_Platoon_IC", "3_Platoon_2IC", "3-1_Section_IC", "3-1_Section_2IC", "3-1_Section",
+      "3-2_Section_IC", "3-2_Section_2IC", "3-2_Section",
+      "FSG_HQ_IC", "FSG_HQ_2IC", "Fire_Support_Group_IC", "Fire_Support_Group_2IC", "Fire_Support_Group",
+      "4-1_Section_IC", "4-1_Section_2IC", "4-1_Section",
+      "13AASR_IC", "13AASR_2IC", "13AASR",
+      "16CSMR_IC", "16CSMR_2IC", "16CSMR",
+      "216_Para_Signals_IC", "216_Para_Signals_2IC", "216_Para_Signals",
     ],
     "black_dzf.png",
     "<center><b>4 Platoon</b></center><br>The main combat services ground support element of 16AA, providing Fire support, Medical support, Logistics support and Explosive Ordnance Disposal service."
@@ -216,7 +226,8 @@ export const qualifications = deepFreeze([
     [],
     "paratrooper.jpg",
     "<center><b>Paratrooper</b></center><br>Awarded on the successful completion of the Third static line Parachute Combat Drop.",
-    [{ x: 44, y: 116, width: 40, height: 50 }]
+    [{ x: 44, y: 116, width: 40, height: 50 }],
+    { RAF: u(`/assets/images/qualifications/paratrooper_raf.png`) }
   ),
   qual(
     "PCBC",
