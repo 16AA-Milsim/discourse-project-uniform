@@ -4,153 +4,157 @@ import {
   ranks,
   officerRanks,
   enlistedRanks,
-  lanyardGroups,
   lanyardToImageMap,
   groupToImageMap,
   qualifications,
-  rankToImageMap,
-  qualificationToImageMap,
   awards,
   lanyardTooltipRegion,
   lanyardTooltipMap,
   groupTooltipMap
 } from 'discourse/plugins/project-uniform/discourse/uniform-data';
 
+const DEBUG_MODE = false;
+
+// Precompute award name -> seniority index once
+const AWARD_INDEX = Object.fromEntries(awards.map((a, i) => [a.name, i]));
+
 // Global storage for tooltip regions.
 const tooltipRegions = [];
-const DEBUG_TOOLTIPS = false; // Change to true when you want to see red rectangles
-let cachedRect = null; // Will store the latest bounding rect
+
+function debugLog(...args) {
+  if (DEBUG_MODE) console.log(...args);
+}
+
+// Simple in-memory cache
+const imageCache = new Map();
+
+function loadImageCached(url) {
+  return new Promise((resolve, reject) => {
+    if (imageCache.has(url)) {
+      return resolve(imageCache.get(url));
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      imageCache.set(url, img);
+      resolve(img);
+    };
+    img.onerror = (err) => reject(err);
+    img.src = url;
+  });
+}
+
+function normalizePath(url) {
+  try { return new URL(url, window.location.origin).pathname; }
+  catch { return url; }
+}
 
 // Registers a tooltip region with given coordinates and content.
 function registerTooltip(x, y, width, height, content) {
-  console.log('Registering tooltip region:', { x, y, width, height, content });
+  debugLog('Registering tooltip region:', { x, y, width, height, content });
   tooltipRegions.push({ x, y, width, height, content });
 }
 
 // Attaches a tooltip element to the canvas container and sets up mouse event handlers.
 function setupTooltips(canvas) {
+  const parent = canvas.parentElement;
+  parent.style.position = "relative";
+
+  // Remove any previous tooltip in this container
+  const oldTip = parent.querySelector(".canvas-tooltip");
+  if (oldTip) oldTip.remove();
+
   const ctx = canvas.getContext("2d");
 
-  if (DEBUG_TOOLTIPS) {
-    tooltipRegions.forEach(region => {
+  if (DEBUG_MODE) {
+    tooltipRegions.forEach((region) => {
       ctx.strokeStyle = "red";
       ctx.lineWidth = 2;
       ctx.strokeRect(region.x, region.y, region.width, region.height);
-      console.log(`Drawing debug tooltip box at (${region.x}, ${region.y})`);
+      debugLog(`Drawing debug tooltip box at (${region.x}, ${region.y})`);
     });
   }
 
+  const controller = new AbortController();
+  const { signal } = controller;
+
   const tooltip = document.createElement("div");
   tooltip.className = "canvas-tooltip";
-  Object.assign(tooltip.style, {
-    position: "absolute",
-    opacity: "0",
-    transition: "opacity 0.1s ease-in-out",
-    background: "rgba(0,0,0,0.85)",
-    color: "#fff",
-    padding: "4px 8px",
-    borderRadius: "4px",
-    fontFamily: "Roboto, sans-serif",
-    fontSize: "16px",
-    pointerEvents: "none"
-  });
+  tooltip.setAttribute("role", "tooltip");
+  tooltip.setAttribute("aria-hidden", "true");
+  parent.appendChild(tooltip);
 
-  canvas.parentElement.style.position = "relative";
-  canvas.parentElement.appendChild(tooltip);
-
+  let cachedCanvasRect = null;
+  let cachedParentRect = null;
   let activeTooltip = null;
-  let fadeTimeout = null;
 
-  // Compute bounding rect once
-  cachedRect = canvas.getBoundingClientRect();
+  const recomputeRects = () => {
+    cachedCanvasRect = canvas.getBoundingClientRect();
+    cachedParentRect = parent.getBoundingClientRect();
+  };
 
-  // Recompute on scroll or resize
-  window.addEventListener("scroll", () => {
-    cachedRect = canvas.getBoundingClientRect();
-  });
-  window.addEventListener("resize", () => {
-    cachedRect = canvas.getBoundingClientRect();
-  });
+  recomputeRects();
+  window.addEventListener("scroll", recomputeRects, { passive: true, signal });
+  window.addEventListener("resize", recomputeRects, { signal });
 
-  canvas.addEventListener("mousemove", (event) => {
-    if (!cachedRect) return;
+  const onMove = (event) => {
+    if (!cachedCanvasRect || !cachedParentRect) return;
 
-    const localX = event.clientX - cachedRect.left;
-    const localY = event.clientY - cachedRect.top;
-    let found = false;
-    let newTooltipContent = null;
+    const localX = event.clientX - cachedCanvasRect.left;
+    const localY = event.clientY - cachedCanvasRect.top;
 
+    let hit = null;
     for (const region of tooltipRegions) {
       if (
-        localX >= region.x &&
-        localX <= region.x + region.width &&
-        localY >= region.y &&
-        localY <= region.y + region.height
+        localX >= region.x && localX <= region.x + region.width &&
+        localY >= region.y && localY <= region.y + region.height
       ) {
-        newTooltipContent = region.content;
-
-        if (activeTooltip !== newTooltipContent) {
-          activeTooltip = newTooltipContent;
-          if (fadeTimeout) clearTimeout(fadeTimeout);
-
-          tooltip.style.opacity = "0";
-          fadeTimeout = setTimeout(() => {
-            tooltip.innerHTML = newTooltipContent;
-
-            // Place temporarily to measure size
-            tooltip.style.left = "0px";
-            tooltip.style.top = "0px";
-            tooltip.style.visibility = "hidden";
-            tooltip.style.opacity = "0";
-
-            requestAnimationFrame(() => {
-              const canvasRect = canvas.getBoundingClientRect();
-              const parentRect = canvas.parentElement.getBoundingClientRect();
-              const offsetX = canvasRect.left - parentRect.left;
-              const offsetY = canvasRect.top - parentRect.top;
-
-              const tooltipWidth = tooltip.offsetWidth;
-              const tooltipHeight = tooltip.offsetHeight;
-
-              const offsetAdjustX = 0;
-              const offsetAdjustY = 25;
-
-              tooltip.style.left =
-                offsetX + region.x + region.width / 2 + offsetAdjustX + "px";
-              tooltip.style.top =
-                offsetY + region.y + region.height / 2 + offsetAdjustY + "px";
-
-              tooltip.style.visibility = "visible";
-              tooltip.style.opacity = "1";
-            });
-          }, 100);
-        }
-
-        tooltip.style.width = region.content.includes("<img") ? "250px" : "auto";
-        tooltip.style.whiteSpace = region.content.includes("<img") ? "normal" : "nowrap";
-        tooltip.style.textAlign = region.content.includes("<img") ? "center" : "left";
-
-        found = true;
+        hit = region;
         break;
       }
     }
 
-    if (!found) {
+    if (!hit) {
       activeTooltip = null;
-      if (fadeTimeout) clearTimeout(fadeTimeout);
-      fadeTimeout = setTimeout(() => {
-        tooltip.style.opacity = "0";
-      }, 50);
+      tooltip.classList.remove("visible");
+      tooltip.setAttribute("aria-hidden", "true");
+      return;
     }
-  });
 
-  canvas.addEventListener("mouseout", () => {
+    if (activeTooltip !== hit.content) {
+      activeTooltip = hit.content;
+      tooltip.innerHTML = hit.content;
+      tooltip.classList.toggle("has-img", hit.content.includes("<img"));
+      tooltip.style.left = "0px";
+      tooltip.style.top = "0px";
+    }
+
+    const offsetX = cachedCanvasRect.left - cachedParentRect.left;
+    const offsetY = cachedCanvasRect.top - cachedParentRect.top;
+    const offsetAdjustX = 0;
+    const offsetAdjustY = 25;
+
+    tooltip.style.left = `${offsetX + hit.x + hit.width / 2 + offsetAdjustX}px`;
+    tooltip.style.top  = `${offsetY + hit.y + hit.height / 2 + offsetAdjustY}px`;
+
+    tooltip.classList.add("visible");
+    tooltip.setAttribute("aria-hidden", "false");
+  };
+
+  const onOut = () => {
     activeTooltip = null;
-    if (fadeTimeout) clearTimeout(fadeTimeout);
-    fadeTimeout = setTimeout(() => {
-      tooltip.style.opacity = "0";
-    }, 50);
-  });
+    tooltip.classList.remove("visible");
+    tooltip.setAttribute("aria-hidden", "true");
+  };
+
+  canvas.addEventListener("mousemove", onMove, { signal });
+  canvas.addEventListener("mouseout", onOut, { signal });
+
+  // Teardown: abort listeners and remove tooltip
+  canvas._teardownTooltips = () => {
+    controller.abort();
+    tooltip.remove();
+  };
 }
 
 // Transforms a point using rotation and skew parameters.
@@ -177,13 +181,13 @@ export default {
         if (siteSettings.project_uniform_admin_only) {
           const currentUser = Discourse.User.current();
           if (!currentUser || !currentUser.admin) {
-            console.log('Project Uniform: Admin-only mode enabled. Hiding uniform for non-admins.');
+            debugLog('Project Uniform: Admin-only mode enabled. Hiding uniform for non-admins.');
             return;
           }
         }
 
         const username = url.split('/u/')[1].split('/')[0];
-        console.log('Extracted username:', username);
+        debugLog('Extracted username:', username);
 
         const fetchJson = (url) =>
           fetch(url)
@@ -192,7 +196,7 @@ export default {
               return response.json();
             })
             .catch(error => {
-              console.error(`Error fetching ${url}:`, error);
+              if (DEBUG_MODE) console.error(`Error fetching ${url}:`, error);
               throw error;
             });
 
@@ -201,21 +205,30 @@ export default {
           fetchJson(`/user-badges/${username}.json`)
         ])
           .then(([userSummaryData, badgeData]) => {
-            console.log('Fetched user data:', userSummaryData);
-            console.log('Fetched badge data:', badgeData);
+            debugLog('Fetched user data:', userSummaryData);
+            debugLog('Fetched badge data:', badgeData);
 
             if (!(userSummaryData?.user && badgeData?.user_badges)) return;
 
             const groups = userSummaryData.user.groups || [];
-            const badgeNames = badgeData.user_badges
-              .map(ub => badgeData.badges.find(b => b.id === ub.badge_id)?.name)
+
+            // Build badge_id -> badge object once
+            const idToBadge = new Map((badgeData.badges || []).map(b => [b.id, b]));
+
+            // Resolve names once for the small info panel
+            const userBadges = badgeData.user_badges || [];
+            const badgeNames = userBadges
+              .map(ub => idToBadge.get(ub.badge_id)?.name)
               .filter(Boolean);
-            console.log('User groups:', groups);
-            console.log('User badge names:', badgeNames);
+
+            debugLog('User groups:', groups);
+            debugLog('User badge names:', badgeNames);
 
             const userInfo = createUserInfo(groups, badgeNames);
             containerElement.prepend(userInfo);
-            prepareAndRenderImages(groups, badgeData.user_badges, badgeData.badges, siteSettings, containerElement);
+
+            // Pass the map instead of the raw array
+            prepareAndRenderImages(groups, userBadges, idToBadge, containerElement);
           })
           .catch(error => console.error('Error fetching user data:', error));
       });
@@ -231,17 +244,29 @@ function createUserInfo(groups, badgeNames) {
     <p>Groups: ${groups.map(g => g.name).join(', ') || 'None'}</p>
     <p>Badges: ${badgeNames.length ? badgeNames.join(', ') : 'None'}</p>
   `;
-  console.log('Created user info element.');
+  debugLog('Created user info element.');
   return userInfo;
 }
 
-function prepareAndRenderImages(groups, userBadges, badges, siteSettings, container) {
+function highestIn(orderArray, hasSet) {
+  for (let i = orderArray.length - 1; i >= 0; i--) {
+    if (hasSet.has(orderArray[i])) return orderArray[i];
+  }
+  return undefined;
+}
+
+function prepareAndRenderImages(groups, userBadges, idToBadge, container) {
+  tooltipRegions.length = 0;
   let backgroundImageUrl = '';
   const foregroundImageUrls = [];
   const awardImageUrls = [];
   const qualificationsToRender = []; // ✅ NEW: track qualification objects
   const is16CSMR = groups.some(g =>
     ["16CSMR", "16CSMR_IC", "16CSMR_2IC"].includes(g.name)
+  );
+
+  const badgeNameSet = new Set(
+    userBadges.map(ub => idToBadge.get(ub.badge_id)?.name).filter(Boolean)
   );
 
   // Determine uniform (background) based on group membership
@@ -267,26 +292,14 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
   });
 
   const leadershipQualificationsOrder = ["FTCC", "SCBC", "PSBC", "PCBC"];
-
-  const highestLeadershipQualification = leadershipQualificationsOrder.findLast(q =>
-    userBadges.some(ub => {
-      const badge = badges.find(b => b.id === ub.badge_id);
-      return badge && badge.name === q;
-    })
-  );
+  const highestLeadershipQualification = highestIn(leadershipQualificationsOrder, badgeNameSet);
 
   const marksmanshipQualificationsOrder = ["1st Class Marksman","Sharpshooter","Sniper"];
-
-  const highestMarksmanshipQualification = marksmanshipQualificationsOrder.findLast(q =>
-    userBadges.some(ub => {
-      const badge = badges.find(b => b.id === ub.badge_id);
-      return badge && badge.name === q;
-    })
-  );
+  const highestMarksmanshipQualification = highestIn(marksmanshipQualificationsOrder, badgeNameSet);
 
   // Process badges
   userBadges.forEach(ub => {
-    const badge = badges.find(b => b.id === ub.badge_id);
+    const badge = idToBadge.get(ub.badge_id);
     if (!badge) return;
 
     const badgeName = badge.name;
@@ -327,7 +340,6 @@ function prepareAndRenderImages(groups, userBadges, badges, siteSettings, contai
       backgroundImageUrl,
       validForegroundImageUrls,
       validAwardImageUrls,
-      siteSettings,
       highestRank,
       qualificationsToRender,
       groups
@@ -341,13 +353,22 @@ function mergeImagesOnCanvas(
     backgroundImageUrl,
     foregroundImageUrls,
     awardImageUrls,
-    siteSettings,
     highestRank,
     qualificationsToRender,
     groups
-  ) {
-  console.log('Starting mergeImagesOnCanvas...');
+) {
+  debugLog('Starting mergeImagesOnCanvas...');
+
+  // Remove any old canvas
+  const old = container.querySelector('.project-uniform-canvas');
+  if (old) {
+    old._teardownTooltips?.();
+    old.remove();
+  }
+
+  // Create new canvas
   const canvas = document.createElement('canvas');
+  canvas.className = 'project-uniform-canvas';
   Object.assign(canvas.style, {
     position: 'relative',
     zIndex: '0',
@@ -357,26 +378,45 @@ function mergeImagesOnCanvas(
   });
   const ctx = canvas.getContext('2d');
 
-  const bgImage = new Image();
-  const fgImages = foregroundImageUrls.map(url => new Image());
-  const awardImages = awardImageUrls.map(url => {
-    const img = new Image();
-    img.alt = (awards.find(a => a.imageKey === url)?.name) || '';
-    return img;
-  });
+  // Load all required images from cache or network
+  Promise.all([
+    loadImageCached(backgroundImageUrl || ''),
+    ...foregroundImageUrls.map(url => loadImageCached(url || '')),
+    ...awardImageUrls.map(url => loadImageCached(url || ''))
+  ])
+    .then(([bgImage, ...rest]) => {
+      const fgImages = rest.slice(0, foregroundImageUrls.length);
+      const awImages = rest.slice(foregroundImageUrls.length);
 
-  let imagesLoaded = 0;
-  const totalImages = 1 + fgImages.length + awardImages.length;
+      // Set alt text on award images (needed for AWARD_INDEX sorting)
+      awImages.forEach(img => {
+        if (!img) return;
 
-  const checkAllLoaded = () => {
-    if (imagesLoaded !== totalImages) return;
+        const imgPath = normalizePath(img.src);
+        const match = awards.find(a => normalizePath(a.imageKey) === imgPath);
 
-    // Set canvas dimensions
-    canvas.width = bgImage.naturalWidth || 1;
-    canvas.height = bgImage.naturalHeight || 1;
-    ctx.imageSmoothingEnabled = true;
+        img.alt = match?.name || '';
+      });
 
-    // Draw background
+      drawEverything(ctx, canvas, container, bgImage, fgImages, awImages,
+        highestRank, qualificationsToRender, groups);
+    })
+    .catch(err => {
+      console.error("Error loading images:", err);
+    });
+}
+
+// This contains all the draw + tooltip logic that used to be in checkAllLoaded()
+function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages,
+  highestRank, qualificationsToRender, groups) {
+
+  // Set canvas size from background
+  canvas.width = bgImage?.naturalWidth || 1;
+  canvas.height = bgImage?.naturalHeight || 1;
+  ctx.imageSmoothingEnabled = true;
+
+  // Draw background
+  if (bgImage) {
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
     ctx.shadowBlur = 10;
@@ -384,43 +424,41 @@ function mergeImagesOnCanvas(
     ctx.shadowOffsetY = 1;
     ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
     ctx.restore();
+  }
 
-    // Draw foreground (rank, lanyard, qualifications, etc.)
-    drawImages(ctx, fgImages, canvas);
+  // Draw foreground images (rank, lanyards, quals)
+  drawImages(ctx, fgImages.filter(Boolean), canvas);
 
-
-    // Register tooltips for any group image
-    groups.forEach((g) => {
-      const data = groupTooltipMap[g.name];
-      if (data && data.tooltipAreas) {
-        data.tooltipAreas.forEach((area) => {
-          registerTooltip(
-            area.x,
-            area.y,
-            area.width,
-            area.height,
-            `<img src="${data.tooltipImage}"> ${data.tooltipText}`
-          );
-        });
-      }
-    });
-
-    // Register tooltip for rank
-    if (highestRank && fgImages.length && highestRank.tooltipAreas) {
-      const rankImg = fgImages[0]; // assuming first image is rank
-      const x = (canvas.width - rankImg.naturalWidth) / 2;
-      const y = (canvas.height - rankImg.naturalHeight) / 2;
-
-      const tooltipContent = `<img src="${highestRank.tooltipImage}"> ${highestRank.tooltipText}`;
-      highestRank.tooltipAreas.forEach(area => {
-        registerTooltip(x + area.x, y + area.y, area.width, area.height, tooltipContent);
+  // Register tooltips for groups
+  groups.forEach((g) => {
+    const data = groupTooltipMap[g.name];
+    if (data?.tooltipAreas) {
+      data.tooltipAreas.forEach((area) => {
+        registerTooltip(
+          area.x,
+          area.y,
+          area.width,
+          area.height,
+          `<img src="${data.tooltipImage}"> ${data.tooltipText}`
+        );
       });
     }
+  });
 
-    // ✅ Register tooltips for qualifications
-    qualificationsToRender.forEach(q => {
-      if (!q.tooltipAreas) return;
+  // Rank tooltips
+  if (highestRank && fgImages.length && highestRank.tooltipAreas) {
+    const rankImg = fgImages[0];
+    const x = (canvas.width - rankImg.naturalWidth) / 2;
+    const y = (canvas.height - rankImg.naturalHeight) / 2;
+    const tooltipContent = `<img src="${highestRank.tooltipImage}"> ${highestRank.tooltipText}`;
+    highestRank.tooltipAreas.forEach(area => {
+      registerTooltip(x + area.x, y + area.y, area.width, area.height, tooltipContent);
+    });
+  }
 
+  // Qualifications tooltips
+  qualificationsToRender.forEach(q => {
+    if (q.tooltipAreas) {
       q.tooltipAreas.forEach(area => {
         registerTooltip(
           area.x,
@@ -430,104 +468,90 @@ function mergeImagesOnCanvas(
           `<img src="${q.tooltipImage}"> ${q.tooltipText}`
         );
       });
-    });
-
-    // ✅ Handle awards (draw separately, scale, and register tooltips)
-    try {
-      const awardsCanvas = document.createElement('canvas');
-      awardsCanvas.width = canvas.width;
-      awardsCanvas.height = canvas.height;
-      const awardsCtx = awardsCanvas.getContext('2d');
-      const awardTooltips = drawAwards(awardsCtx, awardImages, awardsCanvas);
-
-      const scaleFactor = 0.29;
-      const scaledAwardsCanvas = document.createElement('canvas');
-      scaledAwardsCanvas.width = awardsCanvas.width * scaleFactor;
-      scaledAwardsCanvas.height = awardsCanvas.height * scaleFactor;
-      scaledAwardsCanvas.getContext('2d').drawImage(
-        awardsCanvas,
-        0,
-        0,
-        scaledAwardsCanvas.width,
-        scaledAwardsCanvas.height
-      );
-
-      const { awardsX, awardsY } = (() => {
-        const count = awardImages.length;
-        if (count === 1) return { awardsX: 385, awardsY: 45 };
-        if (count === 2) return { awardsX: 382, awardsY: 45 };
-        if (count === 3) return { awardsX: 384, awardsY: 44 };
-        return { awardsX: 380, awardsY: 46 };
-      })();
-
-      const rotationAngle = -3 * Math.PI / 180;
-      const skewYValue = -3 * Math.PI / 180;
-      ctx.save();
-      ctx.translate(awardsX + scaledAwardsCanvas.width / 2, awardsY + scaledAwardsCanvas.height / 2);
-      ctx.rotate(rotationAngle);
-      ctx.transform(1, Math.tan(skewYValue), 0, 1, 0, 0);
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 2;
-      ctx.shadowOffsetX = -0.5;
-      ctx.shadowOffsetY = 0;
-      ctx.drawImage(
-        scaledAwardsCanvas,
-        -scaledAwardsCanvas.width / 2,
-        -scaledAwardsCanvas.height / 2,
-        scaledAwardsCanvas.width,
-        scaledAwardsCanvas.height
-      );
-      ctx.restore();
-
-      // ✅ Register award tooltips
-      const tx = awardsX + scaledAwardsCanvas.width / 2;
-      const ty = awardsY + scaledAwardsCanvas.height / 2;
-      const offsetX = scaledAwardsCanvas.width / 2;
-      const offsetY = scaledAwardsCanvas.height / 2;
-      const ribbonTooltipRotationOffset = -3 * Math.PI / 180;
-
-      awardTooltips.forEach(t => {
-        const xScaled = t.x * scaleFactor;
-        const yScaled = t.y * scaleFactor;
-        const widthScaled = t.width * scaleFactor;
-        const heightScaled = t.height * scaleFactor;
-        const tanSkewY = Math.tan(skewYValue);
-
-        const adjustedRotationAngle = rotationAngle + ribbonTooltipRotationOffset;
-        const pointA = transformPoint(xScaled, yScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
-        const pointB = transformPoint(xScaled + widthScaled, yScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
-        const pointC = transformPoint(xScaled, yScaled + heightScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
-        const pointD = transformPoint(xScaled + widthScaled, yScaled + heightScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
-
-        const minX = Math.min(pointA.x, pointB.x, pointC.x, pointD.x);
-        const minY = Math.min(pointA.y, pointB.y, pointC.y, pointD.y);
-        const maxX = Math.max(pointA.x, pointB.x, pointC.x, pointD.x);
-        const maxY = Math.max(pointA.y, pointB.y, pointC.y, pointD.y);
-
-        registerTooltip(minX, minY, (maxX - minX) - 2, (maxY - minY) - 2, t.content);
-      });
-    } catch (e) {
-      console.error('Error processing awards:', e);
     }
+  });
 
-    // ✅ Append canvas
-    container.prepend(canvas);
-    setupTooltips(canvas);
-  };
+  // Awards drawing + tooltips
+  try {
+    const awardsCanvas = document.createElement('canvas');
+    awardsCanvas.width = canvas.width;
+    awardsCanvas.height = canvas.height;
+    const awardsCtx = awardsCanvas.getContext('2d');
 
-  // Attach load handlers
-  const attachLoadHandler = (img, src) => {
-    img.onload = () => {
-      imagesLoaded++;
-      checkAllLoaded();
-    };
-    img.onerror = () => console.error(`Error loading image:`, src);
-    img.src = src;
-  };
+    const awardTooltips = drawAwards(awardsCtx, awardImages.filter(Boolean), awardsCanvas);
 
-  attachLoadHandler(bgImage, backgroundImageUrl || '');
-  fgImages.forEach((img, i) => attachLoadHandler(img, foregroundImageUrls[i] || ''));
-  awardImages.forEach((img, i) => attachLoadHandler(img, awardImageUrls[i] || ''));
+    // Scale and transform awards block
+    const scaleFactor = 0.29;
+    const scaledAwardsCanvas = document.createElement('canvas');
+    scaledAwardsCanvas.width = awardsCanvas.width * scaleFactor;
+    scaledAwardsCanvas.height = awardsCanvas.height * scaleFactor;
+    scaledAwardsCanvas.getContext('2d').drawImage(
+      awardsCanvas,
+      0, 0,
+      scaledAwardsCanvas.width,
+      scaledAwardsCanvas.height
+    );
+
+    const { awardsX, awardsY } = (() => {
+      const count = awardImages.length;
+      if (count === 1) return { awardsX: 385, awardsY: 45 };
+      if (count === 2) return { awardsX: 382, awardsY: 45 };
+      if (count === 3) return { awardsX: 384, awardsY: 44 };
+      return { awardsX: 380, awardsY: 46 };
+    })();
+
+    const rotationAngle = -3 * Math.PI / 180;
+    const skewYValue = -3 * Math.PI / 180;
+    ctx.save();
+    ctx.translate(awardsX + scaledAwardsCanvas.width / 2, awardsY + scaledAwardsCanvas.height / 2);
+    ctx.rotate(rotationAngle);
+    ctx.transform(1, Math.tan(skewYValue), 0, 1, 0, 0);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = -0.5;
+    ctx.shadowOffsetY = 0;
+    ctx.drawImage(
+      scaledAwardsCanvas,
+      -scaledAwardsCanvas.width / 2,
+      -scaledAwardsCanvas.height / 2,
+      scaledAwardsCanvas.width,
+      scaledAwardsCanvas.height
+    );
+    ctx.restore();
+
+    // Award tooltips after transform
+    const tx = awardsX + scaledAwardsCanvas.width / 2;
+    const ty = awardsY + scaledAwardsCanvas.height / 2;
+    const offsetX = scaledAwardsCanvas.width / 2;
+    const offsetY = scaledAwardsCanvas.height / 2;
+    const ribbonTooltipRotationOffset = -3 * Math.PI / 180;
+
+    awardTooltips.forEach(t => {
+      const xScaled = t.x * scaleFactor;
+      const yScaled = t.y * scaleFactor;
+      const widthScaled = t.width * scaleFactor;
+      const heightScaled = t.height * scaleFactor;
+      const tanSkewY = Math.tan(skewYValue);
+
+      const adjustedRotationAngle = rotationAngle + ribbonTooltipRotationOffset;
+      const pointA = transformPoint(xScaled, yScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
+      const pointB = transformPoint(xScaled + widthScaled, yScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
+      const pointC = transformPoint(xScaled, yScaled + heightScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
+      const pointD = transformPoint(xScaled + widthScaled, yScaled + heightScaled, tx, ty, adjustedRotationAngle, tanSkewY, offsetX, offsetY);
+
+      const minX = Math.min(pointA.x, pointB.x, pointC.x, pointD.x);
+      const minY = Math.min(pointA.y, pointB.y, pointC.y, pointD.y);
+      const maxX = Math.max(pointA.x, pointB.x, pointC.x, pointD.x);
+      const maxY = Math.max(pointA.y, pointB.y, pointC.y, pointD.y);
+
+      registerTooltip(minX, minY, (maxX - minX) - 2, (maxY - minY) - 2, t.content);
+    });
+  } catch (e) {
+    console.error('Error processing awards:', e);
+  }
+
+  container.prepend(canvas);
+  setupTooltips(canvas);
 }
 
 function drawImages(ctx, images, canvas) {
@@ -536,7 +560,7 @@ function drawImages(ctx, images, canvas) {
       const x = (canvas.width - image.naturalWidth) / 2;
       const y = (canvas.height - image.naturalHeight) / 2;
       ctx.drawImage(image, x, y, image.naturalWidth, image.naturalHeight);
-      console.log(`Drew foreground image ${idx} at (${x}, ${y}) with dimensions (${image.naturalWidth}x${image.naturalHeight}).`);
+      debugLog(`Drew foreground image ${idx} at (${x}, ${y}) with dimensions (${image.naturalWidth}x${image.naturalHeight}).`);
     } else {
       console.warn(`Foreground image ${idx} missing dimensions.`);
     }
@@ -544,35 +568,26 @@ function drawImages(ctx, images, canvas) {
 }
 
 function drawAwards(ctx, awardImages, canvas) {
-  const awardNameToIndex = Object.fromEntries(awards.map((award, index) => [award.name, index]));
-
-  // Sort ribbons by seniority
-  const sortedAwardImages = awardImages
-    .sort((a, b) => (awardNameToIndex[a.alt] ?? Infinity) - (awardNameToIndex[b.alt] ?? Infinity))
+  const sortedAwardImages = [...awardImages]
+    .sort((a, b) => (AWARD_INDEX[a.alt] ?? Infinity) - (AWARD_INDEX[b.alt] ?? Infinity))
     .reverse();
 
   const maxAwardsToDisplay = 22;
   const finalAwardImages = sortedAwardImages.slice(-maxAwardsToDisplay);
 
-  // Define max ribbons per row
   const maxAwardsPerRowArray = [4, 4, 4, 4, 3, 2, 1];
-
   let rowAwardCounts = Array(maxAwardsPerRowArray.length).fill(0);
   let rowAssignments = [];
   let currentRow = 0;
 
-  // Assign ribbons to rows respecting the max per row
   finalAwardImages.forEach((_, index) => {
-    while (rowAwardCounts[currentRow] >= maxAwardsPerRowArray[currentRow]) {
-      currentRow++;
-    }
+    while (rowAwardCounts[currentRow] >= maxAwardsPerRowArray[currentRow]) currentRow++;
     rowAssignments.push(currentRow);
     rowAwardCounts[currentRow]++;
   });
 
   const tooltipData = [];
 
-  // Track precise rendering positions
   finalAwardImages.forEach((awardImage, index) => {
     if (!awardImage.naturalWidth || !awardImage.naturalHeight) {
       console.warn(`Award image ${index} missing dimensions.`);
@@ -584,12 +599,12 @@ function drawAwards(ctx, awardImages, canvas) {
     let col = index - rowAssignments.findIndex(r => r === row);
 
     let startX;
-    if (row <= 3) { 
+    if (row <= 3) {
       startX = (canvas.width - (awardsInRow * (awardImage.naturalWidth + 1))) / 2;
     } else if (row === 4) {
       startX = awardsInRow === 1
-          ? (canvas.width - awardImage.naturalWidth) / 2
-          : canvas.width - (maxAwardsPerRowArray[row] * (awardImage.naturalWidth + 1)) - 146;
+        ? (canvas.width - awardImage.naturalWidth) / 2
+        : canvas.width - (maxAwardsPerRowArray[row] * (awardImage.naturalWidth + 1)) - 146;
     } else if (row === 5) {
       startX = canvas.width - (maxAwardsPerRowArray[row] * (awardImage.naturalWidth + 1)) - 150;
     } else if (row === 6) {
@@ -601,22 +616,21 @@ function drawAwards(ctx, awardImages, canvas) {
     const awardX = startX + ((awardsInRow - 1 - col) * awardImage.naturalWidth);
     const awardY = canvas.height - ((row + 1) * awardImage.naturalHeight);
 
-    // Draw the ribbon
     ctx.drawImage(awardImage, awardX, awardY, awardImage.naturalWidth, awardImage.naturalHeight);
+    debugLog(`Drew ribbon ${index} at (${awardX}, ${awardY})`);
 
-    console.log(`Drew ribbon ${index} at (${awardX}, ${awardY})`);
+    const srcPath = normalizePath(awardImage.src);
+    const awardData =
+      awards.find(a => normalizePath(a.imageKey) === srcPath || a.name === awardImage.alt) || {};
 
-    // Store tooltip data
-    const awardData = awards.find(a => a.imageKey === awardImage.src || a.name === awardImage.alt) || {};
     const content = `<img src="${awardData.tooltipImage || awardData.imageKey}"> ${awardData.tooltipText || awardData.name}`;
-    
     tooltipData.push({ x: awardX, y: awardY, width: awardImage.naturalWidth, height: awardImage.naturalHeight, content });
   });
 
   return tooltipData;
 }
 
-// New function to register lanyard tooltips
+// Register lanyard tooltips
 function registerLanyardTooltips(groups) {
   groups.forEach(group => {
     if (lanyardTooltipMap[group.name]) {
@@ -629,7 +643,7 @@ function registerLanyardTooltips(groups) {
         lanyardTooltipRegion.height,
         content
       );
-      console.log(`Registered lanyard tooltip for group ${group.name}:`, content);
+      debugLog(`Registered lanyard tooltip for group ${group.name}:`, content);
     }
   });
 }

@@ -1,0 +1,33 @@
+.canvas-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  width: 220px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  pointer-events: none;
+
+  /* hidden by default; CSS handles the fade */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease-in-out, visibility 0.12s ease-in-out;
+
+  /* default text behavior for non-image tooltips */
+  white-space: nowrap;
+  text-align: left;
+}
+
+.canvas-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.canvas-tooltip.has-img {
+  max-width: 250px;
+  white-space: normal;
+  text-align: center;
+}
