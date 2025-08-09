@@ -4,7 +4,7 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 ![Showcase Image](./assets/showcase.png)
 
 ## Debug Mode Control
-Debug Mode can be set to 'true' or 'false' via the first line of code in the assets/javascripts/discourse/lib/pu-prepare.js file. Debug Mode on will add browser dev console output and show tooltip areas outlined with red rectangles.
+Debug Mode can be set to 'true' or 'false' via the first line of code in the assets/javascripts/discourse/lib/pu-utils.js file. Debug Mode on will add browser dev console output and show tooltip areas outlined with red rectangles.
 
 ## To-Do
 - [ ] Royal Air Force Officers & Enlisted uniforms + ranks + specific qualifications + awards
