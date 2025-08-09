@@ -92,6 +92,11 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const highestMarksmanshipLC = highestIn(marksmanshipOrderLC, badgeNameSetLC);
     debugLog("[PU:prepare] Highest leadership:", highestLeadershipLC, "Highest marksmanship:", highestMarksmanshipLC);
 
+    // Pilot quals: prefer Senior over Junior if both present
+    const pilotOrder = ["Junior Pilot", "Senior Pilot"];
+    const pilotOrderLC = pilotOrder.map(lc);
+    const highestPilotLC = highestIn(pilotOrderLC, badgeNameSetLC);
+
     // Process each badge for qualifications and awards
     userBadges.forEach(ub => {
         const badge = idToBadge.get(ub.badge_id); if (!badge) return;
@@ -107,11 +112,18 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const q = qualifications.find(q => lc(q.name) === nameLC);
         const isLeader = leadershipOrderLC.includes(nameLC);
         const isMarks = marksmanshipOrderLC.includes(nameLC);
+        const isPilot = pilotOrderLC.includes(nameLC);
 
         // Skip lower leadership/marksmanship badges
         if (isLeader && nameLC !== highestLeadershipLC) { debugLog("[PU:prepare] Skip (not highest leadership):", name); }
         if (isMarks && nameLC !== highestMarksmanshipLC) { debugLog("[PU:prepare] Skip (not highest marks):", name); }
         if ((isLeader && nameLC !== highestLeadershipLC) || (isMarks && nameLC !== highestMarksmanshipLC)) return;
+        if ((isLeader && nameLC !== highestLeadershipLC) ||
+            (isMarks && nameLC !== highestMarksmanshipLC) ||
+            (isPilot && nameLC !== highestPilotLC)) {
+            debugLog("[PU:prepare] Skip (not highest in pilot/leader/marks):", name);
+            return;
+        }
 
         // Add qualification image if allowed (case-insensitive restrictions)
         const restrictedLC = new Set((q?.restrictedRanks || []).map(lc));

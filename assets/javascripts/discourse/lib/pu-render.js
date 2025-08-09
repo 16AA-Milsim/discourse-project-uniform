@@ -180,11 +180,20 @@ function drawImages(ctx, images, canvas) {
 // Draws awards in correct order/rows and returns tooltip rectangles
 function drawAwards(ctx, awardImages, canvas, AWARD_INDEX) {
     // Sort awards by priority index, keep only the last 22 for display
-    const sorted = [...awardImages].sort((a, b) => (AWARD_INDEX[a.alt] ?? Infinity) - (AWARD_INDEX[b.alt] ?? Infinity)).reverse();
-    const final = sorted.slice(-22);
+    // const sorted = [...awardImages].sort((a, b) => (AWARD_INDEX[a.alt] ?? Infinity) - (AWARD_INDEX[b.alt] ?? Infinity)).reverse();
+    // const final = sorted.slice(-22);
+
+    // Sort by priority and keep only the highest 8 (two rows of four)
+    // Lower index in AWARD_INDEX = higher priority
+    const sorted = [...awardImages]
+        .sort((a, b) => (AWARD_INDEX[a.alt] ?? Infinity) - (AWARD_INDEX[b.alt] ?? Infinity))
+        .slice(0, 8)
+        .reverse();
+    const final = sorted;
 
     // Max per row layout definition
-    const perRow = [4, 4, 4, 4, 3, 2, 1];
+    // const perRow = [4, 4, 4, 4, 3, 2, 1]; - Old ribbon layout, before the 8 ribbon cap
+    const perRow = [4, 4];
     const rowCounts = Array(perRow.length).fill(0);
     const rows = []; let r = 0;
 

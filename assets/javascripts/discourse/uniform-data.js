@@ -6,6 +6,7 @@ const u = (p) => getURL(p);
 const deepFreeze = (o) => (Object.freeze(o), Object.values(o).forEach(v => v && typeof v === "object" && !Object.isFrozen(v) && deepFreeze(v)), o);
 
 const rankAreas = {
+  // BA rank regions
   officerCollar: [
     { x: 80, y: 18, width: 100, height: 52 },
     { x: 520, y: 18, width: 80, height: 47 },
@@ -34,6 +35,23 @@ const rankAreas = {
     { x: 40, y: 215, width: 52, height: 55 },
     { x: 607, y: 208, width: 58, height: 55 },
   ],
+  // RAF rank regions
+  sqnldrSleeve: [
+    { x: 16, y: 588, width: 120, height: 56 },
+    { x: 556, y: 592, width: 118, height: 58 },
+  ],
+  fltltSleeve: [
+    { x: 16, y: 596, width: 120, height: 54 },
+    { x: 556, y: 602, width: 118, height: 54 },
+  ],
+  fgoffSleeve: [
+    { x: 16, y: 600, width: 120, height: 40 },
+    { x: 556, y: 604, width: 118, height: 42 },
+  ],
+  pltoffSleeve: [
+    { x: 16, y: 600, width: 120, height: 40 },
+    { x: 556, y: 604, width: 118, height: 42 },
+  ]
 };
 
 const rank = (name, category, key, tipKey, tipText, areas, service = "BA") => ({
@@ -91,10 +109,10 @@ export const ranks = deepFreeze([
   rank("Corporal", "enlisted", "cpl", "cpl", "<center><b>Corporal</b></center>", rankAreas.cplSleeve),
   rank("Lance_Corporal", "enlisted", "lcpl", "lcpl", "<center><b>Lance Corporal</b></center>", rankAreas.lcplSleeve),
 
-  rank("Squadron_Leader", "officer", "sqnldr", "sqnldr", "<center><b>Squadron Leader</b></center>", rankAreas.officerCollar, "RAF"),
-  rank("Flight_Lieutenant", "officer", "fltlt", "fltlt", "<center><b>Flight Lieutenant</b></center>", rankAreas.officerCollar, "RAF"),
-  rank("Flying_Officer", "officer", "fgoff", "fgoff", "<center><b>Flying Officer</b></center>", rankAreas.officerCollar, "RAF"),
-  rank("Pilot_Officer", "officer", "pltoff", "pltoff", "<center><b>Pilot Officer</b></center>", rankAreas.officerCollar, "RAF"),
+  rank("Squadron_Leader", "officer", "sqnldr", "sqnldr", "<center><b>Squadron Leader</b></center>", rankAreas.sqnldrSleeve, "RAF"),
+  rank("Flight_Lieutenant", "officer", "fltlt", "fltlt", "<center><b>Flight Lieutenant</b></center>", rankAreas.fltltSleeve, "RAF"),
+  rank("Flying_Officer", "officer", "fgoff", "fgoff", "<center><b>Flying Officer</b></center>", rankAreas.fgoffSleeve, "RAF"),
+  rank("Pilot_Officer", "officer", "pltoff", "pltoff", "<center><b>Pilot Officer</b></center>", rankAreas.pltoffSleeve, "RAF"),
   rank("Flight_Sergeant_Aircrew", "enlisted", "fsacr", "fsacr", "<center><b>Flight Sergeant (Aircrew)</b></center>", rankAreas.ssgtSleeve, "RAF"),
   rank("Sergeant_Aircrew", "enlisted", "sacr", "sacr", "<center><b>Sergeant (Aircrew)</b></center>", rankAreas.sgtSleeve, "RAF"),
 ]);
@@ -194,8 +212,25 @@ export const lanyardToImageMap = deepFreeze(
 // ---------- qualifications ----------
 export const leadershipQualificationsOrder = deepFreeze(["FTCC", "SCBC", "PSBC", "PCBC"]);
 export const marksmanshipQualificationsOrder = deepFreeze(["1st Class Marksman", "Sharpshooter", "Sniper"]);
+export const pilotQualificationsOrder = deepFreeze(["Junior Pilot", "Senior Pilot"]);
 
 export const qualifications = deepFreeze([
+  qual(
+    "Senior Pilot",
+    "seniorpilot",
+    [],
+    "seniorpilot.jpg",
+    "<center><b>Senior Pilot</b></center><br>Awarded on the successful completion of the Advanced Flight Qualification. Trains the pilot in advanced flight on both fixed wing and rotary wing and can assume Pilot In Command duties.",
+    [{ x: 450, y: 182, width: 74, height: 41 }]
+  ),
+  qual(
+    "Junior Pilot",
+    "juniorpilot",
+    [],
+    "juniorpilot.jpg",
+    "<center><b>Junior Pilot</b></center><br>Awarded on the successful completion of the Basic Flight Qualification. Trains the pilot in basic rotary and fixed wing flight skills.",
+    [{ x: 474, y: 182, width: 49, height: 41 }]
+  ),
   qual(
     "1st Class Marksman",
     "1st_class_marksman",
