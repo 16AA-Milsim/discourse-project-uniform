@@ -7,6 +7,8 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 Debug Mode can be set to 'true' or 'false' via the first line of code in the assets/javascripts/discourse/lib/pu-utils.js file. Debug Mode true will add browser dev console output and show tooltip areas outlined with red rectangles.
 
 ## To-Do
+- [ ] Add Discourse Admin panel toggle for debug logs
+- [ ] Verify dev console for deprecated stuff
 - [ ] RAF Enlisted uniforms + ranks + specific qualifications + awards
 - [ ] 7RHA graphics
 - [ ] Add Recruit graphics

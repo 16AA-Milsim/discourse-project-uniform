@@ -8,6 +8,8 @@ enabled_site_setting :project_uniform_enabled
 
 add_admin_route 'project_uniform.title', 'project-uniform'
 register_asset "stylesheets/canvas-tooltip.scss"
+register_locale(:en, force_reload: true)
+register_locale(:en_GB, force_reload: true)
 
 Discourse::Application.routes.append do
   get '/admin/plugins/project-uniform' => 'admin/site_settings#index', constraints: StaffConstraint.new, defaults: { filter: 'project uniform' }
