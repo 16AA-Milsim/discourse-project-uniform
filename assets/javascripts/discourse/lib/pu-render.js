@@ -1,11 +1,11 @@
 // pu-render.js
 
 // Import utilities for image loading, path handling, transforms, and debug logging
-import { loadImageCached, normalizePath, transformPoint, debugLog } from "discourse/plugins/project-uniform/discourse/lib/pu-utils";
+import { loadImageCached, normalizePath, transformPoint, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 // Import tooltip setup and registration helpers
-import { setupTooltips, registerTooltip } from "discourse/plugins/project-uniform/discourse/lib/pu-tooltips";
+import { setupTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
 // Import award data for mapping and metadata
-import { awards } from "discourse/plugins/project-uniform/discourse/uniform-data";
+import { awards } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
 // Create an index mapping award names to their order position
 const AWARD_INDEX = Object.fromEntries(awards.map((a, i) => [a.name, i]));

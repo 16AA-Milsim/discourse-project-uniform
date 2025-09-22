@@ -5,13 +5,13 @@ import {
     backgroundImages, ranks, officerRanks, enlistedRanks,
     lanyardToImageMap, groupToImageMap, qualifications,
     lanyardTooltipRegion, lanyardTooltipMap
-} from "discourse/plugins/project-uniform/discourse/uniform-data";
+} from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 // Import render function
-import { mergeImagesOnCanvas } from "discourse/plugins/project-uniform/discourse/lib/pu-render";
+import { mergeImagesOnCanvas } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
 // Import tooltip helpers
-import { clearTooltips, registerTooltip } from "discourse/plugins/project-uniform/discourse/lib/pu-tooltips";
+import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
 // Import debug logging
-import { debugLog } from "discourse/plugins/project-uniform/discourse/lib/pu-utils";
+import { debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // Finds the highest-ranked name in `order` that is present in `have`
 function highestIn(order, have) {

@@ -3,11 +3,11 @@
 // Import Discourse plugin API helper
 import { withPluginApi } from "discourse/lib/plugin-api";
 // Import debug toggle/logger
-import { DEBUG_MODE, debugLog } from "discourse/plugins/project-uniform/discourse/lib/pu-utils";
+import { DEBUG_MODE, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 // Import preparation/rendering pipeline
-import { prepareAndRenderImages } from "discourse/plugins/project-uniform/discourse/lib/pu-prepare";
+import { prepareAndRenderImages } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-prepare";
 // Import award and tooltip data
-import { awards, groupTooltipMap } from "discourse/plugins/project-uniform/discourse/uniform-data";
+import { awards, groupTooltipMap } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
 export default {
     name: "project-uniform",
@@ -41,7 +41,7 @@ export default {
 
                 // If admin-only mode is enabled, ensure current user is admin
                 if (siteSettings.project_uniform_admin_only) {
-                    const currentUser = Discourse.User.current();
+                    const currentUser = api.getCurrentUser();
                     const allowed = !!(currentUser && currentUser.admin);
                     debugLog("[PU:init] Admin-only mode:", { currentUser: currentUser?.username, allowed });
                     if (!allowed) return;

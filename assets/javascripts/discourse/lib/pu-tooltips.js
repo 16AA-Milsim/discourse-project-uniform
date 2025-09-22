@@ -1,7 +1,7 @@
 // pu-tooltips.js
 
 // Import debug mode toggle and logging utility
-import { DEBUG_MODE, debugLog } from "discourse/plugins/project-uniform/discourse/lib/pu-utils";
+import { DEBUG_MODE, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // Stores tooltip hit regions
 const tooltipRegions = [];
