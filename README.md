@@ -96,7 +96,7 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 ### 7) Code structure
 
-* **Initializer (entry point):** page-change hook, data fetch, debug overlay, calls the pipeline. `assets/javascripts/discourse/initializers/project-uniform.js.es6`
+* **Initializer (entry point):** page-change hook, data fetch, debug overlay, calls the pipeline. `assets/javascripts/discourse/initializers/discourse-project-uniform.js.es6`
 * **Data catalog:** backgrounds, ranks, groups, lanyards, quals, awards (+ tooltip metadata & hit-areas). `assets/javascripts/discourse/uniform-data.js`
 * **Prepare step:** builds the “what to draw” lists (bg/fg/ribbons/quals), applies throttling and special rules. `lib/pu-prepare.js`
 * **Render step:** draws canvas, composes layers, lays out ribbons, registers tooltips. `lib/pu-render.js`

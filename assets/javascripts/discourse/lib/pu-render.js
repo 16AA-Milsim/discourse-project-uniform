@@ -15,7 +15,7 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIma
     debugLog("[PU:render] mergeImagesOnCanvas", { backgroundImageUrl, fgCount: foregroundImageUrls.length, awardCount: awardImageUrls.length, highestRank: highestRank?.name });
 
     // Remove old canvas if it exists
-    const old = container.querySelector(".project-uniform-canvas");
+    const old = container.querySelector(".discourse-project-uniform-canvas");
     if (old) {
         old._teardownTooltips?.();
         old.remove();
@@ -24,7 +24,7 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIma
 
     // Create new canvas
     const canvas = document.createElement("canvas");
-    canvas.className = "project-uniform-canvas";
+    canvas.className = "discourse-project-uniform-canvas";
     Object.assign(canvas.style, { position: "relative", zIndex: "0", pointerEvents: "auto", display: "block", margin: "0 auto" });
     const ctx = canvas.getContext("2d");
 

@@ -1,4 +1,4 @@
-// project-uniform.js.es6
+// discourse-project-uniform.js.es6
 
 // Import Discourse plugin API helper
 import { withPluginApi } from "discourse/lib/plugin-api";
@@ -10,7 +10,7 @@ import { prepareAndRenderImages } from "discourse/plugins/discourse-project-unif
 import { awards, groupTooltipMap } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
 export default {
-    name: "project-uniform",
+    name: "discourse-project-uniform",
     initialize(container) {
         // Use the Discourse plugin API (min version 0.8.26)
         withPluginApi("0.8.26", (api) => {
@@ -34,7 +34,7 @@ export default {
                 }
 
                 // Prevent duplicate rendering if placeholder already exists
-                if (document.querySelector(".project-uniform-placeholder")) {
+                if (document.querySelector(".discourse-project-uniform-placeholder")) {
                     debugLog("[PU:init] Placeholder already present – avoiding duplicate render");
                     return;
                 }
@@ -114,12 +114,12 @@ export default {
                         });
 
                         const badgeNames = userBadges.map(ub => idToBadge.get(ub.badge_id)?.name).filter(Boolean);
-                        const existingInfo = containerElement.querySelector(".project-uniform-user-info");
+                        const existingInfo = containerElement.querySelector(".discourse-project-uniform-user-info");
 
                         // If debug mode is enabled, show group/badge text block above uniform
                         if (DEBUG_MODE) {
                             const info = existingInfo || document.createElement("div");
-                            info.className = "project-uniform-user-info";
+                            info.className = "discourse-project-uniform-user-info";
                             info.style.cssText = "text-align:center;margin-bottom:10px;";
                             info.innerHTML = `
                 <p>Groups: ${groups.map(g => g.name).join(", ") || "None"}</p>
