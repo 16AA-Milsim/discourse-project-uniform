@@ -6,7 +6,7 @@
 
 enabled_site_setting :project_uniform_enabled
 
-add_admin_route 'project_uniform.title', 'discourse-project-uniform'
+add_admin_route 'discourse_project_uniform.title', 'discourse-project-uniform'
 register_asset "stylesheets/canvas-tooltip.scss"
 register_locale(:en, force_reload: true)
 register_locale(:en_GB, force_reload: true)
