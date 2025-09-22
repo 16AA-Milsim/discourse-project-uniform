@@ -1,7 +1,8 @@
-# name: project-uniform
-# about: Adds a placeholder image to the user's summary page
-# version: 0.1.0
+# name: discourse-project-uniform
+# about: 16AA Project Uniform plugin
+# version: 0.5.1
 # authors: Daniel Frederiksen
+# url: https://github.com/16AA-Milsim/discourse-project-uniform
 
 enabled_site_setting :project_uniform_enabled
 
