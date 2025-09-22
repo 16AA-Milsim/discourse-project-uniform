@@ -41,6 +41,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     // Find highest rank first (case-insensitive)
     const highestRank = ranks.find(r => groupNameSetLC.has(lc(r.name)));
     debugLog("[PU:prepare] Highest rank:", highestRank?.name || null);
+    const isRAFUniform = highestRank?.service === "RAF";
 
     // Decide background from service + category, else fall back
     if (highestRank) {
@@ -73,14 +74,31 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     debugLog("[PU:prepare] Highest rank:", highestRank?.name || null);
     if (highestRank?.imageKey) fgUrls.push(highestRank.imageKey);
 
-    // Add group images and lanyards for each group (case-insensitive keys)
+    // Add group images (always) and lanyards (BA only) for each group (case-insensitive keys)
     const toLcMap = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k.toLowerCase(), v]));
     const groupToImageMapLC = toLcMap(groupToImageMap);
     const lanyardToImageMapLC = toLcMap(lanyardToImageMap);
+
     groups.forEach(g => {
         const key = lc(g.name);
-        const gi = groupToImageMapLC[key]; if (gi) { fgUrls.push(gi); debugLog("[PU:prepare] Add group image:", g.name, gi); }
-        const li = lanyardToImageMapLC[key]; if (li) { fgUrls.push(li); debugLog("[PU:prepare] Add lanyard image:", g.name, li); }
+
+        // Group crest/badge image (always allowed)
+        const gi = groupToImageMapLC[key];
+        if (gi) {
+            fgUrls.push(gi);
+            debugLog("[PU:prepare] Add group image:", g.name, gi);
+        }
+
+        // Lanyards: suppressed entirely when the uniform is RAF
+        if (!isRAFUniform) {
+            const li = lanyardToImageMapLC[key];
+            if (li) {
+                fgUrls.push(li);
+                debugLog("[PU:prepare] Add lanyard image:", g.name, li);
+            }
+        } else {
+            debugLog("[PU:prepare] RAF uniform – skipping lanyard image for group:", g.name);
+        }
     });
 
     // Determine highest leadership and marksmanship badges (case-insensitive)
@@ -153,8 +171,24 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const toLcTooltipMap = (obj) => Object.fromEntries(
             Object.entries(obj).flatMap(([k, v]) => [[k, v], [k.toLowerCase(), v]])
         );
-        mergeImagesOnCanvas(container, bg, validFg, awardUrls.filter(Boolean), highestRank, qualsToRender, groups, toLcTooltipMap(groupTooltipMap));
-        registerLanyardTooltips(groups);
+    mergeImagesOnCanvas(
+    container,
+    bg,
+    validFg,
+    awardUrls.filter(Boolean),
+    highestRank,
+    qualsToRender,
+    groups,
+    toLcTooltipMap(groupTooltipMap)
+    );
+
+    // Only register lanyard tooltips for BA uniforms
+    if (!isRAFUniform) {
+    registerLanyardTooltips(groups);
+    } else {
+    debugLog("[PU:prepare] RAF uniform – skipping lanyard tooltips");
+    }
+
     } else {
         debugLog("[PU:prepare] Nothing to render – missing bg or no foregrounds");
     }

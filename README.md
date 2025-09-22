@@ -9,9 +9,9 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 ## To-Do
 - [ ] RAF Enlisted uniforms + ranks + specific qualifications + awards
 - [ ] 7RHA graphics
-- [ ] Correct the lanyard for FST (should be blue and red for 7RHA)
 - [ ] Add Recruit graphics
 - [ ] Add and organise implementation of remaining qualifications graphics
+- [ ] Community Support Arms ?
 
 ## Features & Components Overview
 
@@ -106,10 +106,10 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 ### A) Uniform backgrounds (base canvases)
 
-* **British Army – Officer** → `backgroundImages.officer` (PNG)
-* **British Army – Enlisted** → `backgroundImages.enlisted` (PNG)
-* **RAF – Officer** → `backgroundImages.rafOfficer` (PNG)
-* **RAF – Enlisted** → `backgroundImages.rafEnlisted` (PNG)
+* **British Army – Officer**
+* **British Army – Enlisted**
+* **RAF – Officer** 
+* **RAF – Enlisted**
 
 ---
 
@@ -141,11 +141,11 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 ### Lanyards (image + tooltip)
 
-* **Lightblue & Maroon** (Coy leadership roles)
-* **Red** (1 Platoon; sections & leadership)
-* **Green** (2 Platoon; sections & leadership)
+* **Lightblue & Maroon** (Coy HQ)
+* **Red** (1 Platoon)
+* **Green** (2 Platoon)
 * **Black** (3 Pl; FSG & FSG HQ; 4-1; 13AASR; 16CSMR; 216 Para Signals)
-* **Black & Olive** (Fire Support Team)
+* **Red & Blue** (7RHA)
 
 ---
 
@@ -153,8 +153,8 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 **Pilot track (only highest shown):**
 
-* **Senior Pilot** (Advanced Flight; can PIC) — renders on chest; has hit-area.
-* **Junior Pilot** (Basic Flight) — same area; hidden if Senior present.
+* **Senior Pilot** (Advanced Flight)
+* **Junior Pilot** (Basic Flight)
 
 **Marksmanship track (only highest shown, and suppressed for 16CSMR):**
 

@@ -107,8 +107,14 @@ export const ranks = deepFreeze([
   rank("Staff_Sergeant", "enlisted", "ssgt", "ssgt", "<center><b>Staff Sergeant</b></center>", rankAreas.ssgtSleeve),
   rank("Sergeant", "enlisted", "sgt", "sgt", "<center><b>Sergeant</b></center>", rankAreas.sgtSleeve),
   rank("Corporal", "enlisted", "cpl", "cpl", "<center><b>Corporal</b></center>", rankAreas.cplSleeve),
+  rank("Bombardier", "enlisted", "cpl", "cpl", "<center><b>Bombardier</b></center>", rankAreas.cplSleeve),
+  rank("Acting_Corporal", "enlisted", "cpl", "cpl", "<center><b>Acting Corporal</b></center>", rankAreas.cplSleeve),
+  rank("Acting_Bombardier", "enlisted", "cpl", "cpl", "<center><b>Acting Bombardier</b></center>", rankAreas.cplSleeve),
   rank("Lance_Corporal", "enlisted", "lcpl", "lcpl", "<center><b>Lance Corporal</b></center>", rankAreas.lcplSleeve),
-
+  rank("Lance_Bombardier", "enlisted", "lcpl", "lcpl", "<center><b>Lance Bombardier</b></center>", rankAreas.lcplSleeve),
+  rank("Acting_Lance_Corporal", "enlisted", "lcpl", "lcpl", "<center><b>Acting Lance Corporal</b></center>", rankAreas.lcplSleeve),
+  rank("Acting_Lance_Bombardier", "enlisted", "lcpl", "lcpl", "<center><b>Acting Lance Bombardier</b></center>", rankAreas.lcplSleeve),
+  
   rank("Squadron_Leader", "officer", "sqnldr", "sqnldr", "<center><b>Squadron Leader</b></center>", rankAreas.sqnldrSleeve, "RAF"),
   rank("Flight_Lieutenant", "officer", "fltlt", "fltlt", "<center><b>Flight Lieutenant</b></center>", rankAreas.fltltSleeve, "RAF"),
   rank("Flying_Officer", "officer", "fgoff", "fgoff", "<center><b>Flying Officer</b></center>", rankAreas.fgoffSleeve, "RAF"),
@@ -126,21 +132,41 @@ export const groupToImageMap = deepFreeze({
   "16CSMR": u(`/assets/images/groups/16csmr.png`),
   "16CSMR_IC": u(`/assets/images/groups/16csmr.png`),
   "16CSMR_2IC": u(`/assets/images/groups/16csmr.png`),
+  "7RHA": u(`/assets/images/groups/7rha.png`),
+  "7RHA_IC": u(`/assets/images/groups/7rha.png`),
+  "7RHA_2IC": u(`/assets/images/groups/7rha.png`),
 });
 
 const csmrTooltip = deepFreeze({
   tooltipImage: u(`/assets/images/groups/ramc.png`),
   tooltipText:
-    "<center><b>Royal Army Medical Corps</b></center><br>The collar badge worn by<br>members of 16 Close Support Medical Regiment.",
+    "<center><b>Royal Army Medical Corps</b></center><br>Collar badges of the<br>Royal Army Medical Corps,<br>worn by members of 16 Close Support Medical Regiment.",
   tooltipAreas: [
     { x: 183, y: 27, width: 37, height: 35 },
     { x: 477, y: 27, width: 38, height: 35 },
   ],
 });
 
-export const groupTooltipMap = deepFreeze(
-  ["16CSMR", "16CSMR_IC", "16CSMR_2IC"].reduce((a, k) => ((a[k] = csmrTooltip), a), {})
-);
+const rhaTooltip = deepFreeze({
+  tooltipImage: u(`/assets/images/groups/royal_artillery.png`),
+  tooltipText:
+    "<center><b>Royal Artillery</b></center><br>Collar badges of the Royal Regiment of Artillery, worn by members of 7th Parachute Regiment Royal Horse Artillery.",
+  tooltipAreas: csmrTooltip.tooltipAreas, // same collar placement as RAMC
+});
+
+export const groupTooltipMap = deepFreeze({
+  // RAMC/16CSMR tooltips
+  ...["16CSMR", "16CSMR_IC", "16CSMR_2IC"].reduce((acc, k) => {
+    acc[k] = csmrTooltip;
+    return acc;
+  }, {}),
+
+  // 7RHA tooltips
+  ...["7RHA", "7RHA_IC", "7RHA_2IC"].reduce((acc, k) => {
+    acc[k] = rhaTooltip;
+    return acc;
+  }, {}),
+});
 
 // ---------- lanyards ----------
 export const lanyardGroupsConfig = deepFreeze([
@@ -165,8 +191,8 @@ export const lanyardGroupsConfig = deepFreeze([
       "2_Platoon_IC", "2_Platoon_2IC", "2-1_Section_IC", "2-1_Section_2IC", "2-1_Section",
       "2-2_Section_IC", "2-2_Section_2IC", "2-2_Section", "2-3_Section_IC", "2-3_Section_2IC", "2-3_Section",
     ],
-    "green_lanyard.png",
-    "<center><b>Green Lanyard</b></center><br>Description for Green Lanyard."
+    "green_dzf.png",
+    "<center><b>2 Platoon</b></center><br>The airborne infantry platoons are the main paratrooper/ground infantry efforts of 16AA."
   ),
   lanyardCfg(
     "black_lanyard.png",
@@ -184,9 +210,21 @@ export const lanyardGroupsConfig = deepFreeze([
   ),
   lanyardCfg(
     "black_and_olive_lanyard.png",
-    ["Fire_Support_Team_IC", "Fire_Support_Team_2IC", "Fire_Support_Team"],
+    [],
     "black_and_olive_lanyard.png",
     "<center><b>Black and Olive Lanyard</b></center><br>Description for Black and Olive Lanyard."
+  ),
+    lanyardCfg(
+    "red_and_blue_lanyard.png",
+    ["7RHA_IC","7RHA_2IC","7RHA","Fire_Support_Team_IC", "Fire_Support_Team_2IC", "Fire_Support_Team"],
+    "red_and_blue_dzf.png",
+    "<center><b>7 Royal Horse Artillery</b></center><br>The dedicated artillery element of 16AA, delivering precision fires in support of the brigade and Fire Support Teams to coordinate indirect and joint fires."
+  ),
+    lanyardCfg(
+    "green_and_lightgrey_lanyard.png",
+    ["MI_IC","MI_2IC","MI"],
+    "mi_dzf.png",
+    "<center><b>Military Intelligence</b></center><br>The intelligence element of 16AA, providing information, analysis, Zeus control and roleplay support for operations and planning."
   ),
 ]);
 
