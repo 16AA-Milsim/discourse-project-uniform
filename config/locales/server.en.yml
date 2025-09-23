@@ -3,7 +3,3 @@ en:
     discourse_project_uniform_enabled: "Enable Discourse Project Uniform"
     discourse_project_uniform_admin_only: "Restrict Discourse Project Uniform output visibility to Admins Only"
     discourse_project_uniform_debug_enabled: "Enable dev console debugging messages and red rectangle areas for tooltips"
-
-  js:
-    discourse_project_uniform:
-      title: "Discourse Project Uniform"

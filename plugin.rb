@@ -1,15 +1,13 @@
 # name: discourse-project-uniform
-# about: Discourse Project Uniform plugin
+# about: Discourse Project Uniform
 # version: 0.6.0
-# authors: ChatGPT & Daniel Frederiksen
+# authors: ChatGPT & Darojax
 # url: https://github.com/16AA-Milsim/discourse-project-uniform
 
 enabled_site_setting :discourse_project_uniform_enabled
 
 add_admin_route 'discourse_project_uniform.title', 'discourse-project-uniform'
 register_asset "stylesheets/canvas-tooltip.scss"
-register_locale(:en, force_reload: true)
-register_locale(:en_GB, force_reload: true)
 
 Discourse::Application.routes.append do
   get '/admin/plugins/discourse-project-uniform' => 'admin/site_settings#index', constraints: StaffConstraint.new, defaults: { filter: 'discourse project uniform' }
