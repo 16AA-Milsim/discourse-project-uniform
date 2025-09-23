@@ -300,7 +300,7 @@ export const qualifications = deepFreeze([
     "ftcc",
     [],
     "ftcc.jpg",
-    "<center><b>FTCC</b></center><br>Fire Team Commanders Course.",
+    "<center><b>FTCC</b></center><br>Awarded on the successful completion of the Fire Team Commanders Course. Provides the upcoming commander with the knowledge required to command a fireteam.",
     [{ x: 192, y: 206, width: 30, height: 38 }]
   ),
   qual(
@@ -317,7 +317,7 @@ export const qualifications = deepFreeze([
     "pcbc",
     [],
     "pcbc.jpg",
-    "<center><b>PCBC</b></center><br>Platoon Commanders Battle Course.",
+    "<center><b>PCBC</b></center><br>Awarded on the successful completion of the Platoon Commanders Battle Course. Gives the senior commander the necessary skills and knowledge to lead a platoon.",
     [{ x: 188, y: 206, width: 36, height: 38 }]
   ),
   qual(
@@ -325,7 +325,7 @@ export const qualifications = deepFreeze([
     "psbc",
     [],
     "psbc.jpg",
-    "<center><b>PSBC</b></center><br>Platoon Sergeants Battle Course.",
+    "<center><b>PSBC</b></center><br>Awarded on the successful completion of the Platoon Sergeants Battle Course. Prepares the junior commander for the duties and responsibilities of a Platoon Sergeant and introduces them to the command of a full rifle platoon.",
     [{ x: 188, y: 206, width: 36, height: 38 }]
   ),
   qual(
@@ -333,7 +333,7 @@ export const qualifications = deepFreeze([
     "scbc",
     [],
     "scbc.jpg",
-    "<center><b>SCBC</b></center><br>Section Commanders Battle Course.",
+    "<center><b>SCBC</b></center><br>Awarded on the successful completion of the Section Commanders Battle Course. Teaches the individual the skills required to lead a section.",
     [{ x: 188, y: 206, width: 36, height: 38 }]
   ),
   qual(
