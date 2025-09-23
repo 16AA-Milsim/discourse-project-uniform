@@ -4,32 +4,29 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 ![Showcase Image](./assets/showcase.png)
 
 ## Debug Mode
-Debug Mode can be set to 'true' or 'false' via the first line of code in the assets/javascripts/discourse/lib/pu-utils.js file. Debug Mode true will add browser dev console output and show tooltip areas outlined with red rectangles.
+Debug Mode can be set to 'true' or 'false' via the first line of code in the assets/javascripts/discourse/lib/pu-utils.js file, this will override the Debug Mode setting for the plugin in the discourse admin panel. Debug Mode will add browser dev console output and show tooltip areas outlined with red rectangles.
 
 ## To-Do
-- [ ] Add Discourse Admin panel toggle for debug logs
 - [ ] Verify dev console for deprecated stuff
 - [ ] RAF Enlisted uniforms + ranks + specific qualifications + awards
 - [ ] 7RHA graphics
 - [ ] Add Recruit graphics
 - [ ] Add and organise implementation of remaining qualifications graphics
 - [ ] Community Support Arms ?
+- [ ] More...
 
 ## Features & Components Overview
 
 ### 1) What the plugin delivers
 
 * **Uniform visual on user profile → Summary tab**
-  Automatically renders a British-Army/RAF style uniform image on a member’s Discourse user **Summary** page. The uniform shows background (service & officer/enlisted), rank insignia, unit/group crests, lanyard, qualifications badges, and up to **8** medal ribbons (two rows of four).
-
-* **Smart background selection (BA vs RAF, officer vs enlisted)**
-  The plugin infers service & category from the user’s highest rank and picks the corresponding background: BA officer/enlisted, RAF officer/enlisted. Falls back to rank presence if needed.
+  Automatically renders a British-Army/RAF style uniform image (based on users rank) on a member’s Discourse user **Summary** page. The uniform shows rank insignia, unit/group crests, lanyards, qualifications badges, and up to **8** medal ribbons (two rows of four).
 
 * **Highest-rank, highest-qualification logic**
-  Detects the user’s **highest rank**; for stacked qualifications (leadership, marksmanship, pilot), it shows **only the top** one per track (e.g., Senior Pilot over Junior Pilot; Sniper over Sharpshooter/1st Class). Special rule: certain marksmanship quals are **suppressed for 16CSMR** members.
+  Detects stacked qualifications (leadership, marksmanship, pilot), it shows **only the top** one per track (e.g., Senior Pilot over Junior Pilot; Sniper over Sharpshooter/1st Class). Special rule: certain marksmanship quals are **suppressed for 16CSMR** members.
 
 * **Medal ribbons with priority & cap**
-  Ribbons are prioritized by a defined order and **capped at 8** (two rows of four) for a clean layout. Their tooltips use the corresponding full-medal art and description.
+  Ribbons are prioritized by a defined order and **capped at 8** (two rows of four). Their tooltips use the corresponding full-medal art and description.
 
 * **Rich tooltips (hoverable hot-zones)**
   Hovering rank patches, qualifications, lanyards, group crests, and ribbons shows image-backed tooltips (with small preview image + text). Tooltips fade in/out and don’t interfere with clicks.
@@ -46,9 +43,9 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 * **Fast page loads via image caching**
   Foreground and ribbon images are loaded with an in-memory cache to avoid re-downloads.
 
-### 2) How/when it runs (lifecycle & data)
+### 2) How/when it runs
 
-* **Runs only on user Summary pages** and avoids duplicate renders; supports an **admin-only** mode via site setting.
+* **Runs only on user Summary pages** and avoids duplicate renders; supports an **admin-only** mode (plugin output onl visible to admins) via site setting.
 
 * **Pulls data from core Discourse endpoints**
   Fetches `/u/:username.json` (groups) and `/user-badges/:username.json` (badges) to decide what to render.
@@ -139,7 +136,8 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 ### Group images
 
-* **16CSMR** shows an **RAMC** badge tooltip with two hit-areas on the collar (`groupTooltipMap`).
+* **16CSMR** shows **RAMC** badges on the collars.
+* **7RHA** shows **Royal Artillery** badges on the collars.
 
 ### Lanyards (image + tooltip)
 
@@ -148,6 +146,7 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 * **Green** (2 Platoon)
 * **Black** (3 Pl; FSG & FSG HQ; 4-1; 13AASR; 16CSMR; 216 Para Signals)
 * **Red & Blue** (7RHA)
+* **Green & Lightgrey** (MI)
 
 ---
 

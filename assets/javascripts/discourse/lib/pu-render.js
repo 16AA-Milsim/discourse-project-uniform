@@ -86,13 +86,18 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
     });
     debugLog("[PU:render] Group tooltips registered:", groupTipCount);
 
-    // Register tooltips for rank (first foreground image assumed to be rank)
-    if (highestRank && fgImages.length && highestRank.tooltipAreas) {
-        const rankImg = fgImages[0];
-        const x = (canvas.width - rankImg.naturalWidth) / 2;
-        const y = (canvas.height - rankImg.naturalHeight) / 2;
-        const tip = `<img src="${highestRank.tooltipImage}"> ${highestRank.tooltipText}`;
-        highestRank.tooltipAreas.forEach(a => registerTooltip(x + a.x, y + a.y, a.width, a.height, tip));
+    // Register tooltips for rank. If there is no rank image (e.g., Private/Gunner),
+    // fall back to absolute coordinates.
+    if (highestRank && highestRank.tooltipAreas) {
+        const rankImg = fgImages.length ? fgImages[0] : null;
+        const x = rankImg?.naturalWidth ? (canvas.width - rankImg.naturalWidth) / 2 : 0;
+        const y = rankImg?.naturalHeight ? (canvas.height - rankImg.naturalHeight) / 2 : 0;
+        const tip =
+            (highestRank.tooltipImage ? `<img src="${highestRank.tooltipImage}"> ` : "") +
+            (highestRank.tooltipText || "");
+        highestRank.tooltipAreas.forEach(a =>
+            registerTooltip(x + a.x, y + a.y, a.width, a.height, tip)
+        );
         debugLog("[PU:render] Rank tooltips registered:", highestRank.tooltipAreas.length);
     }
 

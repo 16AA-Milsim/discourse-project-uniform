@@ -165,34 +165,31 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const validFg = fgUrls.filter(Boolean);
     debugLog("[PU:prepare] Summary before render:", { bg: !!bg, fgCount: validFg.length, awards: awardUrls.length, quals: qualsToRender.map(q => q.name) });
 
-    // Only render if background and at least one foreground exist
-    if (bg && validFg.length) {
-        // Pass a case-insensitive tooltip map to the renderer
-        const toLcTooltipMap = (obj) => Object.fromEntries(
-            Object.entries(obj).flatMap(([k, v]) => [[k, v], [k.toLowerCase(), v]])
+    // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
+    if (bg) {
+        const toLcTooltipMap = (obj) =>
+            Object.fromEntries(Object.entries(obj).flatMap(([k, v]) => [[k, v], [k.toLowerCase(), v]]));
+
+        mergeImagesOnCanvas(
+            container,
+            bg,
+            validFg,                 // can be []
+            awardUrls.filter(Boolean),
+            highestRank,
+            qualsToRender,
+            groups,
+            toLcTooltipMap(groupTooltipMap)
         );
-    mergeImagesOnCanvas(
-    container,
-    bg,
-    validFg,
-    awardUrls.filter(Boolean),
-    highestRank,
-    qualsToRender,
-    groups,
-    toLcTooltipMap(groupTooltipMap)
-    );
 
-    // Only register lanyard tooltips for BA uniforms
-    if (!isRAFUniform) {
-    registerLanyardTooltips(groups);
+        // Only register lanyard tooltips for BA uniforms
+        if (!isRAFUniform) {
+            registerLanyardTooltips(groups);
+        } else {
+            debugLog("[PU:prepare] RAF uniform – skipping lanyard tooltips");
+        }
     } else {
-    debugLog("[PU:prepare] RAF uniform – skipping lanyard tooltips");
+        debugLog("[PU:prepare] Nothing to render – missing bg");
     }
-
-    } else {
-        debugLog("[PU:prepare] Nothing to render – missing bg or no foregrounds");
-    }
-    debugLog("[PU:prepare] end");
 }
 
 // Registers tooltips for any lanyards the player has

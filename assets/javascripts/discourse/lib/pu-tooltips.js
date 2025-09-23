@@ -1,7 +1,7 @@
 // pu-tooltips.js
 
 // Import debug mode toggle and logging utility
-import { DEBUG_MODE, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { isDebugEnabled, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // Stores tooltip hit regions
 const tooltipRegions = [];
@@ -27,9 +27,9 @@ export function setupTooltips(canvas) {
     parent.style.position = "relative";
     parent.querySelector(".canvas-tooltip")?.remove(); // remove any old tooltip
 
-    // Draw debug rectangles if DEBUG_MODE is on
+    // Draw debug rectangles if debug is enabled (code flag OR admin flag)
     const ctx = canvas.getContext("2d");
-    if (DEBUG_MODE) {
+    if (isDebugEnabled()) {
         tooltipRegions.forEach((r) => {
             ctx.strokeStyle = "red"; ctx.lineWidth = 2; ctx.strokeRect(r.x, r.y, r.width, r.height);
         });

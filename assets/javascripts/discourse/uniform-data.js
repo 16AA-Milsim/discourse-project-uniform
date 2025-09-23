@@ -1,5 +1,6 @@
 // uniform-data.js
 import getURL from "discourse-common/lib/get-url";
+import { puPaths } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // ---------- helpers ----------
 const u = (p) => getURL(p);
@@ -35,6 +36,10 @@ const rankAreas = {
     { x: 40, y: 215, width: 52, height: 55 },
     { x: 607, y: 208, width: 58, height: 55 },
   ],
+  ptegnrSleeve: [
+    { x: 38, y: 195, width: 52, height: 110 },
+    { x: 607, y: 193, width: 60, height: 105 },
+  ],
   // RAF rank regions
   sqnldrSleeve: [
     { x: 16, y: 588, width: 120, height: 56 },
@@ -56,44 +61,44 @@ const rankAreas = {
 
 const rank = (name, category, key, tipKey, tipText, areas, service = "BA") => ({
   name,
-  category,         // "officer" | "enlisted"
-  service,          // "BA" | "RAF"
-  imageKey: u(`/assets/images/ranks/${key}.png`),
-  tooltipImage: u(`/assets/images/tooltip_rankimages/${tipKey}.jpg`),
-  tooltipText: tipText,
-  tooltipAreas: areas,
+  category,              // "officer" | "enlisted"
+  service,               // "BA" | "RAF"
+  imageKey: key ? puPaths.rank(`${key}.png`) : null,
+  tooltipImage: tipKey ? puPaths.tooltipRank(`${tipKey}.jpg`) : null,
+  tooltipText: tipText || "",
+  tooltipAreas: areas ?? null,
 });
 
 const lanyardCfg = (image, groups, tipImage, tipText) => ({
-  imageKey: u(`/assets/images/lanyards/${image}`),
+  imageKey: puPaths.lanyard(image),
   groups,
-  tooltipImage: u(`/assets/images/tooltip_lanyardimages/${tipImage}`),
+  tooltipImage: puPaths.tooltipLanyard(tipImage),
   tooltipText: tipText,
 });
 
 const qual = (name, key, restrictedRanks, tipImg, tipText, areas, serviceVariants = {}) => ({
   name,
-  imageKey: u(`/assets/images/qualifications/${key}.png`),
+  imageKey: puPaths.qual(`${key}.png`),
   restrictedRanks,
-  tooltipImage: u(`/assets/images/tooltip_qualificationimages/${tipImg}`),
+  tooltipImage: puPaths.tooltipQual(tipImg),
   tooltipText: tipText,
   tooltipAreas: areas,
-  serviceVariants, // e.g. { RAF: u('/assets/images/qualifications/paratrooper_raf.png') }
+  serviceVariants, // e.g. { RAF: puPaths.qual("paratrooper_raf.png") },
 });
 
 const award = (name, ribbonFile, medalFile, tipText) => ({
   name,
-  imageKey: u(`/assets/images/ribbons/${ribbonFile}`),
-  tooltipImage: u(`/assets/images/medals/${medalFile}`),
+  imageKey: puPaths.ribbon(ribbonFile),
+  tooltipImage: puPaths.medal(medalFile),
   tooltipText: tipText,
 });
 
 // ---------- backgrounds ----------
 export const backgroundImages = deepFreeze({
-  officer: u(`/assets/images/uniforms/ba_officers_uniform.png`),
-  enlisted: u(`/assets/images/uniforms/ba_enlisted_uniform.png`),
-  rafOfficer: u(`/assets/images/uniforms/raf_officers_uniform.png`),
-  rafEnlisted: u(`/assets/images/uniforms/raf_enlisted_uniform.png`),
+  officer: puPaths.uniform("ba_officers_uniform.png"),
+  enlisted: puPaths.uniform("ba_enlisted_uniform.png"),
+  rafOfficer: puPaths.uniform("raf_officers_uniform.png"),
+  rafEnlisted: puPaths.uniform("raf_enlisted_uniform.png"),
 });
 
 // ---------- ranks ----------
@@ -114,7 +119,9 @@ export const ranks = deepFreeze([
   rank("Lance_Bombardier", "enlisted", "lcpl", "lcpl", "<center><b>Lance Bombardier</b></center>", rankAreas.lcplSleeve),
   rank("Acting_Lance_Corporal", "enlisted", "lcpl", "lcpl", "<center><b>Acting Lance Corporal</b></center>", rankAreas.lcplSleeve),
   rank("Acting_Lance_Bombardier", "enlisted", "lcpl", "lcpl", "<center><b>Acting Lance Bombardier</b></center>", rankAreas.lcplSleeve),
-  
+  rank("Private", "enlisted", null, "pte", "<center><b>Private</b></center>", rankAreas.ptegnrSleeve),
+  rank("Gunner", "enlisted", null, "gnr", "<center><b>Gunner</b></center>", rankAreas.ptegnrSleeve),
+
   rank("Squadron_Leader", "officer", "sqnldr", "sqnldr", "<center><b>Squadron Leader</b></center>", rankAreas.sqnldrSleeve, "RAF"),
   rank("Flight_Lieutenant", "officer", "fltlt", "fltlt", "<center><b>Flight Lieutenant</b></center>", rankAreas.fltltSleeve, "RAF"),
   rank("Flying_Officer", "officer", "fgoff", "fgoff", "<center><b>Flying Officer</b></center>", rankAreas.fgoffSleeve, "RAF"),
@@ -129,16 +136,16 @@ export const rankToImageMap = deepFreeze(Object.fromEntries(ranks.map(r => [r.na
 
 // ---------- groups/images ----------
 export const groupToImageMap = deepFreeze({
-  "16CSMR": u(`/assets/images/groups/16csmr.png`),
-  "16CSMR_IC": u(`/assets/images/groups/16csmr.png`),
-  "16CSMR_2IC": u(`/assets/images/groups/16csmr.png`),
-  "7RHA": u(`/assets/images/groups/7rha.png`),
-  "7RHA_IC": u(`/assets/images/groups/7rha.png`),
-  "7RHA_2IC": u(`/assets/images/groups/7rha.png`),
+  "16CSMR": puPaths.group("16csmr.png"),
+  "16CSMR_IC": puPaths.group("16csmr.png"),
+  "16CSMR_2IC": puPaths.group("16csmr.png"),
+  "7RHA": puPaths.group("7rha.png"),
+  "7RHA_IC": puPaths.group("7rha.png"),
+  "7RHA_2IC": puPaths.group("7rha.png"),
 });
 
 const csmrTooltip = deepFreeze({
-  tooltipImage: u(`/assets/images/groups/ramc.png`),
+  tooltipImage: puPaths.group("ramc.png"),
   tooltipText:
     "<center><b>Royal Army Medical Corps</b></center><br>Collar badges of the<br>Royal Army Medical Corps,<br>worn by members of 16 Close Support Medical Regiment.",
   tooltipAreas: [
@@ -148,10 +155,13 @@ const csmrTooltip = deepFreeze({
 });
 
 const rhaTooltip = deepFreeze({
-  tooltipImage: u(`/assets/images/groups/royal_artillery.png`),
+  tooltipImage: puPaths.group("royal_artillery.png"),
   tooltipText:
     "<center><b>Royal Artillery</b></center><br>Collar badges of the Royal Regiment of Artillery, worn by members of 7th Parachute Regiment Royal Horse Artillery.",
-  tooltipAreas: csmrTooltip.tooltipAreas, // same collar placement as RAMC
+  tooltipAreas: [
+    { x: 190, y: 25, width: 37, height: 35 },
+    { x: 465, y: 23, width: 38, height: 38 },
+  ],
 });
 
 export const groupTooltipMap = deepFreeze({
@@ -214,15 +224,15 @@ export const lanyardGroupsConfig = deepFreeze([
     "black_and_olive_lanyard.png",
     "<center><b>Black and Olive Lanyard</b></center><br>Description for Black and Olive Lanyard."
   ),
-    lanyardCfg(
+  lanyardCfg(
     "red_and_blue_lanyard.png",
-    ["7RHA_IC","7RHA_2IC","7RHA","Fire_Support_Team_IC", "Fire_Support_Team_2IC", "Fire_Support_Team"],
+    ["7RHA_IC", "7RHA_2IC", "7RHA", "Fire_Support_Team_IC", "Fire_Support_Team_2IC", "Fire_Support_Team"],
     "red_and_blue_dzf.png",
-    "<center><b>7 Royal Horse Artillery</b></center><br>The dedicated artillery element of 16AA, delivering precision fires in support of the brigade and Fire Support Teams to coordinate indirect and joint fires."
+    "<center><b>7 Royal Horse Artillery</b></center><br>The dedicated artillery element of 16AA, delivering precision fires and Fire Support Teams to coordinate indirect and joint fires."
   ),
-    lanyardCfg(
+  lanyardCfg(
     "green_and_lightgrey_lanyard.png",
-    ["MI_IC","MI_2IC","MI"],
+    ["MI_IC", "MI_2IC", "MI"],
     "mi_dzf.png",
     "<center><b>Military Intelligence</b></center><br>The intelligence element of 16AA, providing information, analysis, Zeus control and roleplay support for operations and planning."
   ),
@@ -298,9 +308,9 @@ export const qualifications = deepFreeze([
     "paratrooper",
     [],
     "paratrooper.jpg",
-    "<center><b>Paratrooper</b></center><br>Awarded on the successful completion of the Third static line Parachute Combat Drop.",
+    "<center><b>Paratrooper</b></center><br>Awarded on the successful completion of the Third static line Parachute Combat Drop or the successful completion of the Static Line Parachute Course.",
     [{ x: 44, y: 116, width: 40, height: 50 }],
-    { RAF: u(`/assets/images/qualifications/paratrooper_raf.png`) }
+    { RAF: puPaths.qual("paratrooper_raf.png") }
   ),
   qual(
     "PCBC",

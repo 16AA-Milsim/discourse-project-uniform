@@ -41,9 +41,6 @@ yarn-error.log
 package-lock.json
 
 # Asset pipeline
-public/assets/
-public/packs/
-public/packs-test/
 webpacker-dev-server.log
 
 # Generated files

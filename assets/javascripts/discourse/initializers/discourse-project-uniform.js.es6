@@ -3,7 +3,7 @@
 // Import Discourse plugin API helper
 import { withPluginApi } from "discourse/lib/plugin-api";
 // Import debug toggle/logger
-import { DEBUG_MODE, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { debugLog, setAdminDebugFlag, isDebugEnabled } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 // Import preparation/rendering pipeline
 import { prepareAndRenderImages } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-prepare";
 // Import award and tooltip data
@@ -15,6 +15,8 @@ export default {
         // Use the Discourse plugin API (min version 0.8.26)
         withPluginApi("0.8.26", (api) => {
             const siteSettings = container.lookup("site-settings:main");
+            // Wire the admin setting into the utils runtime flag
+            setAdminDebugFlag(!!siteSettings.discourse_project_uniform_debug_enabled);
 
             // Run logic on every page change
             api.onPageChange((url) => {
@@ -40,7 +42,7 @@ export default {
                 }
 
                 // If admin-only mode is enabled, ensure current user is admin
-                if (siteSettings.project_uniform_admin_only) {
+                if (siteSettings.discourse_project_uniform_admin_only) {
                     const currentUser = api.getCurrentUser();
                     const allowed = !!(currentUser && currentUser.admin);
                     debugLog("[PU:init] Admin-only mode:", { currentUser: currentUser?.username, allowed });
@@ -117,7 +119,7 @@ export default {
                         const existingInfo = containerElement.querySelector(".discourse-project-uniform-user-info");
 
                         // If debug mode is enabled, show group/badge text block above uniform
-                        if (DEBUG_MODE) {
+                        if (isDebugEnabled()) {
                             const info = existingInfo || document.createElement("div");
                             info.className = "discourse-project-uniform-user-info";
                             info.style.cssText = "text-align:center;margin-bottom:10px;";

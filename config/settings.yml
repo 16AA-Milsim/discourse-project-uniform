@@ -1,9 +1,15 @@
 plugins:
-  project_uniform_enabled:
-    type: boolean
+  discourse_project_uniform_enabled:
+    type: bool
     default: true
     client: true
-  project_uniform_admin_only:
-    type: boolean
+
+  discourse_project_uniform_admin_only:
+    type: bool
+    default: false
+    client: true
+
+  discourse_project_uniform_debug_enabled:
+    type: bool
     default: false
     client: true

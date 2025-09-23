@@ -1,10 +1,10 @@
 # name: discourse-project-uniform
-# about: 16AA Project Uniform plugin
-# version: 0.5.1
+# about: Discourse Project Uniform plugin
+# version: 0.6.0
 # authors: ChatGPT & Daniel Frederiksen
 # url: https://github.com/16AA-Milsim/discourse-project-uniform
 
-enabled_site_setting :project_uniform_enabled
+enabled_site_setting :discourse_project_uniform_enabled
 
 add_admin_route 'discourse_project_uniform.title', 'discourse-project-uniform'
 register_asset "stylesheets/canvas-tooltip.scss"
