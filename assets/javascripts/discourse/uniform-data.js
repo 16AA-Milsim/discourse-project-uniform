@@ -76,14 +76,15 @@ const lanyardCfg = (image, groups, tipImage, tipText) => ({
   tooltipText: tipText,
 });
 
-const qual = (name, key, restrictedRanks, tipImg, tipText, areas, serviceVariants = {}) => ({
+const qual = (name, key, restrictedRanks, tipImg, tipText, areas, serviceVariants = {}, ribbonRowVariants = {}) => ({
   name,
   imageKey: puPaths.qual(`${key}.png`),
   restrictedRanks,
   tooltipImage: puPaths.tooltipQual(tipImg),
   tooltipText: tipText,
   tooltipAreas: areas,
-  serviceVariants, // e.g. { RAF: puPaths.qual("paratrooper_raf.png") },
+  serviceVariants,       // e.g. { RAF: puPaths.qual("paratrooper_raf.png") }
+  ribbonRowVariants,     // e.g. { 0: puPaths.qual("juniorpilot_pos0.png"), 1: ..., 2: ... }
 });
 
 const award = (name, ribbonFile, medalFile, tipText) => ({
@@ -103,32 +104,241 @@ export const backgroundImages = deepFreeze({
 
 // ---------- ranks ----------
 export const ranks = deepFreeze([
-  rank("Major", "officer", "maj", "maj", "<center><b>Major</b></center>", rankAreas.officerCollar),
-  rank("Captain", "officer", "capt", "capt", "<center><b>Captain</b></center>", rankAreas.officerCollar),
-  rank("Lieutenant", "officer", "lt", "lt", "<center><b>Lieutenant</b></center>", rankAreas.officerCollar),
-  rank("Second_Lieutenant", "officer", "2lt", "2lt", "<center><b>Second Lieutenant</b></center>", rankAreas.officerCollar),
-  rank("Warrant_Officer_Class_2", "enlisted", "wo2", "wo2", "<center><b>Warrant Officer Class 2</b></center>", rankAreas.wo2Sleeve),
-  rank("Colour_Sergeant", "enlisted", "csgt", "csgt", "<center><b>Colour Sergeant</b></center>", rankAreas.csgtSleeve),
-  rank("Staff_Sergeant", "enlisted", "ssgt", "ssgt", "<center><b>Staff Sergeant</b></center>", rankAreas.ssgtSleeve),
-  rank("Sergeant", "enlisted", "sgt", "sgt", "<center><b>Sergeant</b></center>", rankAreas.sgtSleeve),
-  rank("Corporal", "enlisted", "cpl", "cpl", "<center><b>Corporal</b></center>", rankAreas.cplSleeve),
-  rank("Bombardier", "enlisted", "cpl", "cpl", "<center><b>Bombardier</b></center>", rankAreas.cplSleeve),
-  rank("Acting_Corporal", "enlisted", "cpl", "cpl", "<center><b>Acting Corporal</b></center>", rankAreas.cplSleeve),
-  rank("Acting_Bombardier", "enlisted", "cpl", "cpl", "<center><b>Acting Bombardier</b></center>", rankAreas.cplSleeve),
-  rank("Lance_Corporal", "enlisted", "lcpl", "lcpl", "<center><b>Lance Corporal</b></center>", rankAreas.lcplSleeve),
-  rank("Lance_Bombardier", "enlisted", "lcpl", "lcpl", "<center><b>Lance Bombardier</b></center>", rankAreas.lcplSleeve),
-  rank("Acting_Lance_Corporal", "enlisted", "lcpl", "lcpl", "<center><b>Acting Lance Corporal</b></center>", rankAreas.lcplSleeve),
-  rank("Acting_Lance_Bombardier", "enlisted", "lcpl", "lcpl", "<center><b>Acting Lance Bombardier</b></center>", rankAreas.lcplSleeve),
-  rank("Private", "enlisted", null, "pte", "<center><b>Private</b></center>", rankAreas.ptegnrSleeve),
-  rank("Gunner", "enlisted", null, "gnr", "<center><b>Gunner</b></center>", rankAreas.ptegnrSleeve),
+  // BA Officers
+  rank(
+    "Major",
+    "officer",
+    "maj",
+    "maj",
+    "<center><b>Major</b></center><br>Senior company-grade officer. Typically commands a company (Officer Commanding).",
+    rankAreas.officerCollar
+  ),
+  rank(
+    "Captain",
+    "officer",
+    "capt",
+    "capt",
+    "<center><b>Captain</b></center><br>Experienced officer.<br>Typically Company Second-in-Command or commander of a specialist troop/platoon.",
+    rankAreas.officerCollar
+  ),
+  rank(
+    "Lieutenant",
+    "officer",
+    "lt",
+    "lt",
+    "<center><b>Lieutenant</b></center><br>Platoon Commander.<br>Leads platoon operations,<br>planning and control, with the Platoon Sergeant as<br>principal NCO adviser.",
+    rankAreas.officerCollar
+  ),
+  rank(
+    "Second_Lieutenant",
+    "officer",
+    "2lt",
+    "2lt",
+    "<center><b>Second Lieutenant</b></center><br>Junior platoon commander.<br>Leads under mentorship, focusing on fundamentals of command in the field.",
+    rankAreas.officerCollar
+  ),
+  rank(
+    "Acting_Second_Lieutenant",
+    "officer",
+    "2lt",
+    "2lt",
+    "<center><b>Acting Second Lieutenant</b></center><br>Probationary rank undertaking platoon leadership duties pending confirmation of rank by passing the Platoon Commander's Battle Course.",
+    rankAreas.officerCollar
+  ),
 
-  rank("Squadron_Leader", "officer", "sqnldr", "sqnldr", "<center><b>Squadron Leader</b></center>", rankAreas.sqnldrSleeve, "RAF"),
-  rank("Flight_Lieutenant", "officer", "fltlt", "fltlt", "<center><b>Flight Lieutenant</b></center>", rankAreas.fltltSleeve, "RAF"),
-  rank("Flying_Officer", "officer", "fgoff", "fgoff", "<center><b>Flying Officer</b></center>", rankAreas.fgoffSleeve, "RAF"),
-  rank("Pilot_Officer", "officer", "pltoff", "pltoff", "<center><b>Pilot Officer</b></center>", rankAreas.pltoffSleeve, "RAF"),
-  rank("Flight_Sergeant_Aircrew", "enlisted", "fsacr", "fsacr", "<center><b>Flight Sergeant (Aircrew)</b></center>", rankAreas.ssgtSleeve, "RAF"),
-  rank("Sergeant_Aircrew", "enlisted", "sacr", "sacr", "<center><b>Sergeant (Aircrew)</b></center>", rankAreas.sgtSleeve, "RAF"),
+  // BA Warrant Officers & SNCOs
+  rank(
+    "Warrant_Officer_Class_2",
+    "enlisted",
+    "wo2",
+    "wo2",
+    "<center><b>Warrant Officer Class 2</b></center><br>Senior soldier typically at<br>company level. Discipline, standards, drill and soldiering expertise.",
+    rankAreas.wo2Sleeve
+  ),
+  rank(
+    "Colour_Sergeant",
+    "enlisted",
+    "csgt",
+    "csgt",
+    "<center><b>Colour Sergeant</b></center><br>Senior NCO.<br>Typically Platoon Sergeant or Company Quartermaster Sergeant. Training, logistics and oversight.",
+    rankAreas.csgtSleeve
+  ),
+  rank(
+    "Staff_Sergeant",
+    "enlisted",
+    "ssgt",
+    "ssgt",
+    "<center><b>Staff Sergeant</b></center><br>Senior NCO.<br>Platoon Sergeant, leader of specialist teams, or Company Quartermaster Sergeant. Responsible for training, supervision and administration.",
+    rankAreas.ssgtSleeve
+  ),
+  rank(
+    "Sergeant",
+    "enlisted",
+    "sgt",
+    "sgt",
+    "<center><b>Sergeant</b></center><br>Typically serves as Platoon Sergeant or leads specialist teams.<br>Delivers training, discipline and tactical control.",
+    rankAreas.sgtSleeve
+  ),
+  rank(
+    "Acting_Sergeant",
+    "enlisted",
+    "sgt",
+    "sgt",
+    "<center><b>Acting Sergeant</b></center><br>Probationary rank undertaking Platoon Sergeant duties pending confirmation of rank by passing the Platoon Sergeants Battle Course.",
+    rankAreas.sgtSleeve
+  ),
+
+  // BA JNCOs
+  rank(
+    "Corporal",
+    "enlisted",
+    "cpl",
+    "cpl",
+    "<center><b>Corporal</b></center><br>Typically the commander of a section (7-12 soldiers), or a smaller specialised team. Responsible for leading, training, and tactical control.",
+    rankAreas.cplSleeve
+  ),
+  rank(
+    "Bombardier",
+    "enlisted",
+    "cpl",
+    "cpl",
+    "<center><b>Bombardier</b></center><br>Commands a gun detachment, responsible for directing its crew, overseeing firing drills, and ensuring effective operation of the weapon system.",
+    rankAreas.cplSleeve
+  ),
+  rank(
+    "Acting_Corporal",
+    "enlisted",
+    "cpl",
+    "cpl",
+    "<center><b>Acting Corporal</b></center><br>Junior NCO undertaking Corporal duties on a probationary basis pending confirmation of rank by passing the Section Commanders Battle Course.",
+    rankAreas.cplSleeve
+  ),
+  rank(
+    "Acting_Bombardier",
+    "enlisted",
+    "cpl",
+    "cpl",
+    "<center><b>Acting Bombardier</b></center><br>Probationary Royal Artillery JNCO, undertaking gun detachment command duties pending confirmation of rank by passing the Section Commanders Battle Course.",
+    rankAreas.cplSleeve
+  ),
+  rank(
+    "Lance_Corporal",
+    "enlisted",
+    "lcpl",
+    "lcpl",
+    "<center><b>Lance Corporal</b></center><br>Fire team leader and junior commander. Assists the section commander with section control, routine tasks and mentoring of privates.",
+    rankAreas.lcplSleeve
+  ),
+  rank(
+    "Lance_Bombardier",
+    "enlisted",
+    "lcpl",
+    "lcpl",
+    "<center><b>Lance Bombardier</b></center><br>Royal Artillery Junior JNCO. Second in command of a gun detachment, leads small teams, and develops leadership skills under supervision.",
+    rankAreas.lcplSleeve
+  ),
+  rank(
+    "Acting_Lance_Corporal",
+    "enlisted",
+    "lcpl",
+    "lcpl",
+    "<center><b>Acting Lance Corporal</b></center><br>Probationary junior JNCO undertaking fire team leadership duties pending confirmation of<br>rank by passing the<br>Fire Team Commanders Course.",
+    rankAreas.lcplSleeve
+  ),
+  rank(
+    "Acting_Lance_Bombardier",
+    "enlisted",
+    "lcpl",
+    "lcpl",
+    "<center><b>Acting Lance Bombardier</b></center><br>Probationary Royal Artillery junior JNCO undertaking gun detachment 2IC duties pending confirmation of rank by passing the Fire Team Commanders Course.",
+    rankAreas.lcplSleeve
+  ),
+
+  // BA Privates
+  rank(
+    "Private",
+    "enlisted",
+    null,
+    "pte",
+    "<center><b>Private</b></center><br>Trained soldier and core of the platoon. Executes section-level tasks and drills.",
+    rankAreas.ptegnrSleeve
+  ),
+  rank(
+    "Gunner",
+    "enlisted",
+    null,
+    "gnr",
+    "<center><b>Gunner</b></center><br>Royal Artillery private soldier. Operates guns, fire support systems and associated equipment.",
+    rankAreas.ptegnrSleeve
+  ),
+  rank(
+    "Recruit",
+    "enlisted",
+    null,
+    "rec",
+    "<center><b>Recruit</b></center><br>New entrant undergoing basic training and induction. Not yet a fully trained soldier, progressing towards Private rank on completion of Phase 1 training.",
+    rankAreas.ptegnrSleeve
+  ),
+
+  // RAF Officers
+  rank(
+    "Squadron_Leader",
+    "officer",
+    "sqnldr",
+    "sqnldr",
+    "<center><b>Squadron Leader</b></center><br>Typically IC of Joint Helicopter Command attached to 16 Air Assault Brigade.<br>Senior pilot responsible for operational direction, standards, and overall leadership.",
+    rankAreas.sqnldrSleeve,
+    "RAF"
+  ),
+  rank(
+    "Flight_Lieutenant",
+    "officer",
+    "fltlt",
+    "fltlt",
+    "<center><b>Flight Lieutenant</b></center><br>Typically 2IC of Joint Helicopter Command attached to 16 Air Assault Brigade.<br>Senior pilot overseeing planning, tasking, and acting IC when required.",
+    rankAreas.fltltSleeve,
+    "RAF"
+  ),
+  rank(
+    "Flying_Officer",
+    "officer",
+    "fgoff",
+    "fgoff",
+    "<center><b>Flying Officer</b></center><br>Experienced Pilot qualified for mission and flight lead duties. Executes sorties and mentors pilots.",
+    rankAreas.fgoffSleeve,
+    "RAF"
+  ),
+  rank(
+    "Pilot_Officer",
+    "officer",
+    "pltoff",
+    "pltoff",
+    "<center><b>Pilot Officer</b></center><br>Executes tasked piloting sorties and aircrew duties within Joint Helicopter Command attached to 16 Air Assault Brigade.",
+    rankAreas.pltoffSleeve,
+    "RAF"
+  ),
+
+  // RAF Aircrew NCOs
+  rank(
+    "Flight_Sergeant_Aircrew",
+    "enlisted",
+    "fsacr",
+    "fsacr",
+    "<center><b>Flight Sergeant Aircrew</b></center><br>Senior Joint Helicopter Command<br>NCO aircrew. Leads crew discipline, standards and mission execution.",
+    rankAreas.ssgtSleeve,
+    "RAF"
+  ),
+  rank(
+    "Sergeant_Aircrew",
+    "enlisted",
+    "sacr",
+    "sacr",
+    "<center><b>Sergeant Aircrew</b></center><br>Joint Helicopter Command<br>NCO aircrew. Operates and manages onboard systems and crew tasks.",
+    rankAreas.sgtSleeve,
+    "RAF"
+  ),
 ]);
+
 
 export const officerRanks = deepFreeze(ranks.filter(r => r.category === "officer").map(r => r.name));
 export const enlistedRanks = deepFreeze(ranks.filter(r => r.category === "enlisted").map(r => r.name));
@@ -183,8 +393,8 @@ export const lanyardGroupsConfig = deepFreeze([
   lanyardCfg(
     "lightblue_and_maroon_lanyard.png",
     ["Coy_IC", "Coy_2IC", "Coy_Sergeant_Major"],
-    "lightblue_and_maroon_lanyard.png",
-    "<center><b>Lightblue & Maroon Lanyard</b></center><br>Description for Lightblue & Maroon Lanyard."
+    "hq_dzf.png",
+    "<center><b>Company HQ</b></center><br>The command element of<br>A Company, providing leadership, coordination, and oversight of all platoons and attachments<br>within 16AA."
   ),
   lanyardCfg(
     "red_lanyard.png",
@@ -209,6 +419,8 @@ export const lanyardGroupsConfig = deepFreeze([
     [
       "3_Platoon_IC", "3_Platoon_2IC", "3-1_Section_IC", "3-1_Section_2IC", "3-1_Section",
       "3-2_Section_IC", "3-2_Section_2IC", "3-2_Section",
+      "Force_Protection_IC", "Force_Protection_2IC", "Force_Protection",
+      "Reserves",
       "FSG_HQ_IC", "FSG_HQ_2IC", "Fire_Support_Group_IC", "Fire_Support_Group_2IC", "Fire_Support_Group",
       "4-1_Section_IC", "4-1_Section_2IC", "4-1_Section",
       "13AASR_IC", "13AASR_2IC", "13AASR",
@@ -263,21 +475,50 @@ export const marksmanshipQualificationsOrder = deepFreeze(["1st Class Marksman",
 export const pilotQualificationsOrder = deepFreeze(["Junior Pilot", "Senior Pilot"]);
 
 export const qualifications = deepFreeze([
+  // --- Senior Pilot
   qual(
     "Senior Pilot",
     "seniorpilot",
     [],
     "seniorpilot.jpg",
-    "<center><b>Senior Pilot</b></center><br>Awarded on the successful completion of the Advanced Flight Qualification. Trains the pilot in advanced flight on both fixed wing and rotary wing and can assume Pilot In Command duties.",
-    [{ x: 450, y: 182, width: 74, height: 41 }]
+    "<center><b>Senior Pilot</b></center><br>Awarded on successful completion of the Advanced Flight Qualification. Trains advanced fixed-wing and rotary-wing flight; qualifies the pilot to serve as<br>Pilot-in-Command.",
+    [{ x: 450, y: 182, width: 74, height: 41 }], // default/fallback
+    {},
+    {
+      ribbonRowTooltipAreas: {
+        0: [{ x: 450, y: 205, width: 74, height: 39 }],
+        1: [{ x: 450, y: 194, width: 74, height: 35 }],
+        2: [{ x: 448, y: 187, width: 72, height: 35 }],
+      },
+      imagePlacementByRows: {
+        0: { x: 444, y: 203 },
+        1: { x: 444, y: 190 },
+        2: { x: 442, y: 184 },
+      }
+    }
   ),
+
+  // --- Junior Pilot
   qual(
     "Junior Pilot",
     "juniorpilot",
     [],
     "juniorpilot.jpg",
-    "<center><b>Junior Pilot</b></center><br>Awarded on the successful completion of the Basic Flight Qualification. Trains the pilot in basic rotary and fixed wing flight skills.",
-    [{ x: 474, y: 182, width: 49, height: 41 }]
+    "<center><b>Junior Pilot</b></center><br>Awarded on successful completion of the Basic Flight Qualification. Trains core rotary and fixed-wing flight skills.",
+    [{ x: 474, y: 182, width: 49, height: 41 }], // default/fallback
+    {},
+    {
+      ribbonRowTooltipAreas: {
+        0: [{ x: 470, y: 200, width: 49, height: 38 }],
+        1: [{ x: 468, y: 194, width: 49, height: 35 }],
+        2: [{ x: 468, y: 186, width: 49, height: 35 }],
+      },
+      imagePlacementByRows: {
+        0: { x: 465, y: 197 },
+        1: { x: 464, y: 190 },
+        2: { x: 463, y: 182 },
+      }
+    }
   ),
   qual(
     "1st Class Marksman",
@@ -457,7 +698,7 @@ export const awards = deepFreeze([
     "<center><b>Technical Excellence</b></center><br>Awarded to members of REME who have made outstanding contributions for an extended period of time to the technical aspects of the unit. This award recognises those who have worked tirelessly behind the scenes on tasks such as server & forum maintenance and administration, troubleshooting technical issues, and ensuring overall smooth day-to-day operations."
   ),
   award(
-    "RRO Excellence",
+    "RRO Excellence Award",
     "rro_excellence.png",
     "rro_excellence.png",
     "<center><b>RRO Excellence Award</b></center><br>Awarded to troopers that have shown an excellent level of dedication and have worked tirelessly in RRO to raise the standard of the unit."

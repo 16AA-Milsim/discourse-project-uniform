@@ -7,10 +7,16 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 Debug Mode can be set to 'true' or 'false' via the first line of code in the assets/javascripts/discourse/lib/pu-utils.js file, this will override the Debug Mode setting for the plugin in the discourse admin panel. Debug Mode will add browser dev console output and show tooltip areas outlined with red rectangles.
 
 ## To-Do
+
+### Issues:
+- [ ] App/Mobile version, needs smaller sized uniform
+
+### Additions:
 - [ ] Verify dev console for deprecated stuff
-- [ ] RAF Enlisted uniforms + ranks + specific qualifications + awards
-- [ ] 7RHA graphics
+- [ ] RAF Enlisted (FSAcr + SAcr) uniforms + ranks + specific qualifications + awards
+- [ ] 7RHA + FST graphics (Qualifications)
 - [ ] Add Recruit graphics
+- [ ] Should we add more info than just 4 Platoon for the various 4 Platoon elements?
 - [ ] Add and organise implementation of remaining qualifications graphics
 - [ ] Community Support Arms ?
 - [ ] More...

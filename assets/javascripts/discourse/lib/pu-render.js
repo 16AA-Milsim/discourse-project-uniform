@@ -11,8 +11,9 @@ import { awards } from "discourse/plugins/discourse-project-uniform/discourse/un
 const AWARD_INDEX = Object.fromEntries(awards.map((a, i) => [a.name, i]));
 
 // Main function to build the uniform canvas with layers, awards, and tooltips
-export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundImageUrls, awardImageUrls, highestRank, qualificationsToRender, groups, groupTooltipMap) {
-    debugLog("[PU:render] mergeImagesOnCanvas", { backgroundImageUrl, fgCount: foregroundImageUrls.length, awardCount: awardImageUrls.length, highestRank: highestRank?.name });
+export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundItems, awardImageUrls, highestRank, qualificationsToRender, groups, groupTooltipMap) {
+    const fgUrls = (foregroundItems || []).map(it => (typeof it === "string" ? it : it?.url));
+    debugLog("[PU:render] mergeImagesOnCanvas", { backgroundImageUrl, fgCount: fgUrls.length, awardCount: awardImageUrls.length, highestRank: highestRank?.name });
 
     // Remove old canvas if it exists
     const old = container.querySelector(".discourse-project-uniform-canvas");
@@ -31,13 +32,13 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIma
     // Load all images (background, foreground, awards) in parallel
     Promise.all([
         loadImageCached(backgroundImageUrl || ""),
-        ...foregroundImageUrls.map(u => loadImageCached(u || "")),
+        ...fgUrls.map(u => loadImageCached(u || "")),
         ...awardImageUrls.map(u => loadImageCached(u || "")),
     ])
         .then(([bg, ...rest]) => {
             debugLog("[PU:render] Images loaded for render");
-            const fg = rest.slice(0, foregroundImageUrls.length);
-            const aw = rest.slice(foregroundImageUrls.length);
+       const fg = rest.slice(0, fgUrls.length);
+       const aw = rest.slice(fgUrls.length);
 
             // Add alt text to award images using award metadata
             aw.forEach(img => {
@@ -48,13 +49,13 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIma
             });
 
             // Draw all elements onto canvas
-            drawEverything(ctx, canvas, container, bg, fg, aw, highestRank, qualificationsToRender, groups, groupTooltipMap);
+            drawEverything(ctx, canvas, container, bg, fg, aw, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems);
         })
         .catch(e => debugLog("[PU:render] Error loading images:", e));
 }
 
 // Draws the entire uniform with all layers and tooltips
-function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap) {
+function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = []) {
     // Set canvas size to background image size
     canvas.width = bgImage?.naturalWidth || 1;
     canvas.height = bgImage?.naturalHeight || 1;
@@ -69,8 +70,8 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
         ctx.restore();
     }
 
-    // Draw all foreground layers
-    drawImages(ctx, fgImages.filter(Boolean), canvas);
+  // Draw all foreground layers (centered by default; absolute if {x,y} provided)
+  drawImages(ctx, fgImages.filter(Boolean), canvas, foregroundItems);
 
     // Register tooltips for groups
     let groupTipCount = 0;
@@ -169,11 +170,13 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
 }
 
 // Draws all foreground images centered on the canvas
-function drawImages(ctx, images, canvas) {
+function drawImages(ctx, images, canvas, items = []) {
     images.forEach((img, i) => {
         if (img?.naturalWidth && img?.naturalHeight) {
-            const x = (canvas.width - img.naturalWidth) / 2;
-            const y = (canvas.height - img.naturalHeight) / 2;
+       const it = items[i];
+       const hasPos = it && typeof it === "object" && Number.isFinite(it.x) && Number.isFinite(it.y);
+       const x = hasPos ? it.x : (canvas.width - img.naturalWidth) / 2;
+       const y = hasPos ? it.y : (canvas.height - img.naturalHeight) / 2;
             ctx.drawImage(img, x, y, img.naturalWidth, img.naturalHeight);
             debugLog(`[PU:render] Drew foreground image ${i} at (${x}, ${y}) size ${img.naturalWidth}x${img.naturalHeight}`);
         } else {

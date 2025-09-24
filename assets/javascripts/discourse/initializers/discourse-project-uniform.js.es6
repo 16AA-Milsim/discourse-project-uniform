@@ -42,7 +42,7 @@ export default {
                 }
 
                 // If admin-only mode is enabled, ensure current user is admin
-                if (siteSettings.discourse_project_uniform_admin_only) {
+                if (siteSettings.discourse_project_uniform_adminvisibility_only_enabled) {
                     const currentUser = api.getCurrentUser();
                     const allowed = !!(currentUser && currentUser.admin);
                     debugLog("[PU:init] Admin-only mode:", { currentUser: currentUser?.username, allowed });

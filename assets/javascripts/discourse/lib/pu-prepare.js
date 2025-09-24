@@ -6,11 +6,9 @@ import {
     lanyardToImageMap, groupToImageMap, qualifications,
     lanyardTooltipRegion, lanyardTooltipMap
 } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
-// Import render function
+
 import { mergeImagesOnCanvas } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
-// Import tooltip helpers
 import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
-// Import debug logging
 import { debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // Finds the highest-ranked name in `order` that is present in `have`
@@ -23,15 +21,26 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     debugLog("[PU:prepare] start");
     clearTooltips(); // reset tooltips before rendering
 
-    let bg = "";                   // background image URL
-    const fgUrls = [];             // list of foreground image URLs
-    const awardUrls = [];          // list of award ribbon image URLs
-    const qualsToRender = [];      // list of qualification objects to render
+    let bg = "";                        // background image URL (string)
+    const foregroundItems = [];         // ALWAYS push objects: { url: string|array, x?, y? }
+    const awardUrls = [];               // award ribbons (strings)
+    const qualsToRender = [];           // qualification objects we’ll still pass to renderer (for tooltips)
+
+    // Helper: always push as object so renderer sees `.url`
+    const pushFg = (urlOrArray, pos) => {
+        if (!urlOrArray) return;
+        if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+            foregroundItems.push({ url: urlOrArray, x: pos.x, y: pos.y });
+        } else {
+            foregroundItems.push({ url: urlOrArray });
+        }
+    };
 
     // Helpers for case-insensitive work
     const lc = (s) => String(s || "").toLowerCase();
     const groupNameSetLC = new Set(groups.map(g => lc(g.name)));
     const is16CSMR = ["16csmr", "16csmr_ic", "16csmr_2ic"].some(n => groupNameSetLC.has(n));
+
     // Badge name set (lowercased) the user has
     const badgeNameSetLC = new Set(
         userBadges.map(ub => lc(idToBadge.get(ub.badge_id)?.name)).filter(Boolean)
@@ -46,17 +55,13 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     // Decide background from service + category, else fall back
     if (highestRank) {
         if (highestRank.service === "RAF" && highestRank.category === "officer") {
-            bg = backgroundImages.rafOfficer;
-            debugLog("[PU:prepare] Background=RAF officer");
+            bg = backgroundImages.rafOfficer; debugLog("[PU:prepare] Background=RAF officer");
         } else if (highestRank.service === "RAF" && highestRank.category === "enlisted") {
-            bg = backgroundImages.rafEnlisted;
-            debugLog("[PU:prepare] Background=RAF enlisted");
+            bg = backgroundImages.rafEnlisted; debugLog("[PU:prepare] Background=RAF enlisted");
         } else if (highestRank.category === "officer") {
-            bg = backgroundImages.officer;
-            debugLog("[PU:prepare] Background=BA officer");
+            bg = backgroundImages.officer; debugLog("[PU:prepare] Background=BA officer");
         } else if (highestRank.category === "enlisted") {
-            bg = backgroundImages.enlisted;
-            debugLog("[PU:prepare] Background=BA enlisted");
+            bg = backgroundImages.enlisted; debugLog("[PU:prepare] Background=BA enlisted");
         }
     } else {
         // legacy fallback using group presence if no rank matched
@@ -71,10 +76,12 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         }
     }
 
-    debugLog("[PU:prepare] Highest rank:", highestRank?.name || null);
-    if (highestRank?.imageKey) fgUrls.push(highestRank.imageKey);
+    // Highest rank image (may be an array of candidate URLs) — push as object
+    if (highestRank?.imageKey) {
+        pushFg(highestRank.imageKey);
+    }
 
-    // Add group images (always) and lanyards (BA only) for each group (case-insensitive keys)
+    // Add group images and lanyards (BA only), using case-insensitive maps
     const toLcMap = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k.toLowerCase(), v]));
     const groupToImageMapLC = toLcMap(groupToImageMap);
     const lanyardToImageMapLC = toLcMap(lanyardToImageMap);
@@ -85,7 +92,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         // Group crest/badge image (always allowed)
         const gi = groupToImageMapLC[key];
         if (gi) {
-            fgUrls.push(gi);
+            pushFg(gi);
             debugLog("[PU:prepare] Add group image:", g.name, gi);
         }
 
@@ -93,7 +100,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         if (!isRAFUniform) {
             const li = lanyardToImageMapLC[key];
             if (li) {
-                fgUrls.push(li);
+                pushFg(li);
                 debugLog("[PU:prepare] Add lanyard image:", g.name, li);
             }
         } else {
@@ -105,10 +112,10 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const leadershipOrder = ["FTCC", "SCBC", "PSBC", "PCBC"];
     const leadershipOrderLC = leadershipOrder.map(lc);
     const highestLeadershipLC = highestIn(leadershipOrderLC, badgeNameSetLC);
+
     const marksmanshipOrder = ["1st Class Marksman", "Sharpshooter", "Sniper"];
     const marksmanshipOrderLC = marksmanshipOrder.map(lc);
     const highestMarksmanshipLC = highestIn(marksmanshipOrderLC, badgeNameSetLC);
-    debugLog("[PU:prepare] Highest leadership:", highestLeadershipLC, "Highest marksmanship:", highestMarksmanshipLC);
 
     // Pilot quals: prefer Senior over Junior if both present
     const pilotOrder = ["Junior Pilot", "Senior Pilot"];
@@ -132,10 +139,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const isMarks = marksmanshipOrderLC.includes(nameLC);
         const isPilot = pilotOrderLC.includes(nameLC);
 
-        // Skip lower leadership/marksmanship badges
-        if (isLeader && nameLC !== highestLeadershipLC) { debugLog("[PU:prepare] Skip (not highest leadership):", name); }
-        if (isMarks && nameLC !== highestMarksmanshipLC) { debugLog("[PU:prepare] Skip (not highest marks):", name); }
-        if ((isLeader && nameLC !== highestLeadershipLC) || (isMarks && nameLC !== highestMarksmanshipLC)) return;
+        // Skip lower leadership/marksmanship/pilot badges
         if ((isLeader && nameLC !== highestLeadershipLC) ||
             (isMarks && nameLC !== highestMarksmanshipLC) ||
             (isPilot && nameLC !== highestPilotLC)) {
@@ -143,27 +147,54 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             return;
         }
 
-        // Add qualification image if allowed (case-insensitive restrictions)
+        // Add qualification if allowed (check rank restrictions)
         const restrictedLC = new Set((q?.restrictedRanks || []).map(lc));
         if (q?.imageKey && !restrictedLC.has(lc(highestRank?.name))) {
-            if (nameLC === lc("CMT") && !is16CSMR) { debugLog("[PU:prepare] Skip CMT (not 16CSMR)"); }
-            else {
-                const service = highestRank?.service; // "BA" | "RAF"
-                const chosenQualImage = (q.serviceVariants && q.serviceVariants[service]) || q.imageKey;
-                fgUrls.push(chosenQualImage); debugLog("[PU:prepare] Add qualification image:", name, q.imageKey); qualsToRender.push(q);
+            if (nameLC === lc("CMT") && !is16CSMR) {
+                debugLog("[PU:prepare] Skip CMT (not 16CSMR)");
+            } else {
+                qualsToRender.push(q);
+                debugLog("[PU:prepare] Queue qualification:", name);
             }
         } else if (restrictedLC.has(lc(highestRank?.name))) {
             debugLog("[PU:prepare] Skip qualification (restricted by rank):", name, "for", highestRank?.name);
         }
 
-        // Add award ribbon image if present (case-insensitive match)
+        // Add award ribbon image if present (case-insensitive)
         const aw = awards.find(a => lc(a.name) === nameLC);
-        if (aw?.imageKey) { awardUrls.push(aw.imageKey); debugLog("[PU:prepare] Add award ribbon:", name, aw.imageKey); }
+        if (aw?.imageKey) {
+            awardUrls.push(aw.imageKey);
+            debugLog("[PU:prepare] Add award ribbon:", name, aw.imageKey);
+        }
     });
 
-    // Filter out invalid foregrounds
-    const validFg = fgUrls.filter(Boolean);
-    debugLog("[PU:prepare] Summary before render:", { bg: !!bg, fgCount: validFg.length, awards: awardUrls.length, quals: qualsToRender.map(q => q.name) });
+    // --- Select qualification images now that we know how many ribbon rows render ---
+    const totalAwards = awardUrls.length;
+    const ribbonRows = totalAwards === 0 ? 0 : totalAwards <= 4 ? 1 : 2;
+
+    // NEW: Build adjusted quals with row-specific tooltip boxes, without mutating originals
+    const adjustedQuals = qualsToRender.map((q) => {
+        const rrAreas =
+            q?.ribbonRowVariants?.ribbonRowTooltipAreas?.[ribbonRows];
+        return rrAreas ? { ...q, tooltipAreas: rrAreas } : q;
+    });
+
+    // Push qualification images into foregroundItems, using absolute coords for pilots only
+    const service = highestRank?.service; // "BA" | "RAF"
+    qualsToRender.forEach((q) => {
+        const chosenUrl = (q.serviceVariants && q.serviceVariants[service]) || q.imageKey;
+
+        // Pilot-only: absolute coords per ribbonRows, stored with the qual
+        const pilotPos = q?.ribbonRowVariants?.imagePlacementByRows?.[ribbonRows];
+        if (pilotPos) {
+            pushFg(chosenUrl, pilotPos);
+        } else {
+            // Other quals: centered by renderer
+            pushFg(chosenUrl);
+        }
+
+        debugLog("[PU:prepare] Add qualification image (post-awards):", q.name, pilotPos || "(centered)");
+    });
 
     // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
     if (bg) {
@@ -173,10 +204,10 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         mergeImagesOnCanvas(
             container,
             bg,
-            validFg,                 // can be []
+            foregroundItems,           // every item is an object with a `.url` (and maybe x,y)
             awardUrls.filter(Boolean),
             highestRank,
-            qualsToRender,
+            adjustedQuals,
             groups,
             toLcTooltipMap(groupTooltipMap)
         );
@@ -199,6 +230,12 @@ function registerLanyardTooltips(groups) {
         if (!data) return;
         const content = `<img src="${data.tooltipImage}"> ${data.tooltipText}`;
         debugLog("[PU:prepare] Register lanyard tooltip:", group.name, lanyardTooltipRegion);
-        registerTooltip(lanyardTooltipRegion.x, lanyardTooltipRegion.y, lanyardTooltipRegion.width, lanyardTooltipRegion.height, content);
+        registerTooltip(
+            lanyardTooltipRegion.x,
+            lanyardTooltipRegion.y,
+            lanyardTooltipRegion.width,
+            lanyardTooltipRegion.height,
+            content
+        );
     });
 }

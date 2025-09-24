@@ -4,7 +4,7 @@ plugins:
     default: true
     client: true
 
-  discourse_project_uniform_admin_only:
+  discourse_project_uniform_adminvisibility_only_enabled:
     type: bool
     default: false
     client: true

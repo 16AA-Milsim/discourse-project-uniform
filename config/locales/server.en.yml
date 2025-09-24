@@ -1,5 +1,5 @@
 en:
   site_settings:
-    discourse_project_uniform_enabled: "Enable Discourse Project Uniform"
-    discourse_project_uniform_admin_only: "Restrict Discourse Project Uniform output visibility to Admins Only"
-    discourse_project_uniform_debug_enabled: "Enable dev console debugging messages and red rectangle areas for tooltips"
+    discourse_project_uniform_enabled: "Enable the Discourse Project Uniform plugin"
+    discourse_project_uniform_adminvisibility_only_enabled: "Enable Admin only visibility"
+    discourse_project_uniform_debug_enabled: "Enable Debug Mode"
