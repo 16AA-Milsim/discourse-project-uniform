@@ -5,30 +5,44 @@ import getURL from "discourse-common/lib/get-url";
 const BASE = "/plugins/discourse-project-uniform/images";
 const EXT_CANDIDATES = ["png", "jpg", "jpeg"];
 
+// Reads the plugin version from plugin.rb
+function versionSuffix() {
+  try {
+    const site = window?.Discourse?.__container__?.lookup("site:main") || window?.__site__;
+    const v = site?.project_uniform_version;
+    return v ? `?v=${encodeURIComponent(v)}` : "";
+  } catch {
+    return "";
+  }
+}
+
 export const puPaths = {
-    uniform: (file) => getURL(`${BASE}/uniforms/${file}`),
-    rank: (fileOrKey) => {
-        const m = String(fileOrKey).match(/^(.*?)(?:\.(png|jpg|jpeg))?$/i);
-        const base = m ? m[1] : String(fileOrKey);
-        return EXT_CANDIDATES.map((ext) => getURL(`${BASE}/ranks/${base}.${ext}`));
-    },
-    ribbon: (file) => getURL(`${BASE}/ribbons/${file}`),
-    medal: (file) => getURL(`${BASE}/medals/${file}`),
-    lanyard: (file) => getURL(`${BASE}/lanyards/${file}`),
-    group: (file) => getURL(`${BASE}/groups/${file}`),
-    /**
-    * Qualification images often exist in different extensions across repos.
-    * Return an array of candidate URLs, trying png → jpg → jpeg.
-    * Accepts either "key.png" or "key" – both work.
-    */
-    qual: (fileOrKey) => {
-        const m = String(fileOrKey).match(/^(.*?)(?:\.(png|jpg|jpeg))?$/i);
-        const base = m ? m[1] : String(fileOrKey);
-        return EXT_CANDIDATES.map(ext => getURL(`${BASE}/qualifications/${base}.${ext}`));
-    },
-    tooltipRank: (file) => getURL(`${BASE}/tooltip_rankimages/${file}`),
-    tooltipQual: (file) => getURL(`${BASE}/tooltip_qualificationimages/${file}`),
-    tooltipLanyard: (file) => getURL(`${BASE}/tooltip_lanyardimages/${file}`),
+  uniform: (file) => getURL(`${BASE}/uniforms/${file}${versionSuffix()}`),
+
+  rank: (fileOrKey) => {
+    const m = String(fileOrKey).match(/^(.*?)(?:\.(png|jpg|jpeg))?$/i);
+    const base = m ? m[1] : String(fileOrKey);
+    return EXT_CANDIDATES.map(
+      (ext) => getURL(`${BASE}/ranks/${base}.${ext}${versionSuffix()}`)
+    );
+  },
+
+  ribbon:  (file) => getURL(`${BASE}/ribbons/${file}${versionSuffix()}`),
+  medal:   (file) => getURL(`${BASE}/medals/${file}${versionSuffix()}`),
+  lanyard: (file) => getURL(`${BASE}/lanyards/${file}${versionSuffix()}`),
+  group:   (file) => getURL(`${BASE}/groups/${file}${versionSuffix()}`),
+
+  qual: (fileOrKey) => {
+    const m = String(fileOrKey).match(/^(.*?)(?:\.(png|jpg|jpeg))?$/i);
+    const base = m ? m[1] : String(fileOrKey);
+    return EXT_CANDIDATES.map(
+      (ext) => getURL(`${BASE}/qualifications/${base}.${ext}${versionSuffix()}`)
+    );
+  },
+
+  tooltipRank:    (file) => getURL(`${BASE}/tooltip_rankimages/${file}${versionSuffix()}`),
+  tooltipQual:    (file) => getURL(`${BASE}/tooltip_qualificationimages/${file}${versionSuffix()}`),
+  tooltipLanyard: (file) => getURL(`${BASE}/tooltip_lanyardimages/${file}${versionSuffix()}`),
 };
 
 export const DEBUG_MODE = false; // if true here, admin setting is ignored and debug is always on

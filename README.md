@@ -9,9 +9,14 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 ## To-Do
 
 ### Issues:
+- [ ] When no uniform is rendered the plugin shows the Groups: and Badges: output in text format instead. POSSIBLY ONLY SHOWING WHEN IN DEBUG MODE, WHICH IS WORKING AS INTENDED.
 - [ ] App/Mobile version, needs smaller sized uniform
+- [ ] Senior Pilot (and Junior Pilot?) badges not being displayed on the uniform. Tooltip works though.
 
 ### Additions:
+- [ ] Tooltips for the parachute regiment collar badges.
+- [ ] Commanders Course badge.
+- [ ] External URL provider?
 - [ ] Verify dev console for deprecated stuff
 - [ ] RAF Enlisted (FSAcr + SAcr) uniforms + ranks + specific qualifications + awards
 - [ ] 7RHA + FST graphics (Qualifications)

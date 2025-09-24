@@ -422,6 +422,7 @@ export const lanyardGroupsConfig = deepFreeze([
       "Force_Protection_IC", "Force_Protection_2IC", "Force_Protection",
       "Reserves",
       "FSG_HQ_IC", "FSG_HQ_2IC", "Fire_Support_Group_IC", "Fire_Support_Group_2IC", "Fire_Support_Group",
+      "4_Platoon_IC", "4_Platoon_2IC", 
       "4-1_Section_IC", "4-1_Section_2IC", "4-1_Section",
       "13AASR_IC", "13AASR_2IC", "13AASR",
       "16CSMR_IC", "16CSMR_2IC", "16CSMR",
@@ -491,8 +492,8 @@ export const qualifications = deepFreeze([
         2: [{ x: 448, y: 187, width: 72, height: 35 }],
       },
       imagePlacementByRows: {
-        0: { x: 444, y: 203 },
-        1: { x: 444, y: 190 },
+        0: { x: 446, y: 200 },
+        1: { x: 446, y: 190 },
         2: { x: 442, y: 184 },
       }
     }
@@ -514,8 +515,8 @@ export const qualifications = deepFreeze([
         2: [{ x: 468, y: 186, width: 49, height: 35 }],
       },
       imagePlacementByRows: {
-        0: { x: 465, y: 197 },
-        1: { x: 464, y: 190 },
+        0: { x: 467, y: 198 },
+        1: { x: 465, y: 190 },
         2: { x: 463, y: 182 },
       }
     }
