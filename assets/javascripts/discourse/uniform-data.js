@@ -479,10 +479,10 @@ export const qualifications = deepFreeze([
   // --- Senior Pilot
   qual(
     "Senior Pilot",
-    "seniorpilot",
+    "seniorpilot2",
     [],
     "seniorpilot.jpg",
-    "<center><b>Senior Pilot</b></center><br>Awarded on successful completion of the Advanced Flight Qualification. Trains advanced fixed-wing and rotary-wing flight; qualifies the pilot to serve as<br>Pilot-in-Command.",
+    "<center><b>Senior Pilot</b></center><br>Awarded on successful completion of the Advanced Flight Qualification. Trains advanced fixed-wing and rotary-wing flight. Qualifies the pilot to serve as<br>Pilot-in-Command.",
     [{ x: 450, y: 182, width: 74, height: 41 }], // default/fallback
     {},
     {
@@ -502,7 +502,7 @@ export const qualifications = deepFreeze([
   // --- Junior Pilot
   qual(
     "Junior Pilot",
-    "juniorpilot",
+    "juniorpilot2",
     [],
     "juniorpilot.jpg",
     "<center><b>Junior Pilot</b></center><br>Awarded on successful completion of the Basic Flight Qualification. Trains core rotary and fixed-wing flight skills.",
