@@ -1,3 +1,17 @@
+.uniform-frame {
+  width: min(92vw, var(--uniform-max-w, 695px));
+  margin: 0 auto;
+}
+
+/* Make the canvas scale with its container */
+.uniform-frame canvas,
+.pu-uniform-canvas {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+  max-width: var(--uniform-max-w, 695px);
+}
+
 .canvas-tooltip {
   position: absolute;
   background: rgba(0, 0, 0, 0.85);

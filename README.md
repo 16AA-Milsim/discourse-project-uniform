@@ -9,9 +9,7 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 ## To-Do
 
 ### Issues:
-- [ ] When no uniform is rendered the plugin shows the Groups: and Badges: output in text format instead. POSSIBLY ONLY SHOWING WHEN IN DEBUG MODE, WHICH IS WORKING AS INTENDED.
-- [ ] App/Mobile version, needs smaller sized uniform
-- [ ] Senior Pilot (and Junior Pilot?) badges not being displayed on the uniform. Tooltip works though.
+- [ ] Extra line break/gap between the bottom of the uniform canvas and the "STATS" text.
 
 ### Additions:
 - [ ] Tooltips for the parachute regiment collar badges.

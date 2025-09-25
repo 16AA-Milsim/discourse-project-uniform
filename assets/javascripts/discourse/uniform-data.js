@@ -487,7 +487,7 @@ export const qualifications = deepFreeze([
     {},
     {
       ribbonRowTooltipAreas: {
-        0: [{ x: 450, y: 205, width: 74, height: 39 }],
+        0: [{ x: 450, y: 205, width: 74, height: 35 }],
         1: [{ x: 450, y: 194, width: 74, height: 35 }],
         2: [{ x: 448, y: 187, width: 72, height: 35 }],
       },
