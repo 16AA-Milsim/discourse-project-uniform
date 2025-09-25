@@ -10,6 +10,7 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 ### Issues:
 - [ ] Extra line break/gap between the bottom of the uniform canvas and the "STATS" text.
+- 
 
 ### Additions:
 - [ ] Tooltips for the parachute regiment collar badges.
@@ -26,81 +27,30 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 ## Features & Components Overview
 
-### 1) What the plugin delivers
+### 1) Features
 
-* **Uniform visual on user profile → Summary tab**
-  Automatically renders a British-Army/RAF style uniform image (based on users rank) on a member’s Discourse user **Summary** page. The uniform shows rank insignia, unit/group crests, lanyards, qualifications badges, and up to **8** medal ribbons (two rows of four).
-
-* **Highest-rank, highest-qualification logic**
-  Detects stacked qualifications (leadership, marksmanship, pilot), it shows **only the top** one per track (e.g., Senior Pilot over Junior Pilot; Sniper over Sharpshooter/1st Class). Special rule: certain marksmanship quals are **suppressed for 16CSMR** members.
-
-* **Medal ribbons with priority & cap**
-  Ribbons are prioritized by a defined order and **capped at 8** (two rows of four). Their tooltips use the corresponding full-medal art and description.
-
-* **Rich tooltips (hoverable hot-zones)**
-  Hovering rank patches, qualifications, lanyards, group crests, and ribbons shows image-backed tooltips (with small preview image + text). Tooltips fade in/out and don’t interfere with clicks.
+* **Uniform on users Summary tab**
+  Automatically renders a British-Army/RAF style uniform on a member’s Discourse user Summary page. The uniform shows rank insignia, unit/group crests, lanyards, qualifications badges, and up to 8 medal ribbons (two rows of four).
 
 * **Per-group visuals & lanyards (including Platoon/FSG/Signals/CSMR)**
   Group membership adds crests and appropriate **lanyard** images; each lanyard has a defined tooltip region on the canvas.
 
 * **Per-service variants for some quals**
-  Example: **Paratrooper** badge swaps to a RAF variant when the user’s highest rank is RAF.
+  Examples: **Paratrooper** badge swaps to a RAF variant when the user’s highest rank is RAF. **1st Class Marksman** does not display for 16CSMR members, flight ranks, or BA ranks of WO2 or above.
 
-* **Clean, shadowed compositing and subtle ribbon transform**
-  Images are layered with drop shadows; ribbons are scaled and rotated/skewed slightly for a more realistic pin-on effect.
+* **Rich tooltips (hoverable hot-zones)**
+  Hovering over rank patches, qualifications, lanyards, group crests, and ribbons shows image-backed tooltips (with image + text).
 
 * **Fast page loads via image caching**
   Foreground and ribbon images are loaded with an in-memory cache to avoid re-downloads.
 
-### 2) How/when it runs
+### 2) Discourse Admin Options
 
-* **Runs only on user Summary pages** and avoids duplicate renders; supports an **admin-only** mode (plugin output onl visible to admins) via site setting.
+* **Admin-only toggle** via site setting that blocks non-admins from seeing the plugin feature when enabled.
 
-* **Pulls data from core Discourse endpoints**
-  Fetches `/u/:username.json` (groups) and `/user-badges/:username.json` (badges) to decide what to render.
+* **Debug toggle** via site setting that adds extensive debugging console messages and red hitbox area indicators for tooltips.
 
-* **Discourse Plugin API requirement**
-  Uses `withPluginApi("0.8.26")` to hook into page changes safely.
-
-### 3) Tracking “content catalogs” (what can appear on the uniform)
-
-* **Backgrounds** (BA/RAF, officer/enlisted) — defined in one place.
-* **Ranks** (BA & RAF, officer & enlisted) — each with canvas hit-areas for rank tooltips.
-* **Groups → images & group tooltips** (e.g., 16CSMR variants with RAMC badge tooltip).
-* **Lanyards** — grouped by unit roles (Platoons, FSG, Signals, CSMR etc.) with tooltip imagery & text, and a global **lanyard tooltip region** on the canvas.
-* **Qualifications** — full catalog with per-rank restrictions and optional **serviceVariants** for RAF swaps; includes leadership, marksmanship, pilot, medical, and courses (FTCC/SCBC/PSBC/PCBC, etc.).
-* **Awards** (ribbons ↔ medals) — one authoritative list mapping a ribbon image to a medal image + prose tooltip.
-
-### 4) UX & accessibility details
-
-* **Tooltip styling & behavior**
-  Dark, rounded, small-shadow tooltip; hidden by default, fades in/out; supports text or image-plus-text; `role="tooltip"` set when mounted.
-
-* **Canvas hit-testing**
-  The code maintains a registry of rectangular “hot zones” and activates the correct tooltip as the cursor moves, with optional debug overlay boxes.
-
-### 5) Rendering & layout rules
-
-* **Single source of truth for layout**
-  A “prepare” step assembles background + foregrounds (rank, groups, lanyards, quals) and ribbons; a “render” step composites them and registers matching tooltips.
-
-* **Ribbon layout policy**
-  Priority sort, **max 8 ribbons**, arranged in **two rows of four**; tooltips mapped after scale/rotate/skew transforms so hover aligns precisely.
-
-* **Qualification gating**
-  Only the top item per track is shown (leadership, marksmanship, pilot). Some quals are **rank-restricted** (e.g., Sniper/Sharpshooter/1st Class disallowed for specific high ranks; the code checks restrictions before drawing).
-
-* **Service-aware badge art**
-  If a qual defines `serviceVariants`, the renderer swaps images for RAF users (e.g., Paratrooper RAF).
-
-### 6) Admin/ops & safety
-
-* **Admin-only toggle** via site setting (`project_uniform_admin_only`) — blocks non-admins from seeing the feature when enabled.
-
-* **Defensive checks & duplicate-render guard**
-  Skips if not on a Summary page, if the container is missing, or if a placeholder already exists.
-
-### 7) Code structure
+### 3) Code structure
 
 * **Initializer (entry point):** page-change hook, data fetch, debug overlay, calls the pipeline. `assets/javascripts/discourse/initializers/discourse-project-uniform.js.es6`
 * **Data catalog:** backgrounds, ranks, groups, lanyards, quals, awards (+ tooltip metadata & hit-areas). `assets/javascripts/discourse/uniform-data.js`
@@ -110,7 +60,7 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 * **Styles:** `.canvas-tooltip` CSS. `assets/stylesheets/canvas-tooltip.scss`
 * **Assets:** images for uniforms, ranks, groups, lanyards, quals (incl. tooltip variants), ribbons, and medals (folder tree in the code summary).
 
-## Implementation Inventory
+## Component Inventory
 
 ### A) Uniform backgrounds (base canvases)
 
@@ -118,8 +68,6 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 * **British Army – Enlisted**
 * **RAF – Officer** 
 * **RAF – Enlisted**
-
----
 
 ### B) Rank catalog (with tooltip hit-areas)
 
@@ -139,8 +87,6 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 * Flight\_Sergeant\_Aircrew, Sergeant\_Aircrew (sleeve regions)
 
----
-
 ### C) Groups & crests + lanyards
 
 ### Group images
@@ -152,39 +98,35 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 
 * **Lightblue & Maroon** (Coy HQ)
 * **Red** (1 Platoon)
-* **Green** (2 Platoon)
+* **Green** (2 Platoon - not in use as of this writing)
 * **Black** (3 Pl; FSG & FSG HQ; 4-1; 13AASR; 16CSMR; 216 Para Signals)
 * **Red & Blue** (7RHA)
 * **Green & Lightgrey** (MI)
-
----
 
 ### D) Qualifications (with gating rules)
 
 **Pilot track (only highest shown):**
 
-* **Senior Pilot** (Advanced Flight)
-* **Junior Pilot** (Basic Flight)
+* **Senior Pilot**
+* **Junior Pilot**
 
-**Marksmanship track (only highest shown, and suppressed for 16CSMR):**
+**Marksmanship track (only highest shown):**
 
-* **1st Class Marksman** (110/120+) — **restricted** from WO ranks & officers.
-* **Sharpshooter** — **restricted** from WO ranks & officers.
-* **Sniper** — **restricted** from WO ranks & officers.
+* **Sniper**
+* **Sharpshooter**
+* **1st Class Marksman**
 
 **Leadership track (only highest shown):**
 
-* **FTCC** (Fire Team Commanders Course)
-* **SCBC** (Section Commanders Battle Course)
-* **PSBC** (Platoon Sergeants Battle Course)
 * **PCBC** (Platoon Commanders Battle Course)
+* **PSBC** (Platoon Sergeants Battle Course)
+* **SCBC** (Section Commanders Battle Course)
+* **FTCC** (Fire Team Commanders Course)
 
 **Other notable quals:**
 
-* **CMT** (Combat Medical Technician) — only rendered for specific contexts (skipped if not 16CSMR per logic).
-* **Paratrooper** — **RAF-specific art** swap via `serviceVariants` when the highest rank is RAF.
-
----
+* **CMT** (Combat Medical Technician) — only rendered for 16CSMR even if user in other group has the qualification.
+* **Paratrooper** with **RAF-specific art variant**. Swaps if flight rank.
 
 ### E) Ribbons & Awards (with layout, priority, & tooltips)
 

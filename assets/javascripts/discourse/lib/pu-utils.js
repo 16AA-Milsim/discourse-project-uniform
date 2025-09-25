@@ -1,5 +1,30 @@
 // pu-utils.js
 
+export const DEBUG_MODE = false; // if true here, admin setting is ignored and debug is always on
+
+// --- Runtime override from admin setting (mutable, set at boot by initializer) ---
+let ADMIN_DEBUG_FLAG = false;
+
+// Called from initializer with the site setting value
+export function setAdminDebugFlag(value) {
+    ADMIN_DEBUG_FLAG = !!value;
+}
+
+// Effective debug state: code flag OR admin flag
+export function isDebugEnabled() {
+    return !!DEBUG_MODE || ADMIN_DEBUG_FLAG;
+}
+
+/**
+ * Logs debug messages to the browser console if effective debug is enabled.
+ */
+export function debugLog(...args) {
+    if (!isDebugEnabled()) return;
+    const ts = new Date().toISOString();
+    // Use console.debug so it only shows when “Verbose” is enabled in devtools
+    console.debug(`[ProjectUniform ${ts}]`, ...args);
+}
+
 import getURL from "discourse-common/lib/get-url";
 
 const BASE = "/plugins/discourse-project-uniform/images";
@@ -44,31 +69,6 @@ export const puPaths = {
   tooltipQual:    (file) => getURL(`${BASE}/tooltip_qualificationimages/${file}${versionSuffix()}`),
   tooltipLanyard: (file) => getURL(`${BASE}/tooltip_lanyardimages/${file}${versionSuffix()}`),
 };
-
-export const DEBUG_MODE = false; // if true here, admin setting is ignored and debug is always on
-
-// --- Runtime override from admin setting (mutable, set at boot by initializer) ---
-let ADMIN_DEBUG_FLAG = false;
-
-// Called from initializer with the site setting value
-export function setAdminDebugFlag(value) {
-    ADMIN_DEBUG_FLAG = !!value;
-}
-
-// Effective debug state: code flag OR admin flag
-export function isDebugEnabled() {
-    return !!DEBUG_MODE || ADMIN_DEBUG_FLAG;
-}
-
-/**
- * Logs debug messages to the browser console if effective debug is enabled.
- */
-export function debugLog(...args) {
-    if (!isDebugEnabled()) return;
-    const ts = new Date().toISOString();
-    // Use console.debug so it only shows when “Verbose” is enabled in devtools
-    console.debug(`[ProjectUniform ${ts}]`, ...args);
-}
 
 // Simple in-memory cache for loaded images, keyed by URL
 const imageCache = new Map();
