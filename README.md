@@ -9,8 +9,6 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 ## To-Do
 
 ### Issues:
-- [ ] Extra line break/gap between the bottom of the uniform canvas and the "STATS" text.
-- 
 
 ### Additions:
 - [ ] Tooltips for the parachute regiment collar badges.
