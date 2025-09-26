@@ -29,7 +29,7 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 ### 1) Features
 
 * **Uniform on users Summary tab**
-  Automatically renders a British-Army/RAF style uniform on a member’s Discourse user Summary page. The uniform shows rank insignia, unit/group crests, lanyards, qualifications badges, and up to 8 medal ribbons (two rows of four).
+  Automatically renders a British-Army/RAF style uniform on a member’s Discourse user Summary page. The uniform shows rank insignia, unit/group crests, lanyards, qualifications badges, and up to 12 medal ribbons (three rows of four) with perspective-aware spacing.
 
 * **Per-group visuals & lanyards (including Platoon/FSG/Signals/CSMR)**
   Group membership adds crests and appropriate **lanyard** images; each lanyard has a defined tooltip region on the canvas.

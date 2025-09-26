@@ -20,7 +20,7 @@ const RIBBON_SKEW_STRENGTH = -0.08;          // horizontal skew (negative lifts 
 const RIBBON_SLICE_COUNT = 48;               // controls smoothness of taper/curve sampling
 const RIBBON_OFFSET_X = 3;                   // fine-tune final placement horizontally
 const RIBBON_OFFSET_Y = 5;                   // fine-tune final placement vertically
-const SINGLE_THIRD_ROW_OFFSET_X = 2;         // nudge lone top-row ribbon to align with perspective
+const SINGLE_THIRD_ROW_OFFSET_X = 2;         // nudge lone third-row ribbon to align with perspective
 
 /**
  * Builds the Project Uniform canvas inside `container`, loading every layer in parallel

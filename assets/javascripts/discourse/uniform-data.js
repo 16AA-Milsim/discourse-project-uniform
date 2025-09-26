@@ -60,7 +60,7 @@ const qual = (name, key, restrictedRanks, tipImg, tipText, areas, serviceVariant
   tooltipText: tipText,
   tooltipAreas: areas,
   serviceVariants,       // e.g. { RAF: puPaths.qual("paratrooper_raf.png") }
-  ribbonRowVariants,     // e.g. { 0: puPaths.qual("juniorpilot_pos0.png"), 1: ..., 2: ... }
+  ribbonRowVariants,     // e.g. { 0: puPaths.qual("juniorpilot_pos0.png"), 1: ..., 2: ..., 3: ... }
 });
 
 const award = (name, ribbonFile, medalFile, tipText) => ({
