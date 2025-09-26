@@ -59,6 +59,18 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         }
     };
 
+    const removeExistingCanvas = () => {
+        if (!container?.querySelector) {
+            return;
+        }
+        const existing = container.querySelector(".discourse-project-uniform-canvas");
+        if (existing) {
+            existing._teardownTooltips?.();
+            existing.remove();
+            debugLog("[PU:prepare] Removed existing canvas (cleanup)");
+        }
+    };
+
     // Helpers for case-insensitive work
     const groupNameSetLC = new Set(groups.map(g => toLC(g.name)));
     const is16CSMR = ["16csmr", "16csmr_ic", "16csmr_2ic"].some(n => groupNameSetLC.has(n));
@@ -72,6 +84,11 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     // Find highest rank first (case-insensitive)
     const highestRank = ranks.find(r => groupNameSetLC.has(toLC(r.name)));
     debugLog("[PU:prepare] Highest rank:", highestRank?.name || null);
+    if (highestRank && toLC(highestRank.name) === "recruit") {
+        debugLog("[PU:prepare] Recruit rank detected – skipping uniform render");
+        removeExistingCanvas();
+        return;
+    }
     const isRAFUniform = highestRank?.service === "RAF";
 
     // Decide background from service + category, else fall back
