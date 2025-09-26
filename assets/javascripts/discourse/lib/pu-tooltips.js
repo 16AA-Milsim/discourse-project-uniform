@@ -151,16 +151,10 @@ export function setupTooltips(canvas) {
         const maxLeft = offX + canvasRect.width - tipW;
         left = Math.max(minLeft, Math.min(maxLeft, left));
 
-        // If it would overflow bottom, try flipping above if there's room
-        const canvasBottom = offY + canvasRect.height;
-        if (top + tipH > canvasBottom && (hitDY - gap - tipH) >= 0) {
-            top = offY + hitDY - gap - tipH;
-        }
-
-        // Final vertical clamp to canvas
+        // Final vertical clamp: prevent escaping the top of the canvas while
+        // intentionally allowing bottom spillover.
         const minTop = offY;
-        const maxTop = offY + canvasRect.height - tipH;
-        top = Math.max(minTop, Math.min(maxTop, top));
+        top = Math.max(minTop, top);
 
         // Apply coordinates and reveal the tooltip
         tip.style.left = `${left}px`;

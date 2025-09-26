@@ -354,11 +354,23 @@ export const groupToImageMap = deepFreeze(
   )
 );
 
+export const groupToImageMapLC = deepFreeze(
+  Object.fromEntries(
+    Object.entries(groupToImageMap).map(([key, value]) => [key.toLowerCase(), value])
+  )
+);
+
 const assignTooltips = (keys, tooltip) => keys.map((key) => [key, tooltip]);
 
 export const groupTooltipMap = deepFreeze(
   Object.fromEntries(
     groupConfigs.flatMap(({ keys, tooltip }) => assignTooltips(keys, tooltip))
+  )
+);
+
+export const groupTooltipMapLC = deepFreeze(
+  Object.fromEntries(
+    Object.entries(groupTooltipMap).map(([key, value]) => [key.toLowerCase(), value])
   )
 );
 
@@ -445,12 +457,22 @@ export const lanyardTooltipMap = deepFreeze(
   )
 );
 
+export const lanyardTooltipMapLC = deepFreeze(
+  Object.fromEntries(
+    Object.entries(lanyardTooltipMap).map(([key, value]) => [key.toLowerCase(), value])
+  )
+);
+
 export const lanyardGroups = deepFreeze(
   lanyardGroupsConfig.flatMap((cfg) => cfg.groups.map((name) => ({ name, imageKey: cfg.imageKey })))
 );
 
 export const lanyardToImageMap = deepFreeze(
   Object.fromEntries(lanyardGroups.map((g) => [g.name, g.imageKey]))
+);
+
+export const lanyardToImageMapLC = deepFreeze(
+  Object.fromEntries(lanyardGroups.map((g) => [g.name.toLowerCase(), g.imageKey]))
 );
 
 // ---------- qualifications ----------
@@ -581,6 +603,10 @@ export const qualifications = deepFreeze([
 
 export const qualificationToImageMap = deepFreeze(
   Object.fromEntries(qualifications.map((q) => [q.name, q.imageKey]))
+);
+
+export const qualificationsByNameLC = deepFreeze(
+  Object.fromEntries(qualifications.map((q) => [q.name.toLowerCase(), q]))
 );
 
 // ---------- awards ----------
@@ -736,3 +762,7 @@ export const awards = deepFreeze([
     "<center><b>Citation</b></center><br>Awarded for conspicuous attention to duty on and off the battlefield. Issued at the discretion of the OC."
   ),
 ]);
+
+export const awardsByNameLC = deepFreeze(
+  Object.fromEntries(awards.map((award) => [award.name.toLowerCase(), award]))
+);

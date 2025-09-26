@@ -7,7 +7,7 @@ import { debugLog, setAdminDebugFlag, isDebugEnabled } from "discourse/plugins/d
 // Import preparation/rendering pipeline
 import { prepareAndRenderImages } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-prepare";
 // Import award and tooltip data
-import { awards, groupTooltipMap } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
+import { awards, groupTooltipMapLC } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
 export default {
     name: "discourse-project-uniform",
@@ -134,7 +134,7 @@ export default {
 
                         // Call render pipeline
                         debugLog("[PU:init] Calling prepareAndRenderImages...");
-                        prepareAndRenderImages(groups, userBadges, idToBadge, containerElement, awards, groupTooltipMap);
+                        prepareAndRenderImages(groups, userBadges, idToBadge, containerElement, awards, groupTooltipMapLC);
                         debugLog("[PU:init] prepareAndRenderImages done");
                     })
                     .catch(e => debugLog("[PU:init] Error fetching user data:", e));

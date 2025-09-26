@@ -78,9 +78,19 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
 
     // Register tooltips for groups
     let groupTipCount = 0;
-    const groupTooltipMapLC = new Map(Object.entries(groupTooltipMap || {}).map(([k, v]) => [k.toLowerCase(), v]));
+    const resolveGroupTooltip = (name) => {
+        if (!groupTooltipMap) {
+            return null;
+        }
+        const key = String(name || "");
+        const keyLC = key.toLowerCase();
+        if (typeof groupTooltipMap.get === "function") {
+            return groupTooltipMap.get(keyLC) || groupTooltipMap.get(key) || null;
+        }
+        return groupTooltipMap[keyLC] || groupTooltipMap[key] || null;
+    };
     groups.forEach(g => {
-        const data = groupTooltipMapLC.get(String(g.name || "").toLowerCase());
+        const data = resolveGroupTooltip(g.name);
         if (data?.tooltipAreas) {
             data.tooltipAreas.forEach(a => {
                 registerTooltip(a.x, a.y, a.width, a.height, `<img src="${data.tooltipImage}"> ${data.tooltipText}`);

@@ -37,15 +37,55 @@ import getURL from "discourse-common/lib/get-url";
 const BASE = "/plugins/discourse-project-uniform/images";
 const EXT_CANDIDATES = ["png", "jpg", "jpeg"];
 
-// Reads the plugin version from plugin.rb
-function versionSuffix() {
+// Simple in-memory cache for loaded images, keyed by URL
+const imageCache = new Map();
+
+let cachedVersionSuffix = "";
+let lastVersionKey = null;
+
+function lookupSiteModel() {
   try {
-    const site = window?.Discourse?.__container__?.lookup("site:main") || window?.__site__;
-    const v = site?.project_uniform_version;
-    return v ? `?v=${encodeURIComponent(v)}` : "";
+    return window?.Discourse?.__container__?.lookup?.("site:main") || window?.__site__;
   } catch {
+    return null;
+  }
+}
+
+function resolveVersionKey() {
+  const site = lookupSiteModel();
+  if (site?.project_uniform_cache_key) {
+    return site.project_uniform_cache_key;
+  }
+  if (site?.project_uniform_version) {
+    return `plugin-${site.project_uniform_version}`;
+  }
+
+  const globalFallback =
+    window?.assetVersion ||
+    window?.__APP_VERSION__ ||
+    window?.__DISCOURSE_APP_VERSION__ ||
+    window?.Discourse?.__container__?.lookup?.("app-events:main")?.appVersion;
+
+  return globalFallback ? `site-${globalFallback}` : null;
+}
+
+// Reads the project-uniform cache key exposed by the Site serializer.
+function versionSuffix() {
+  const versionKey = resolveVersionKey();
+  if (!versionKey) {
+    cachedVersionSuffix = "";
+    lastVersionKey = null;
     return "";
   }
+
+  if (versionKey !== lastVersionKey) {
+    lastVersionKey = versionKey;
+    cachedVersionSuffix = `?v=${encodeURIComponent(versionKey)}`;
+    imageCache.clear();
+    debugLog("[versionSuffix] Cache key changed, cleared image cache", versionKey);
+  }
+
+  return cachedVersionSuffix;
 }
 
 // Helper to generate canonical asset URLs for each asset category
@@ -77,9 +117,6 @@ export const puPaths = {
   tooltipQual:    (file) => getURL(`${BASE}/tooltip_qualificationimages/${file}${versionSuffix()}`),
   tooltipLanyard: (file) => getURL(`${BASE}/tooltip_lanyardimages/${file}${versionSuffix()}`),
 };
-
-// Simple in-memory cache for loaded images, keyed by URL
-const imageCache = new Map();
 
 /**
  * Loads an image from a URL or a list of candidate URLs (tries each until one succeeds)
