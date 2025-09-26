@@ -1,7 +1,7 @@
 # name: discourse-project-uniform
 # about: Discourse Project Uniform
-# version: 0.8.1
-# authors: ChatGPT & Darojax
+# version: 0.8.2
+# authors: OpenAI & Darojax
 # url: https://github.com/16AA-Milsim/discourse-project-uniform
 
 require "digest"
