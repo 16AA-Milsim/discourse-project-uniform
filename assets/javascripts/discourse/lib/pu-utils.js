@@ -157,13 +157,3 @@ export function normalizePath(url) {
         return url;
     }
 }
-
-// Applies a transformation to a 2D point based on translation, rotation, skew, and offset.
-export function transformPoint(x, y, tx, ty, angle, tanSkewY, offsetX, offsetY) {
-    const c = Math.cos(angle), s = Math.sin(angle);
-    const x0 = x - offsetX, y0 = y - offsetY; // shift point by offset
-    return {
-        x: tx + c * x0 + (tanSkewY * c - s) * y0,
-        y: ty + s * x0 + (tanSkewY * s + c) * y0
-    };
-}

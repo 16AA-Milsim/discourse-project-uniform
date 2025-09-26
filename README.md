@@ -11,6 +11,7 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 ### Issues:
 
 ### Additions:
+- [ ] Readjust the collar badges for 16CSMR and 7RHA persective, based on the current parachute reg collar badges.
 - [ ] Tooltips for the parachute regiment collar badges.
 - [ ] Commanders Course badge.
 - [ ] External URL provider?

@@ -2,12 +2,25 @@
  * Canvas composition helpers for Project Uniform. Loads background and overlay imagery,
  * draws them onto a shared canvas, and wires up tooltip regions for interactive layers.
  */
-import { loadImageCached, normalizePath, transformPoint, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { loadImageCached, normalizePath, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 import { setupTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
 import { awards } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
 // Index award names to preserve metadata ordering inside the awards layout
 const AWARD_INDEX = Object.fromEntries(awards.map((a, i) => [a.name, i]));
+
+// Visual tweaks for medal ribbons
+const RIBBON_HEIGHT_SCALE = 1.1; // stretch vertically without changing width
+const RIBBON_ROW_GAP = 3;        // intrinsic px gap between stacked rows
+const TOP_ROW_EXTRA_HEIGHT = 1;  // lift the top row upward without touching spacing below
+const RIBBON_ROTATION = -1 * Math.PI / 180;  // subtle overall CCW tilt layered on skew
+const RIBBON_TAPER = 0;                      // taper disabled (minimal distance change)
+const RIBBON_CURVE_DEPTH = 4;                // downward bulge in px (scaled space)
+const RIBBON_SKEW_STRENGTH = -0.08;          // horizontal skew (negative lifts right side upward)
+const RIBBON_SLICE_COUNT = 48;               // controls smoothness of taper/curve sampling
+const RIBBON_OFFSET_X = 3;                   // fine-tune final placement horizontally
+const RIBBON_OFFSET_Y = 5;                   // fine-tune final placement vertically
+const SINGLE_THIRD_ROW_OFFSET_X = 2;         // nudge lone top-row ribbon to align with perspective
 
 /**
  * Builds the Project Uniform canvas inside `container`, loading every layer in parallel
@@ -130,7 +143,14 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
         const awardsCanvas = document.createElement("canvas");
         awardsCanvas.width = canvas.width; awardsCanvas.height = canvas.height;
         const aCtx = awardsCanvas.getContext("2d");
-        const tooltipRects = drawAwards(aCtx, awardImages.filter(Boolean), awardsCanvas, AWARD_INDEX);
+        const hasSeniorPilot = qualificationsToRender.some(q => q?.name === "Senior Pilot");
+        const tooltipRects = drawAwards(
+            aCtx,
+            awardImages.filter(Boolean),
+            awardsCanvas,
+            AWARD_INDEX,
+            hasSeniorPilot
+        );
 
         // Scale ribbons before placing on uniform
         const scale = 0.29;
@@ -144,32 +164,59 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
         debugLog("[PU:render] Awards placed (count):", count);
         const { awardsX, awardsY } = (count === 1) ? { awardsX: 385, awardsY: 45 } : (count === 2) ? { awardsX: 382, awardsY: 45 } : (count === 3) ? { awardsX: 384, awardsY: 44 } : { awardsX: 380, awardsY: 46 };
 
-        // Apply rotation and skew for realism
-        const rot = -3 * Math.PI / 180, skewY = -3 * Math.PI / 180;
+        const perspective = buildRibbonPerspectiveCanvas(scaled);
+        const perspectiveCanvas = perspective.canvas;
+        const destWidth = perspectiveCanvas.width;
+        const destHeight = perspectiveCanvas.height;
+
         ctx.save();
-        ctx.translate(awardsX + scaled.width / 2, awardsY + scaled.height / 2);
-        ctx.rotate(rot);
-        ctx.transform(1, Math.tan(skewY), 0, 1, 0, 0);
-        ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 2; ctx.shadowOffsetX = -0.5; ctx.shadowOffsetY = 0;
-        ctx.drawImage(scaled, -scaled.width / 2, -scaled.height / 2, scaled.width, scaled.height);
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 2.0; // slightly softer shadow without bleeding onto lower row
+        ctx.shadowOffsetX = -0.75;
+        ctx.shadowOffsetY = 0;
+        const skewTan = Math.tan(RIBBON_SKEW_STRENGTH);
+        ctx.translate(awardsX + RIBBON_OFFSET_X, awardsY + RIBBON_OFFSET_Y);
+        ctx.transform(1, skewTan, 0, 1, 0, 0);
+        ctx.translate(destWidth / 2, destHeight / 2);
+        ctx.rotate(RIBBON_ROTATION);
+        ctx.drawImage(perspectiveCanvas, -destWidth / 2, -destHeight / 2);
         ctx.restore();
 
-        // Map tooltip rectangles after transformations
-        const tx = awardsX + scaled.width / 2, ty = awardsY + scaled.height / 2;
-        const offsetX = scaled.width / 2, offsetY = scaled.height / 2;
-        const ribbonTooltipRotationOffset = -3 * Math.PI / 180;
-        const tanSkewY = Math.tan(skewY);
+        const cos = Math.cos(RIBBON_ROTATION);
+        const sin = Math.sin(RIBBON_ROTATION);
 
+        // Map tooltip rectangles through the perspective + skew + rotation transform
         tooltipRects.forEach(t => {
-            const xs = t.x * scale, ys = t.y * scale, ws = t.width * scale, hs = t.height * scale;
-            const ang = rot + ribbonTooltipRotationOffset;
-            const A = transformPoint(xs, ys, tx, ty, ang, tanSkewY, offsetX, offsetY);
-            const B = transformPoint(xs + ws, ys, tx, ty, ang, tanSkewY, offsetX, offsetY);
-            const C = transformPoint(xs, ys + hs, tx, ty, ang, tanSkewY, offsetX, offsetY);
-            const D = transformPoint(xs + ws, ys + hs, tx, ty, ang, tanSkewY, offsetX, offsetY);
-            const minX = Math.min(A.x, B.x, C.x, D.x), maxX = Math.max(A.x, B.x, C.x, D.x);
-            const minY = Math.min(A.y, B.y, C.y, D.y), maxY = Math.max(A.y, B.y, C.y, D.y);
-            registerTooltip(minX, minY, (maxX - minX) - 2, (maxY - minY) - 2, t.content);
+            const corners = [
+                { x: t.x, y: t.y },
+                { x: t.x + t.width, y: t.y },
+                { x: t.x, y: t.y + t.height },
+                { x: t.x + t.width, y: t.y + t.height },
+            ].map(pt => {
+                const sx = pt.x * scale;
+                const sy = pt.y * scale;
+                const mapped = perspective.mapPoint(sx, sy);
+                const localX = mapped.x - destWidth / 2;
+                const localY = mapped.y - destHeight / 2;
+                const rotX = localX * cos - localY * sin;
+                const rotY = localX * sin + localY * cos;
+                const afterRotX = rotX + destWidth / 2;
+                const afterRotY = rotY + destHeight / 2;
+                const skewY = afterRotY + afterRotX * skewTan;
+                return {
+                    x: awardsX + RIBBON_OFFSET_X + afterRotX,
+                    y: awardsY + RIBBON_OFFSET_Y + skewY,
+                };
+            });
+
+            const minX = Math.min(...corners.map(c => c.x));
+            const maxX = Math.max(...corners.map(c => c.x));
+            const minY = Math.min(...corners.map(c => c.y));
+            const maxY = Math.max(...corners.map(c => c.y));
+            const padding = 1;
+            const width = Math.max(0, maxX - minX - padding * 2);
+            const height = Math.max(0, maxY - minY - padding * 2);
+            registerTooltip(minX + padding, minY + padding, width, height, t.content);
         });
         debugLog("[PU:render] Award tooltip rects registered:", tooltipRects.length);
     } catch (e) {
@@ -207,20 +254,84 @@ function drawImages(ctx, images = [], canvas, items = []) {
 }
 
 /**
- * Lays out up to two rows of award ribbons and returns tooltip rectangles for each.
+ * Applies a subtle taper and downward curve to the ribbon block before the final rotation.
+ * Returns both the warped canvas and a helper that maps points through the same transform.
  */
-function drawAwards(ctx, awardImages, canvas, AWARD_INDEX) {
+function buildRibbonPerspectiveCanvas(sourceCanvas) {
+    const width = sourceCanvas.width || 1;
+    const height = sourceCanvas.height || 1;
+    const slices = Math.max(12, RIBBON_SLICE_COUNT);
+    const sliceWidth = width / slices;
+    const info = [];
+
+    let destWidth = 0;
+    for (let i = 0; i < slices; i++) {
+        const srcX = i * sliceWidth;
+        const tMid = (i + 0.5) / slices;
+        const scaleX = 1 - (RIBBON_TAPER * tMid);
+        const destSliceWidth = sliceWidth * scaleX;
+        const curve = RIBBON_CURVE_DEPTH * Math.sin(Math.PI * tMid);
+        info.push({ srcX, destX: destWidth, destWidth: destSliceWidth, curve });
+        destWidth += destSliceWidth;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(destWidth));
+    canvas.height = Math.max(1, Math.round(height + RIBBON_CURVE_DEPTH));
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+
+    info.forEach(segment => {
+        ctx.drawImage(
+            sourceCanvas,
+            segment.srcX,
+            0,
+            sliceWidth,
+            height,
+            segment.destX,
+            segment.curve,
+            segment.destWidth,
+            height
+        );
+    });
+
+    const mapPoint = (x, y) => {
+        const clampedX = Math.min(Math.max(x, 0), width);
+        const idx = Math.min(info.length - 1, Math.floor(clampedX / sliceWidth));
+        const segment = info[idx];
+        const next = info[Math.min(info.length - 1, idx + 1)];
+        const localT = sliceWidth === 0 ? 0 : (clampedX - segment.srcX) / sliceWidth;
+        const curve = segment.curve + (next.curve - segment.curve) * localT;
+        const destX = segment.destX + (segment.destWidth * localT);
+        return { x: destX, y: curve + y };
+    };
+
+    return { canvas, mapPoint };
+}
+
+/**
+ * Lays out up to three rows of award ribbons and returns tooltip rectangles for each.
+ */
+function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
+    const perRow = [4, 4, 4];
+    const maxRibbons = perRow.reduce((sum, count) => sum + count, 0);
     const sorted = [...awardImages]
         .sort((a, b) => (AWARD_INDEX[a.alt] ?? Infinity) - (AWARD_INDEX[b.alt] ?? Infinity))
-        .slice(0, 8)
+        .slice(0, maxRibbons)
         .reverse();
     const final = sorted;
 
-    const perRow = [4, 4];
     const rowCounts = Array(perRow.length).fill(0);
-    const rows = []; let r = 0;
+    const rows = [];
+    let r = 0;
 
-    final.forEach((_img, i) => { while (rowCounts[r] >= perRow[r]) r++; rows.push(r); rowCounts[r]++; });
+    final.forEach((_img) => {
+        while (r < perRow.length - 1 && rowCounts[r] >= perRow[r]) {
+            r++;
+        }
+        rows.push(r);
+        rowCounts[r]++;
+    });
 
     debugLog("[PU:render] Awards layout:", { total: awardImages.length, considered: final.length, rowCounts });
 
@@ -245,15 +356,23 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX) {
         }
 
         // Draw award at calculated position
-        const x = startX + ((inRow - 1 - col) * img.naturalWidth);
-        const y = canvas.height - ((row + 1) * img.naturalHeight);
-        ctx.drawImage(img, x, y, img.naturalWidth, img.naturalHeight);
+        const ribbonHeight = Math.round(img.naturalHeight * RIBBON_HEIGHT_SCALE);
+        const rowHeight = ribbonHeight + RIBBON_ROW_GAP;
+        let x = startX + ((inRow - 1 - col) * img.naturalWidth);
+        if (hasSeniorPilot && row === 2 && inRow === 1 && final.length === 9) {
+            // Special-case: 9 ribbons produce a single badge on the third row; nudge into perspective line
+            x += SINGLE_THIRD_ROW_OFFSET_X;
+        }
+        const extraHeight = row === 0 ? TOP_ROW_EXTRA_HEIGHT : 0;
+        const y = canvas.height - ribbonHeight - (row * rowHeight);
+        const drawY = y - extraHeight;
+        ctx.drawImage(img, x, drawY, img.naturalWidth, ribbonHeight + extraHeight);
 
         // Build tooltip content for award
         const srcPath = normalizePath(img.src);
         const meta = awards.find(a => normalizePath(a.imageKey) === srcPath || a.name === img.alt) || {};
         const content = `<img src="${meta.tooltipImage || meta.imageKey}"> ${meta.tooltipText || meta.name}`;
-        tips.push({ x, y, width: img.naturalWidth, height: img.naturalHeight, content });
+        tips.push({ x, y: drawY, width: img.naturalWidth, height: ribbonHeight + extraHeight, content });
     });
     return tips; // return all award tooltip areas
 }

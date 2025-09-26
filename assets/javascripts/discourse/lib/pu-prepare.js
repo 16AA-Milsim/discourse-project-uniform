@@ -200,8 +200,10 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     });
 
     // Determine ribbon row count and adjust qualification tooltips accordingly
-    const totalAwards = awardUrls.length;
-    const ribbonRows = totalAwards === 0 ? 0 : totalAwards <= 4 ? 1 : 2;
+    const perRowCapacity = 4;
+    const maxRibbonRows = 3;
+    const clampedAwards = Math.min(awardUrls.length, perRowCapacity * maxRibbonRows);
+    const ribbonRows = clampedAwards === 0 ? 0 : Math.ceil(clampedAwards / perRowCapacity);
 
     // Build adjusted qualification list with ribbon-row-specific tooltip boxes
     const adjustedQuals = qualsToRender.map((q) => {

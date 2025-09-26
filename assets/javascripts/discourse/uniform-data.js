@@ -494,12 +494,14 @@ export const qualifications = deepFreeze([
       ribbonRowTooltipAreas: {
         0: [{ x: 450, y: 205, width: 74, height: 35 }],
         1: [{ x: 450, y: 194, width: 74, height: 35 }],
-        2: [{ x: 448, y: 187, width: 72, height: 35 }],
+        2: [{ x: 449, y: 185, width: 72, height: 35 }],
+        3: [{ x: 451, y: 176, width: 72, height: 35 }],
       },
       imagePlacementByRows: {
         0: { x: 446, y: 200 },
         1: { x: 446, y: 190 },
-        2: { x: 442, y: 184 },
+        2: { x: 443, y: 183 },
+        3: { x: 446, y: 174 },
       }
     }
   ),
@@ -517,12 +519,14 @@ export const qualifications = deepFreeze([
       ribbonRowTooltipAreas: {
         0: [{ x: 470, y: 200, width: 49, height: 38 }],
         1: [{ x: 468, y: 194, width: 49, height: 35 }],
-        2: [{ x: 468, y: 186, width: 49, height: 35 }],
+        2: [{ x: 469, y: 186, width: 49, height: 35 }],
+        3: [{ x: 471, y: 177, width: 49, height: 35 }],
       },
       imagePlacementByRows: {
         0: { x: 467, y: 198 },
         1: { x: 465, y: 190 },
-        2: { x: 463, y: 182 },
+        2: { x: 467, y: 182 },
+        3: { x: 466, y: 173 },
       }
     }
   ),
