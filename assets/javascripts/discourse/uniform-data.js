@@ -1,63 +1,39 @@
-// uniform-data.js
-import getURL from "discourse-common/lib/get-url";
+/**
+ * Central catalogue of uniforms, ranks, groups, qualifications, and awards used by the
+ * Project Uniform renderer. Provides frozen metadata with tooltip geometry and asset paths.
+ */
 import { puPaths } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // ---------- helpers ----------
-const u = (p) => getURL(p);
-const deepFreeze = (o) => (Object.freeze(o), Object.values(o).forEach(v => v && typeof v === "object" && !Object.isFrozen(v) && deepFreeze(v)), o);
-
-const rankAreas = {
-  // BA rank regions
-  officerCollar: [
-    { x: 80, y: 18, width: 100, height: 52 },
-    { x: 520, y: 18, width: 80, height: 47 },
-  ],
-  wo2Sleeve: [
-    { x: 15, y: 495, width: 45, height: 60 },
-    { x: 635, y: 495, width: 45, height: 58 },
-  ],
-  csgtSleeve: [
-    { x: 38, y: 195, width: 52, height: 110 },
-    { x: 607, y: 193, width: 60, height: 105 },
-  ],
-  ssgtSleeve: [
-    { x: 38, y: 195, width: 52, height: 110 },
-    { x: 607, y: 193, width: 58, height: 102 },
-  ],
-  sgtSleeve: [
-    { x: 38, y: 210, width: 52, height: 90 },
-    { x: 607, y: 208, width: 60, height: 85 },
-  ],
-  cplSleeve: [
-    { x: 38, y: 210, width: 52, height: 75 },
-    { x: 607, y: 208, width: 60, height: 72 },
-  ],
-  lcplSleeve: [
-    { x: 40, y: 215, width: 52, height: 55 },
-    { x: 607, y: 208, width: 58, height: 55 },
-  ],
-  ptegnrSleeve: [
-    { x: 38, y: 195, width: 52, height: 110 },
-    { x: 607, y: 193, width: 60, height: 105 },
-  ],
-  // RAF rank regions
-  sqnldrSleeve: [
-    { x: 16, y: 588, width: 120, height: 56 },
-    { x: 556, y: 592, width: 118, height: 58 },
-  ],
-  fltltSleeve: [
-    { x: 16, y: 596, width: 120, height: 54 },
-    { x: 556, y: 602, width: 118, height: 54 },
-  ],
-  fgoffSleeve: [
-    { x: 16, y: 600, width: 120, height: 40 },
-    { x: 556, y: 604, width: 118, height: 42 },
-  ],
-  pltoffSleeve: [
-    { x: 16, y: 600, width: 120, height: 40 },
-    { x: 556, y: 604, width: 118, height: 42 },
-  ]
+const deepFreeze = (object) => {
+  Object.freeze(object);
+  Object.values(object).forEach((value) => {
+    if (value && typeof value === "object" && !Object.isFrozen(value)) {
+      deepFreeze(value);
+    }
+  });
+  return object;
 };
+
+// Helper for tooltip geometry objects used across rank area definitions.
+const rect = (x, y, width, height) => ({ x, y, width, height });
+
+const rankAreas = deepFreeze({
+  // BA rank regions
+  officerCollar: [rect(80, 18, 100, 52), rect(520, 18, 80, 47)],
+  wo2Sleeve: [rect(15, 495, 45, 60), rect(635, 495, 45, 58)],
+  csgtSleeve: [rect(38, 195, 52, 110), rect(607, 193, 60, 105)],
+  ssgtSleeve: [rect(38, 195, 52, 110), rect(607, 193, 58, 102)],
+  sgtSleeve: [rect(38, 210, 52, 90), rect(607, 208, 60, 85)],
+  cplSleeve: [rect(38, 210, 52, 75), rect(607, 208, 60, 72)],
+  lcplSleeve: [rect(40, 215, 52, 55), rect(607, 208, 58, 55)],
+  ptegnrSleeve: [rect(38, 195, 52, 110), rect(607, 193, 60, 105)],
+  // RAF rank regions
+  sqnldrSleeve: [rect(16, 588, 120, 56), rect(556, 592, 118, 58)],
+  fltltSleeve: [rect(16, 596, 120, 54), rect(556, 602, 118, 54)],
+  fgoffSleeve: [rect(16, 600, 120, 40), rect(556, 604, 118, 42)],
+  pltoffSleeve: [rect(16, 600, 120, 40), rect(556, 604, 118, 42)],
+});
 
 const rank = (name, category, key, tipKey, tipText, areas, service = "BA") => ({
   name,
@@ -345,15 +321,6 @@ export const enlistedRanks = deepFreeze(ranks.filter(r => r.category === "enlist
 export const rankToImageMap = deepFreeze(Object.fromEntries(ranks.map(r => [r.name, r.imageKey])));
 
 // ---------- groups/images ----------
-export const groupToImageMap = deepFreeze({
-  "16CSMR": puPaths.group("16csmr.png"),
-  "16CSMR_IC": puPaths.group("16csmr.png"),
-  "16CSMR_2IC": puPaths.group("16csmr.png"),
-  "7RHA": puPaths.group("7rha.png"),
-  "7RHA_IC": puPaths.group("7rha.png"),
-  "7RHA_2IC": puPaths.group("7rha.png"),
-});
-
 const csmrTooltip = deepFreeze({
   tooltipImage: puPaths.group("ramc.png"),
   tooltipText:
@@ -374,19 +341,26 @@ const rhaTooltip = deepFreeze({
   ],
 });
 
-export const groupTooltipMap = deepFreeze({
-  // RAMC/16CSMR tooltips
-  ...["16CSMR", "16CSMR_IC", "16CSMR_2IC"].reduce((acc, k) => {
-    acc[k] = csmrTooltip;
-    return acc;
-  }, {}),
+const groupConfigs = deepFreeze([
+  { keys: ["16CSMR", "16CSMR_IC", "16CSMR_2IC"], image: "16csmr.png", tooltip: csmrTooltip },
+  { keys: ["7RHA", "7RHA_IC", "7RHA_2IC"], image: "7rha.png", tooltip: rhaTooltip },
+]);
 
-  // 7RHA tooltips
-  ...["7RHA", "7RHA_IC", "7RHA_2IC"].reduce((acc, k) => {
-    acc[k] = rhaTooltip;
-    return acc;
-  }, {}),
-});
+export const groupToImageMap = deepFreeze(
+  Object.fromEntries(
+    groupConfigs.flatMap(({ keys, image }) =>
+      keys.map((key) => [key, puPaths.group(image)])
+    )
+  )
+);
+
+const assignTooltips = (keys, tooltip) => keys.map((key) => [key, tooltip]);
+
+export const groupTooltipMap = deepFreeze(
+  Object.fromEntries(
+    groupConfigs.flatMap(({ keys, tooltip }) => assignTooltips(keys, tooltip))
+  )
+);
 
 // ---------- lanyards ----------
 export const lanyardGroupsConfig = deepFreeze([
@@ -454,12 +428,21 @@ export const lanyardGroupsConfig = deepFreeze([
 export const lanyardTooltipRegion = deepFreeze({ x: 548, y: 60, width: 30, height: 220 });
 
 export const lanyardTooltipMap = deepFreeze(
-  lanyardGroupsConfig.reduce((acc, cfg) => {
-    cfg.groups.forEach((g) => {
-      acc[g] = { tooltipImage: cfg.tooltipImage, tooltipText: cfg.tooltipText };
-    });
-    return acc;
-  }, {})
+  Object.fromEntries(
+    lanyardGroupsConfig.flatMap((cfg) => {
+      if (!cfg.groups.length) {
+        return [];
+      }
+      const tooltip = { tooltipImage: cfg.tooltipImage, tooltipText: cfg.tooltipText };
+      return cfg.groups.flatMap((groupName) => {
+        const key = String(groupName || "");
+        return [
+          [key, tooltip],
+          [key.toLowerCase(), tooltip],
+        ];
+      });
+    })
+  )
 );
 
 export const lanyardGroups = deepFreeze(
@@ -753,15 +736,3 @@ export const awards = deepFreeze([
     "<center><b>Citation</b></center><br>Awarded for conspicuous attention to duty on and off the battlefield. Issued at the discretion of the OC."
   ),
 ]);
-
-// ---------- final freeze ----------
-deepFreeze(backgroundImages);
-deepFreeze(groupToImageMap);
-deepFreeze(groupTooltipMap);
-deepFreeze(lanyardTooltipRegion);
-deepFreeze(lanyardTooltipMap);
-deepFreeze(lanyardGroups);
-deepFreeze(lanyardToImageMap);
-deepFreeze(leadershipQualificationsOrder);
-deepFreeze(marksmanshipQualificationsOrder);
-deepFreeze(qualificationToImageMap);

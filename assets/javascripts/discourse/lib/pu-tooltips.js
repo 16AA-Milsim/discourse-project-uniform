@@ -1,24 +1,32 @@
-// pu-tooltips.js
-
-// Import debug mode toggle and logging utility
+/**
+ * Tooltip registration and display helpers for Project Uniform. Tracks hit regions on the
+ * canvas and renders accessible tooltip DOM positioned over the uniform preview.
+ */
 import { isDebugEnabled, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // Stores tooltip hit regions
 const tooltipRegions = [];
 
-// Clears all registered tooltip regions
+/**
+ * Clears all registered tooltip regions. Useful before rebuilding the canvas.
+ */
 export function clearTooltips() {
     tooltipRegions.length = 0;
     debugLog("[tooltips] cleared");
 }
 
-// Registers a tooltip area with coordinates, size, and content
+/**
+ * Registers a tooltip area with coordinates, size, and rendered HTML content.
+ */
 export function registerTooltip(x, y, width, height, content) {
     debugLog("[tooltips] register:", { x, y, width, height, hasImg: /<img/i.test(content), len: content?.length });
     tooltipRegions.push({ x, y, width, height, content });
 }
 
-// Sets up tooltip display on a given canvas
+/**
+ * Attaches tooltip behaviour to the supplied canvas. Handles hit testing, positioning,
+ * accessibility attributes, and optional debug overlays.
+ */
 export function setupTooltips(canvas) {
     canvas.classList.add("pu-uniform-canvas");
     const cssMax = canvas.width; // e.g., 695
@@ -112,7 +120,7 @@ export function setupTooltips(canvas) {
             debugLog("[tooltips] enter region");
         }
 
-        // --- POSITIONING: below + centered, clamp to canvas, flip if needed ---
+        // Position tooltip relative to the hit region and keep it within the canvas bounds
         const offX = canvasRect.left - parentRect.left;
         const offY = canvasRect.top - parentRect.top;
         const gap = 8; // space between hitbox and tooltip
@@ -154,14 +162,13 @@ export function setupTooltips(canvas) {
         const maxTop = offY + canvasRect.height - tipH;
         top = Math.max(minTop, Math.min(maxTop, top));
 
-        // Apply and show
+        // Apply coordinates and reveal the tooltip
         tip.style.left = `${left}px`;
         tip.style.top  = `${top}px`;
 
         if (restoreVisibility) tip.style.visibility = "";
         tip.classList.add("visible");
         tip.setAttribute("aria-hidden", "false");
-        // --- END POSITIONING ---
     };
 
     // Mouse out handler to hide tooltip

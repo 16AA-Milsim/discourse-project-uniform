@@ -1,16 +1,23 @@
-// pu-utils.js
+/**
+ * Shared utilities for Project Uniform rendering. Handles debug toggles, path helpers,
+ * lightweight image caching, and geometry math used by the canvas pipeline.
+ */
 
 export const DEBUG_MODE = false; // if true here, admin setting is ignored and debug is always on
 
-// --- Runtime override from admin setting (mutable, set at boot by initializer) ---
+// Runtime override from admin setting (mutable, set at boot by initializer)
 let ADMIN_DEBUG_FLAG = false;
 
-// Called from initializer with the site setting value
+/**
+ * Allows the initializer to provide the admin-controlled debug flag.
+ */
 export function setAdminDebugFlag(value) {
     ADMIN_DEBUG_FLAG = !!value;
 }
 
-// Effective debug state: code flag OR admin flag
+/**
+ * Returns the effective debug state using both the code toggle and admin override.
+ */
 export function isDebugEnabled() {
     return !!DEBUG_MODE || ADMIN_DEBUG_FLAG;
 }
@@ -41,6 +48,7 @@ function versionSuffix() {
   }
 }
 
+// Helper to generate canonical asset URLs for each asset category
 export const puPaths = {
   uniform: (file) => getURL(`${BASE}/uniforms/${file}${versionSuffix()}`),
 
@@ -73,7 +81,10 @@ export const puPaths = {
 // Simple in-memory cache for loaded images, keyed by URL
 const imageCache = new Map();
 
-// Loads an image from a URL or a list of candidate URLs (tries each until one works).
+/**
+ * Loads an image from a URL or a list of candidate URLs (tries each until one succeeds)
+ * and caches the result for subsequent calls.
+ */
 export function loadImageCached(urlOrCandidates) {
     const candidates = Array.isArray(urlOrCandidates) ? urlOrCandidates : [urlOrCandidates];
     const tryNext = (idx) =>

@@ -1,16 +1,18 @@
-// pu-render.js
-
-// Import utilities for image loading, path handling, transforms, and debug logging
+/**
+ * Canvas composition helpers for Project Uniform. Loads background and overlay imagery,
+ * draws them onto a shared canvas, and wires up tooltip regions for interactive layers.
+ */
 import { loadImageCached, normalizePath, transformPoint, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
-// Import tooltip setup and registration helpers
 import { setupTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
-// Import award data for mapping and metadata
 import { awards } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
-// Create an index mapping award names to their order position
+// Index award names to preserve metadata ordering inside the awards layout
 const AWARD_INDEX = Object.fromEntries(awards.map((a, i) => [a.name, i]));
 
-// Main function to build the uniform canvas with layers, awards, and tooltips
+/**
+ * Builds the Project Uniform canvas inside `container`, loading every layer in parallel
+ * before delegating to the drawing pipeline.
+ */
 export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundItems, awardImageUrls, highestRank, qualificationsToRender, groups, groupTooltipMap) {
     const fgUrls = (foregroundItems || []).map(it => (typeof it === "string" ? it : it?.url));
     debugLog("[PU:render] mergeImagesOnCanvas", { backgroundImageUrl, fgCount: fgUrls.length, awardCount: awardImageUrls.length, highestRank: highestRank?.name });
@@ -23,7 +25,7 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
         debugLog("[PU:render] Removed previous canvas instance");
     }
 
-    // Create new canvas
+    // Create fresh canvas surface
     const canvas = document.createElement("canvas");
     canvas.className = "discourse-project-uniform-canvas";
     Object.assign(canvas.style, { position: "relative", zIndex: "0", pointerEvents: "auto", display: "block", margin: "0 auto" });
@@ -37,8 +39,8 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
     ])
         .then(([bg, ...rest]) => {
             debugLog("[PU:render] Images loaded for render");
-       const fg = rest.slice(0, fgUrls.length);
-       const aw = rest.slice(fgUrls.length);
+            const fg = rest.slice(0, fgUrls.length);
+            const aw = rest.slice(fgUrls.length);
 
             // Add alt text to award images using award metadata
             aw.forEach(img => {
@@ -48,13 +50,14 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
                 img.alt = match?.name || "";
             });
 
-            // Draw all elements onto canvas
             drawEverything(ctx, canvas, container, bg, fg, aw, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems);
         })
         .catch(e => debugLog("[PU:render] Error loading images:", e));
 }
 
-// Draws the entire uniform with all layers and tooltips
+/**
+ * Coordinates drawing the background, foreground overlays, ribbons, and tooltip regions.
+ */
 function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = []) {
     // Set canvas size to background image size
     canvas.width = bgImage?.naturalWidth || 1;
@@ -70,8 +73,8 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
         ctx.restore();
     }
 
-  // Draw all foreground layers (centered by default; absolute if {x,y} provided)
-  drawImages(ctx, fgImages.filter(Boolean), canvas, foregroundItems);
+    // Draw all foreground layers (centered by default; absolute if {x,y} provided)
+    drawImages(ctx, fgImages, canvas, foregroundItems);
 
     // Register tooltips for groups
     let groupTipCount = 0;
@@ -169,14 +172,22 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
     debugLog("[PU:render] Canvas appended and tooltips set up");
 }
 
-// Draws all foreground images centered on the canvas
-function drawImages(ctx, images, canvas, items = []) {
+/**
+ * Draws foreground overlays while keeping the image/item index alignment intact.
+ */
+function drawImages(ctx, images = [], canvas, items = []) {
     images.forEach((img, i) => {
+        const it = items[i];
+
+        if (!img) {
+            debugLog(`[PU:render] Foreground image ${i} unavailable`, it);
+            return;
+        }
+
         if (img?.naturalWidth && img?.naturalHeight) {
-       const it = items[i];
-       const hasPos = it && typeof it === "object" && Number.isFinite(it.x) && Number.isFinite(it.y);
-       const x = hasPos ? it.x : (canvas.width - img.naturalWidth) / 2;
-       const y = hasPos ? it.y : (canvas.height - img.naturalHeight) / 2;
+            const hasPos = it && typeof it === "object" && Number.isFinite(it.x) && Number.isFinite(it.y);
+            const x = hasPos ? it.x : (canvas.width - img.naturalWidth) / 2;
+            const y = hasPos ? it.y : (canvas.height - img.naturalHeight) / 2;
             ctx.drawImage(img, x, y, img.naturalWidth, img.naturalHeight);
             debugLog(`[PU:render] Drew foreground image ${i} at (${x}, ${y}) size ${img.naturalWidth}x${img.naturalHeight}`);
         } else {
@@ -185,27 +196,20 @@ function drawImages(ctx, images, canvas, items = []) {
     });
 }
 
-// Draws awards in correct order/rows and returns tooltip rectangles
+/**
+ * Lays out up to two rows of award ribbons and returns tooltip rectangles for each.
+ */
 function drawAwards(ctx, awardImages, canvas, AWARD_INDEX) {
-    // Sort awards by priority index, keep only the last 22 for display
-    // const sorted = [...awardImages].sort((a, b) => (AWARD_INDEX[a.alt] ?? Infinity) - (AWARD_INDEX[b.alt] ?? Infinity)).reverse();
-    // const final = sorted.slice(-22);
-
-    // Sort by priority and keep only the highest 8 (two rows of four)
-    // Lower index in AWARD_INDEX = higher priority
     const sorted = [...awardImages]
         .sort((a, b) => (AWARD_INDEX[a.alt] ?? Infinity) - (AWARD_INDEX[b.alt] ?? Infinity))
         .slice(0, 8)
         .reverse();
     const final = sorted;
 
-    // Max per row layout definition
-    // const perRow = [4, 4, 4, 4, 3, 2, 1]; - Old ribbon layout, before the 8 ribbon cap
     const perRow = [4, 4];
     const rowCounts = Array(perRow.length).fill(0);
     const rows = []; let r = 0;
 
-    // Assign each award to a row
     final.forEach((_img, i) => { while (rowCounts[r] >= perRow[r]) r++; rows.push(r); rowCounts[r]++; });
 
     debugLog("[PU:render] Awards layout:", { total: awardImages.length, considered: final.length, rowCounts });

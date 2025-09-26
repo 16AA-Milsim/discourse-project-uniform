@@ -1,6 +1,8 @@
-// pu-prepare.js
-
-// Import data for backgrounds, ranks, groups, qualifications, and lanyards
+/**
+ * Prepares data for Project Uniform rendering. Selects the correct background, gathers
+ * foreground overlays, resolves qualification and award imagery, and registers tooltips
+ * before delegating to the canvas renderer.
+ */
 import {
     backgroundImages, ranks, officerRanks, enlistedRanks,
     lanyardToImageMap, groupToImageMap, qualifications,
@@ -11,12 +13,20 @@ import { mergeImagesOnCanvas } from "discourse/plugins/discourse-project-uniform
 import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
 import { debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
-// Finds the highest-ranked name in `order` that is present in `have`
+const lanyardTooltipMapLC = Object.fromEntries(
+    Object.entries(lanyardTooltipMap).map(([k, v]) => [k.toLowerCase(), v])
+);
+
+/**
+ * Finds the highest-ranked name in `order` that is present in the provided set.
+ */
 function highestIn(order, have) {
     for (let i = order.length - 1; i >= 0; i--) if (have.has(order[i])) return order[i];
 }
 
-// Main function to prepare image lists and trigger rendering
+/**
+ * Assembles all imagery for the supplied user state and triggers `mergeImagesOnCanvas`.
+ */
 export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipMap) {
     debugLog("[PU:prepare] start");
     clearTooltips(); // reset tooltips before rendering
@@ -26,7 +36,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const awardUrls = [];               // award ribbons (strings)
     const qualsToRender = [];           // qualification objects we’ll still pass to renderer (for tooltips)
 
-    // Helper: always push as object so renderer sees `.url`
+    // Helper: always push as object so the renderer sees `.url`
     const pushFg = (urlOrArray, pos) => {
         if (!urlOrArray) return;
         if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
@@ -168,11 +178,11 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         }
     });
 
-    // --- Select qualification images now that we know how many ribbon rows render ---
+    // Determine ribbon row count and adjust qualification tooltips accordingly
     const totalAwards = awardUrls.length;
     const ribbonRows = totalAwards === 0 ? 0 : totalAwards <= 4 ? 1 : 2;
 
-    // NEW: Build adjusted quals with row-specific tooltip boxes, without mutating originals
+    // Build adjusted qualification list with ribbon-row-specific tooltip boxes
     const adjustedQuals = qualsToRender.map((q) => {
         const rrAreas =
             q?.ribbonRowVariants?.ribbonRowTooltipAreas?.[ribbonRows];
@@ -223,10 +233,13 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     }
 }
 
-// Registers tooltips for any lanyards the player has
+/**
+ * Registers tooltip hitboxes for any lanyards the user qualifies for.
+ */
 function registerLanyardTooltips(groups) {
     groups.forEach(group => {
-        const data = lanyardTooltipMap[group.name];
+        const key = String(group?.name || "").toLowerCase();
+        const data = lanyardTooltipMapLC[key];
         if (!data) return;
         const content = `<img src="${data.tooltipImage}"> ${data.tooltipText}`;
         debugLog("[PU:prepare] Register lanyard tooltip:", group.name, lanyardTooltipRegion);
