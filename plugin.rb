@@ -1,6 +1,6 @@
 # name: discourse-project-uniform
 # about: Discourse Project Uniform
-# version: 0.7.1
+# version: 0.8.0
 # authors: ChatGPT & Darojax
 # url: https://github.com/16AA-Milsim/discourse-project-uniform
 
