@@ -3,11 +3,54 @@
 // Import Discourse plugin API helper
 import { withPluginApi } from "discourse/lib/plugin-api";
 // Import debug toggle/logger
-import { debugLog, setAdminDebugFlag, isDebugEnabled } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { debugLog, setAdminDebugFlag, isDebugEnabled, loadImageCached } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 // Import preparation/rendering pipeline
 import { prepareAndRenderImages } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-prepare";
 // Import award and tooltip data
-import { awards, groupTooltipMapLC } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
+import { awards, groupTooltipMapLC, csaRibbons } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
+
+let STATIC_ASSETS_PRELOADED = false;
+
+function preloadStaticAssets() {
+    if (STATIC_ASSETS_PRELOADED) {
+        return;
+    }
+    STATIC_ASSETS_PRELOADED = true;
+
+    try {
+        const urls = new Set();
+        awards.forEach((award) => {
+            award?.imageKey && urls.add(award.imageKey);
+            award?.tooltipImage && urls.add(award.tooltipImage);
+        });
+        csaRibbons.forEach((ribbon) => {
+            ribbon?.imageKey && urls.add(ribbon.imageKey);
+            ribbon?.tooltipImage && urls.add(ribbon.tooltipImage);
+        });
+
+        urls.forEach((url) => {
+            loadImageCached(url).catch((e) => debugLog("[PU:init] Preload failed", url, e));
+        });
+        debugLog("[PU:init] Preloaded static assets", urls.size);
+    } catch (e) {
+        debugLog("[PU:init] Asset preload error", e);
+    }
+}
+
+function tearDownExistingUniform(containerElement = document) {
+    const canvas = containerElement.querySelector?.(".discourse-project-uniform-canvas");
+    if (canvas) {
+        canvas._teardownTooltips?.();
+        canvas.remove();
+        debugLog("[PU:init] Removed existing canvas", { scoped: containerElement !== document });
+    }
+
+    const placeholder = containerElement.querySelector?.(".discourse-project-uniform-placeholder");
+    if (placeholder) {
+        placeholder.remove();
+        debugLog("[PU:init] Removed existing placeholder", { scoped: containerElement !== document });
+    }
+}
 
 export default {
     name: "discourse-project-uniform",
@@ -18,6 +61,8 @@ export default {
             // Wire the admin setting into the utils runtime flag
             setAdminDebugFlag(!!siteSettings.discourse_project_uniform_debug_enabled);
 
+            preloadStaticAssets();
+
             // Run logic on every page change
             api.onPageChange((url) => {
                 debugLog("[PU:init] onPageChange URL:", url);
@@ -25,6 +70,7 @@ export default {
                 // Only run on user summary pages
                 if (!(url && url.includes("/u/") && url.includes("/summary"))) {
                     debugLog("[PU:init] Not a user summary page – bail early");
+                    tearDownExistingUniform();
                     return;
                 }
 
@@ -32,6 +78,7 @@ export default {
                 const containerElement = document.querySelector(".user-content");
                 if (!containerElement) {
                     debugLog("[PU:init] No .user-content container found");
+                    tearDownExistingUniform();
                     return;
                 }
 
@@ -42,24 +89,6 @@ export default {
                     debugLog("[PU:init] Admin-only mode:", { currentUser: currentUser?.username, allowed });
                     if (!allowed) return;
                 }
-
-                // Remove any prior uniform canvas/placeholder immediately so the page stays blank while loading
-                const tearDownExistingUniform = () => {
-                    const existingCanvas = containerElement.querySelector(".discourse-project-uniform-canvas");
-                    if (existingCanvas) {
-                        existingCanvas._teardownTooltips?.();
-                        existingCanvas.remove();
-                        debugLog("[PU:init] Removed existing canvas on navigation");
-                    }
-
-                    const existingPlaceholder = containerElement.querySelector(".discourse-project-uniform-placeholder");
-                    if (existingPlaceholder) {
-                        existingPlaceholder.remove();
-                        debugLog("[PU:init] Removed existing placeholder on navigation");
-                    }
-                };
-
-                tearDownExistingUniform();
 
                 // Extract username (prefer controller:user, fallback to URL)
                 let username = null;
@@ -91,6 +120,15 @@ export default {
 
                 debugLog(`[PU:init] Extracted username via ${extractionMethod}:`, username);
                 const usernameParam = encodeURIComponent(String(username).trim().toLowerCase());
+
+                if (containerElement._puLastUsername && containerElement._puLastUsername !== username) {
+                    debugLog("[PU:init] Detected different user – clearing existing uniform", {
+                        previous: containerElement._puLastUsername,
+                        next: username,
+                    });
+                    tearDownExistingUniform(containerElement);
+                    containerElement._puLastRenderSignature = null;
+                }
 
                 // Helper function to fetch JSON with debug logging
                 const fetchJson = (u) => {
@@ -144,9 +182,23 @@ export default {
                             existingInfo?.remove();
                         }
 
+                        const signature = JSON.stringify({
+                            groups: groups.map(g => g.name).sort(),
+                            badges: userBadges.map(ub => ub.badge_id).sort((a, b) => a - b),
+                        });
+
+                        if (containerElement._puLastRenderSignature === signature) {
+                            debugLog("[PU:init] Render skipped; signature unchanged");
+                            return;
+                        }
+
+                        tearDownExistingUniform(containerElement);
+
                         // Call render pipeline
                         debugLog("[PU:init] Calling prepareAndRenderImages...");
                         prepareAndRenderImages(groups, userBadges, idToBadge, containerElement, awards, groupTooltipMapLC);
+                        containerElement._puLastRenderSignature = signature;
+                        containerElement._puLastUsername = username;
                         debugLog("[PU:init] prepareAndRenderImages done");
                     })
                     .catch(e => debugLog("[PU:init] Error fetching user data:", e));

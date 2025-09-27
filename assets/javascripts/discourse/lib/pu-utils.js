@@ -104,6 +104,8 @@ export const puPaths = {
   medal:   (file) => getURL(`${BASE}/medals/${file}${versionSuffix()}`),
   lanyard: (file) => getURL(`${BASE}/lanyards/${file}${versionSuffix()}`),
   group:   (file) => getURL(`${BASE}/groups/${file}${versionSuffix()}`),
+  csaRibbon: (file) => getURL(`${BASE}/csa/${file}${versionSuffix()}`),
+  csaTooltip: (file) => getURL(`${BASE}/csa_tooltips/${file}${versionSuffix()}`),
 
   qual: (fileOrKey) => {
     const m = String(fileOrKey).match(/^(.*?)(?:\.(png|jpg|jpeg))?$/i);

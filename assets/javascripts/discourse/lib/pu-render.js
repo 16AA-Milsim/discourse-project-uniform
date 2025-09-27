@@ -28,16 +28,22 @@ const RIBBON_SCALE = 0.29;                  // uniform scaling factor before per
 
 const CSA_RIBBON_MAX = 3;
 const CSA_RIBBON_ROTATION = 1 * Math.PI / 180;   // mirrored (CW) rotation for CSA ribbons
-const CSA_RIBBON_SKEW_STRENGTH = 0.08;           // mirrored horizontal skew (positive lifts left side)
-const CSA_RIBBON_OFFSET_X = -150;                // fine-tune CSA placement horizontally (mirrored)
-const CSA_RIBBON_OFFSET_Y = 182;                 // fine-tune CSA placement vertically
+const CSA_RIBBON_SKEW_STRENGTH = 0.07;           // mirrored horizontal skew (positive lifts left side)
+const CSA_RIBBON_OFFSETS_BY_COUNT = {
+    1: { x: -154, y: 181 },
+    2: { x: -151, y: 182 },
+    3: { x: -149, y: 182 },
+};
+const CSA_RIBBON_DEFAULT_OFFSET = CSA_RIBBON_OFFSETS_BY_COUNT[3];
 const CSA_RIBBON_SCALE = RIBBON_SCALE * 1.4;     // CSA ribbons render slightly larger than awards
 const CSA_RIBBON_CURVE_DEPTH = 2;               // shallower curve than medals for a flatter appearance
-const CSA_SHADOW_OFFSET_X = 0.5;                 // subtler mirror shadow for CSA ribbons
-const CSA_SHADOW_BLUR = 1.1;                     // softer drop shadow for thinner CSA ribbons
-const CSA_SHADOW_COLOR = 'rgba(0,0,0,0.24)';     // lighter drop shadow tone for CSA ribbons
-const CSA_RIBBON_DRAW_ALPHA = 0.80;              // transparency when placing CSA ribbons on uniform
-const CSA_RIBBON_BRIGHTEN_ALPHA = 0.0;          // additional brighten overlay applied to CSA ribbons
+const CSA_SHADOW_OFFSET_X = 0.5;                 // subtle mirrored shadow for CSA ribbons
+const CSA_SHADOW_BLUR = 1.2;                     // slightly stronger drop shadow for thinner CSA ribbons
+const CSA_SHADOW_COLOR = 'rgba(0,0,0,0.4)';      // drop shadow tone for CSA ribbons
+const CSA_RIBBON_DRAW_ALPHA = 1.0;              // opacity when placing CSA ribbons on uniform
+const CSA_RIBBON_BRIGHTEN_ALPHA = 0;            // additional brighten overlay applied to CSA ribbons
+
+const PERSPECTIVE_CACHE = new Map();
 
 const AWARD_PLACEMENTS = {
     1: { x: 385, y: 45 },
@@ -316,11 +322,11 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
                 const destWidth = perspectiveCanvas.width;
                 const destHeight = perspectiveCanvas.height;
 
-                const placement = getAwardPlacement(Math.min(CSA_RIBBON_MAX, csaCount));
-                const baseAnchorX = placement.x + RIBBON_OFFSET_X;
-                const mirroredAnchorX = canvas.width - baseAnchorX;
-                const anchorX = mirroredAnchorX + CSA_RIBBON_OFFSET_X;
-                const anchorY = placement.y + CSA_RIBBON_OFFSET_Y;
+                const referencePlacement = getAwardPlacement(CSA_RIBBON_MAX);
+                const offsets = CSA_RIBBON_OFFSETS_BY_COUNT[csaCount] || CSA_RIBBON_DEFAULT_OFFSET;
+                const mirroredAnchorX = canvas.width - (referencePlacement.x + RIBBON_OFFSET_X);
+                const anchorX = mirroredAnchorX + offsets.x;
+                const anchorY = referencePlacement.y + offsets.y;
 
                 ctx.save();
                 ctx.shadowColor = CSA_SHADOW_COLOR;
@@ -423,22 +429,34 @@ function buildRibbonPerspectiveCanvas(sourceCanvas, options = {}) {
         sliceCount = RIBBON_SLICE_COUNT,
     } = options;
     const slices = Math.max(12, sliceCount);
-    const sliceWidth = width / slices;
-    const info = [];
+    const sliceWidth = width / slices || 1;
+    const cacheKey = `${width}x${height}:${curveDepth}:${taper}:${slices}`;
 
-    let destWidth = 0;
-    for (let i = 0; i < slices; i++) {
-        const srcX = i * sliceWidth;
-        const tMid = (i + 0.5) / slices;
-        const scaleX = 1 - (taper * tMid);
-        const destSliceWidth = sliceWidth * scaleX;
-        const curve = curveDepth * Math.sin(Math.PI * tMid);
-        info.push({ srcX, destX: destWidth, destWidth: destSliceWidth, curve });
-        destWidth += destSliceWidth;
+    let cacheEntry = PERSPECTIVE_CACHE.get(cacheKey);
+    if (!cacheEntry) {
+        const info = [];
+        let destWidth = 0;
+        for (let i = 0; i < slices; i++) {
+            const srcX = i * sliceWidth;
+            const tMid = (i + 0.5) / slices;
+            const scaleX = 1 - (taper * tMid);
+            const destSliceWidth = sliceWidth * scaleX;
+            const curve = curveDepth * Math.sin(Math.PI * tMid);
+            info.push({ srcX, destX: destWidth, destWidth: destSliceWidth, curve });
+            destWidth += destSliceWidth;
+        }
+        cacheEntry = {
+            info,
+            destWidth: Math.max(1, Math.round(destWidth)),
+            sliceWidth,
+        };
+        PERSPECTIVE_CACHE.set(cacheKey, cacheEntry);
     }
 
+    const { info, destWidth, sliceWidth: cachedSliceWidth } = cacheEntry;
+
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(destWidth));
+    canvas.width = destWidth;
     canvas.height = Math.max(1, Math.round(height + curveDepth));
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = true;
@@ -459,10 +477,11 @@ function buildRibbonPerspectiveCanvas(sourceCanvas, options = {}) {
 
     const mapPoint = (x, y) => {
         const clampedX = Math.min(Math.max(x, 0), width);
-        const idx = Math.min(info.length - 1, Math.floor(clampedX / sliceWidth));
+        const effectiveSliceWidth = cachedSliceWidth;
+        const idx = Math.min(info.length - 1, Math.floor(clampedX / effectiveSliceWidth));
         const segment = info[idx];
         const next = info[Math.min(info.length - 1, idx + 1)];
-        const localT = sliceWidth === 0 ? 0 : (clampedX - segment.srcX) / sliceWidth;
+        const localT = effectiveSliceWidth === 0 ? 0 : (clampedX - segment.srcX) / effectiveSliceWidth;
         const curve = segment.curve + (next.curve - segment.curve) * localT;
         const destX = segment.destX + (segment.destWidth * localT);
         return { x: destX, y: curve + y };
@@ -553,22 +572,24 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = []) {
     const widths = limitedImages.map(img => Math.max(1, Math.round(img.naturalWidth || 0)));
     const heights = limitedImages.map(img => Math.max(1, Math.round((img.naturalHeight || 0) * RIBBON_HEIGHT_SCALE)));
     const maxHeight = Math.max(...heights, 1);
-
-    const totalWidth = widths.reduce((sum, width, index) => sum + width + (index > 0 ? gap : 0), 0);
-    canvas.width = Math.max(1, totalWidth);
+    const slotWidth = Math.max(...widths, 1);
+    const fullRowWidth = slotWidth * CSA_RIBBON_MAX + gap * (CSA_RIBBON_MAX - 1);
+    const totalRibbonWidth = widths.reduce((sum, width) => sum + width, 0) + gap * Math.max(0, limitedImages.length - 1);
+    canvas.width = Math.max(1, Math.round(fullRowWidth));
     canvas.height = Math.max(1, maxHeight);
 
     const tips = [];
-    let currentX = 0;
+    let currentX = (canvas.width - totalRibbonWidth) / 2;
     limitedImages.forEach((img, index) => {
         const width = widths[index];
         const height = heights[index];
         const drawY = maxHeight - height;
-        ctx.drawImage(img, currentX, drawY, width, height);
+        const drawX = currentX;
+        ctx.drawImage(img, drawX, drawY, width, height);
 
         const entry = limitedEntries[index];
         const tooltipContent = entry ? `<img src="${entry.tooltipImage}"> ${entry.tooltipText}` : "";
-        tips.push({ x: currentX, y: drawY, width, height, content: tooltipContent });
+        tips.push({ x: drawX, y: drawY, width, height, content: tooltipContent });
 
         currentX += width + gap;
     });

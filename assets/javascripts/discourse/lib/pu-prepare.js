@@ -17,7 +17,10 @@ import {
     awardsByNameLC,
     leadershipQualificationsOrder,
     marksmanshipQualificationsOrder,
-    pilotQualificationsOrder
+    pilotQualificationsOrder,
+    csaRibbonGroupMapLC,
+    csaLeadershipOverrideByRibbonCount,
+    csaLeadershipQualificationNames
 } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
 import { mergeImagesOnCanvas } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
@@ -25,6 +28,17 @@ import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-proj
 import { debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 const toLC = (value) => String(value || "").toLowerCase();
+const startsWithDigit = (value) => /^\d/.test(String(value || ""));
+const compareCsaNames = (a, b) => {
+    const aDigit = startsWithDigit(a);
+    const bDigit = startsWithDigit(b);
+    if (aDigit !== bDigit) {
+        return aDigit ? -1 : 1;
+    }
+    return String(a || "").localeCompare(String(b || ""), undefined, { sensitivity: "base", numeric: true });
+};
+
+const CSA_LEADERSHIP_NAMES = new Set(csaLeadershipQualificationNames);
 
 const leadershipOrderLC = leadershipQualificationsOrder.map(toLC);
 const marksmanshipOrderLC = marksmanshipQualificationsOrder.map(toLC);
@@ -76,11 +90,28 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const groupNameSetLC = new Set(groups.map(g => toLC(g.name)));
     const is16CSMR = ["16csmr", "16csmr_ic", "16csmr_2ic"].some(n => groupNameSetLC.has(n));
 
+    const csaRibbonMembership = new Map();
+    groups.forEach((group) => {
+        const ribbon = csaRibbonGroupMapLC[toLC(group.name)];
+        if (ribbon) {
+            csaRibbonMembership.set(ribbon.name, ribbon);
+        }
+    });
+
+    const csaRibbonsToRender = [...csaRibbonMembership.values()]
+        .sort((a, b) => compareCsaNames(a.name, b.name))
+        .slice(0, 3);
+    const csaRibbonCount = csaRibbonsToRender.length;
+    const hasCsaRibbons = csaRibbonCount > 0;
+    const leadershipOverrideForCount = hasCsaRibbons
+        ? (csaLeadershipOverrideByRibbonCount[csaRibbonCount] || csaLeadershipOverrideByRibbonCount.default)
+        : null;
+
     // Badge name set (lowercased) the user has
     const badgeNameSetLC = new Set(
         userBadges.map(ub => toLC(idToBadge.get(ub.badge_id)?.name)).filter(Boolean)
     );
-    debugLog("[PU:prepare] Inputs:", { groups: groups.map(g => g.name), is16CSMR, badgeNames: [...badgeNameSetLC] });
+    debugLog("[PU:prepare] Inputs:", { groups: groups.map(g => g.name), is16CSMR, badgeNames: [...badgeNameSetLC], csaRibbons: csaRibbonsToRender.map(r => r.name) });
 
     // Find highest rank first (case-insensitive)
     const highestRank = ranks.find(r => groupNameSetLC.has(toLC(r.name)));
@@ -208,9 +239,18 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
     // Build adjusted qualification list with ribbon-row-specific tooltip boxes
     const adjustedQuals = qualsToRender.map((q) => {
-        const rrAreas =
-            q?.ribbonRowVariants?.ribbonRowTooltipAreas?.[ribbonRows];
-        return rrAreas ? { ...q, tooltipAreas: rrAreas } : q;
+        const rrAreas = q?.ribbonRowVariants?.ribbonRowTooltipAreas?.[ribbonRows];
+        let clone = rrAreas ? { ...q, tooltipAreas: rrAreas } : q;
+        if (leadershipOverrideForCount && CSA_LEADERSHIP_NAMES.has(q.name)) {
+            const override = leadershipOverrideForCount;
+            if (override.tooltipAreas) {
+                if (clone === q) {
+                    clone = { ...q };
+                }
+                clone.tooltipAreas = override.tooltipAreas;
+            }
+        }
+        return clone;
     });
 
     // Push qualification images into foregroundItems, using absolute coords for pilots only
@@ -220,14 +260,19 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
         // Pilot-only: absolute coords per ribbonRows, stored with the qual
         const pilotPos = q?.ribbonRowVariants?.imagePlacementByRows?.[ribbonRows];
-        if (pilotPos) {
-            pushFg(chosenUrl, pilotPos);
+        const leadershipOverride = leadershipOverrideForCount && CSA_LEADERSHIP_NAMES.has(q.name)
+            ? leadershipOverrideForCount
+            : null;
+        const finalPos = pilotPos || leadershipOverride?.imagePlacement;
+
+        if (finalPos) {
+            pushFg(chosenUrl, finalPos);
         } else {
             // Other quals: centered by renderer
             pushFg(chosenUrl);
         }
 
-        debugLog("[PU:prepare] Add qualification image (post-awards):", q.name, pilotPos || "(centered)");
+        debugLog("[PU:prepare] Add qualification image (post-awards):", q.name, finalPos || "(centered)");
     });
 
     // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
@@ -240,7 +285,8 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             highestRank,
             adjustedQuals,
             groups,
-            groupTooltipLookup
+            groupTooltipLookup,
+            csaRibbonsToRender
         );
 
         // Only register lanyard tooltips for BA uniforms

@@ -52,6 +52,34 @@ const lanyardCfg = (image, groups, tipImage, tipText) => ({
   tooltipText: tipText,
 });
 
+export const csaLeadershipOverrideByRibbonCount = deepFreeze({
+  default: {
+    imagePlacement: { x: 8, y: -12 },
+    tooltipAreas: [rect(193, 194, 36, 36)],
+  },
+  1: {
+    imagePlacement: { x: 6, y: -12 },
+    tooltipAreas: [rect(191, 194, 36, 36)],
+  },
+});
+
+export const csaLeadershipQualificationNames = Object.freeze([
+  "FTCC",
+  "SCBC",
+  "PSBC",
+  "PCBC",
+]);
+
+const csaAliasSet = (name) => [name, `${name}_IC`, `${name}_2IC`];
+
+const csaRibbon = (name, ribbonFile, tooltipFile, tipText) => ({
+  name,
+  imageKey: puPaths.csaRibbon(ribbonFile),
+  tooltipImage: puPaths.csaTooltip(tooltipFile),
+  tooltipText: tipText,
+  qualifyingGroups: csaAliasSet(name),
+});
+
 const qual = (name, key, restrictedRanks, tipImg, tipText, areas, serviceVariants = {}, ribbonRowVariants = {}) => ({
   name,
   imageKey: puPaths.qual(`${key}.png`),
@@ -321,10 +349,20 @@ export const enlistedRanks = deepFreeze(ranks.filter(r => r.category === "enlist
 export const rankToImageMap = deepFreeze(Object.fromEntries(ranks.map(r => [r.name, r.imageKey])));
 
 // ---------- groups/images ----------
+const paraTooltip = deepFreeze({
+  tooltipImage: puPaths.group("para.png"),
+  tooltipText:
+    "<center><b>The Parachute Regiment</b></center><br>The airborne infantry of the British Army, skilled in rapid deployment by parachute or air assault to conduct high-intensity combat, humanitarian relief, and special operations worldwide.",
+  tooltipAreas: [
+    { x: 183, y: 27, width: 37, height: 35 },
+    { x: 477, y: 27, width: 38, height: 35 },
+  ],
+});
+
 const csmrTooltip = deepFreeze({
   tooltipImage: puPaths.group("ramc.png"),
   tooltipText:
-    "<center><b>Royal Army Medical Corps</b></center><br>Collar badges of the<br>Royal Army Medical Corps,<br>worn by members of 16 Close Support Medical Regiment.",
+    "<center><b>The Royal Army Medical Service</b></center><br>The British Army's unified corps responsible for providing medical support to personnel worldwide.",
   tooltipAreas: [
     { x: 183, y: 27, width: 37, height: 35 },
     { x: 477, y: 27, width: 38, height: 35 },
@@ -334,7 +372,7 @@ const csmrTooltip = deepFreeze({
 const rhaTooltip = deepFreeze({
   tooltipImage: puPaths.group("royal_artillery.png"),
   tooltipText:
-    "<center><b>Royal Artillery</b></center><br>Collar badges of the Royal Regiment of Artillery, worn by members of 7th Parachute Regiment Royal Horse Artillery.",
+    "<center><b>The Royal Regiment of Artillery</b></center><br>The artillery arm of the British Army, responsible for providing firepower and battlefield surveillance using guns, rockets, missiles, and high-tech sensors",
   tooltipAreas: [
     { x: 190, y: 25, width: 37, height: 35 },
     { x: 465, y: 23, width: 38, height: 38 },
@@ -551,7 +589,7 @@ export const qualifications = deepFreeze([
     "ftcc",
     [],
     "ftcc.jpg",
-    "<center><b>FTCC</b></center><br>Awarded on the successful completion of the Fire Team Commanders Course. Provides the upcoming commander with the knowledge required to command a fireteam.",
+    "<center><b>Fire Team Commander's Course (FTCC)</b></center><br>Awarded on the successful completion of the FTCC course. Provides the upcoming commander with the knowledge required to command a fireteam.",
     [{ x: 192, y: 206, width: 30, height: 38 }]
   ),
   qual(
@@ -568,7 +606,7 @@ export const qualifications = deepFreeze([
     "pcbc",
     [],
     "pcbc.jpg",
-    "<center><b>PCBC</b></center><br>Awarded on the successful completion of the Platoon Commanders Battle Course. Gives the senior commander the necessary skills and knowledge to lead a platoon.",
+    "<center><b>Platoon Commander's Battle Course (PCBC)</b></center><br>Awarded on the successful completion of the PCBC course. Gives the senior commander the necessary skills and knowledge to lead a platoon.",
     [{ x: 188, y: 206, width: 36, height: 38 }]
   ),
   qual(
@@ -576,7 +614,7 @@ export const qualifications = deepFreeze([
     "psbc",
     [],
     "psbc.jpg",
-    "<center><b>PSBC</b></center><br>Awarded on the successful completion of the Platoon Sergeants Battle Course. Prepares the junior commander for the duties and responsibilities of a Platoon Sergeant and introduces them to the command of a full rifle platoon.",
+    "<center><b>Platoon Sergeant's Battle Course (PSBC)</b></center><br>Awarded on the successful completion of the PSBC course. Prepares the junior commander for the duties and responsibilities of a Platoon Sergeant and introduces them to the command of a full rifle platoon.",
     [{ x: 188, y: 206, width: 36, height: 38 }]
   ),
   qual(
@@ -584,7 +622,7 @@ export const qualifications = deepFreeze([
     "scbc",
     [],
     "scbc.jpg",
-    "<center><b>SCBC</b></center><br>Awarded on the successful completion of the Section Commanders Battle Course. Teaches the individual the skills required to lead a section.",
+    "<center><b>Section Commander's Battle Course (SCBC)</b></center><br>Awarded on the successful completion of the SCBC course. Teaches the individual the skills required to lead a section.",
     [{ x: 188, y: 206, width: 36, height: 38 }]
   ),
   qual(
@@ -611,6 +649,59 @@ export const qualificationToImageMap = deepFreeze(
 
 export const qualificationsByNameLC = deepFreeze(
   Object.fromEntries(qualifications.map((q) => [q.name.toLowerCase(), q]))
+);
+
+// ---------- CSA ribbons ----------
+export const csaRibbons = deepFreeze([
+  csaRibbon(
+    "3LSR",
+    "3lsr_ba.png",
+    "3lsr.png",
+    "<center><b>3 Logistics Support Regiment (3LSR)</b></center><br>Tests requested mods for technical issues before they reach the field.<br>Repairs and optimises 16AA addons when faults are discovered.<br>Proactively researches and recommends new mods to enhance operations."
+  ),
+  csaRibbon(
+    "ITC",
+    "itc_ba.png",
+    "itc.png",
+    "<center><b>Infantry Training Centre (ITC)</b></center><br>Maintains company-wide lesson plans and Home Rotation material.<br>Guides recruits through Phase 1 training to 16AA standards.<br>Provides foundational soldiering instruction across the unit."
+  ),
+  csaRibbon(
+    "MEDIA",
+    "media_ba.png",
+    "media.png",
+    "<center><b>Media Team</b></center><br>Produces promotional material that showcases 16AA activity.<br>Captures imagery and footage to support recruiting and morale.<br>Amplifies the unit’s presence across community channels."
+  ),
+  csaRibbon(
+    "REME",
+    "reme_ba.png",
+    "reme.png",
+    "<center><b>Royal Electrical and Mechanical Engineers (REME)</b></center><br>Builds, maintains, and improves the 16AA website, TeamSpeak, and game servers.<br>Distributes the unit modpack and curates the repository.<br>Provides technical sustainment that keeps every deployment online."
+  ),
+  csaRibbon(
+    "RLC",
+    "rlc_ba.png",
+    "rlc.png",
+    "<center><b>Royal Logistics Corps (RLC)</b></center><br>Designs, enhances, and maintains 16AA missions.<br>Ensures critical equipment and logistics are ready for operations.<br>Delivers battlefield support that keeps sorties supplied."
+  ),
+  csaRibbon(
+    "RRO",
+    "rro_ba.png",
+    "rro.png",
+    "<center><b>Recruitment and Retention Office</b></center><br>Runs recruiting campaigns and manages applicant outreach.<br>Handles applications, interviews, and onboarding of new members.<br>Maintains personnel files to track every soldier’s service."
+  ),
+]);
+
+export const csaRibbonsByNameLC = deepFreeze(
+  Object.fromEntries(csaRibbons.map((ribbon) => [ribbon.name.toLowerCase(), ribbon]))
+);
+
+export const csaRibbonGroupMapLC = deepFreeze(
+  csaRibbons.reduce((acc, ribbon) => {
+    ribbon.qualifyingGroups.forEach((group) => {
+      acc[group.toLowerCase()] = ribbon;
+    });
+    return acc;
+  }, {})
 );
 
 // ---------- awards ----------

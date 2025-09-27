@@ -7,10 +7,7 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 Debug Mode can be set to 'true' or 'false' via the first line of code in the assets/javascripts/discourse/lib/pu-utils.js file, this will override the Debug Mode setting for the plugin in the discourse admin panel. Debug Mode will add browser dev console output and show tooltip areas outlined with red rectangles.
 
 ## To-Do
-
-### Issues:
-
-### Additions:
+- [ ] Change RAMC collar badges to RAMS.
 - [ ] Readjust the collar badges for 16CSMR and 7RHA persective, based on the current parachute reg collar badges.
 - [ ] Tooltips for the parachute regiment collar badges.
 - [ ] Commanders Course badge.
@@ -23,6 +20,9 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 - [ ] Add and organise implementation of remaining qualifications graphics
 - [ ] Community Support Arms ?
 - [ ] More...
+
+### Issues:
+- [ ] CSA Ribbon textures texture feel.
 
 ## Features & Components Overview
 
