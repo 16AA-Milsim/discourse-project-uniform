@@ -9,6 +9,9 @@ import { awards } from "discourse/plugins/discourse-project-uniform/discourse/un
 // Index award names to preserve metadata ordering inside the awards layout
 const AWARD_INDEX = Object.fromEntries(awards.map((a, i) => [a.name, i]));
 
+// Tracks the most recent render so we can ignore stale async completions
+let renderTicket = 0;
+
 // Visual tweaks for medal ribbons
 const RIBBON_HEIGHT_SCALE = 1.1; // stretch vertically without changing width
 const RIBBON_ROW_GAP = 3;        // intrinsic px gap between stacked rows
@@ -27,6 +30,11 @@ const SINGLE_THIRD_ROW_OFFSET_X = 2;         // nudge lone third-row ribbon to a
  * before delegating to the drawing pipeline.
  */
 export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundItems, awardImageUrls, highestRank, qualificationsToRender, groups, groupTooltipMap) {
+    const renderId = ++renderTicket;
+    if (container) {
+        container._puRenderId = renderId;
+    }
+
     const fgUrls = (foregroundItems || []).map(it => (typeof it === "string" ? it : it?.url));
     debugLog("[PU:render] mergeImagesOnCanvas", { backgroundImageUrl, fgCount: fgUrls.length, awardCount: awardImageUrls.length, highestRank: highestRank?.name });
 
@@ -51,6 +59,10 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
         ...awardImageUrls.map(u => loadImageCached(u || "")),
     ])
         .then(([bg, ...rest]) => {
+            if (!container || container._puRenderId !== renderId) {
+                debugLog("[PU:render] Stale render resolved – skipping append", { renderId });
+                return;
+            }
             debugLog("[PU:render] Images loaded for render");
             const fg = rest.slice(0, fgUrls.length);
             const aw = rest.slice(fgUrls.length);

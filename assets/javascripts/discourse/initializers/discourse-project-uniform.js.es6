@@ -35,12 +35,6 @@ export default {
                     return;
                 }
 
-                // Prevent duplicate rendering if placeholder already exists
-                if (document.querySelector(".discourse-project-uniform-placeholder")) {
-                    debugLog("[PU:init] Placeholder already present – avoiding duplicate render");
-                    return;
-                }
-
                 // If admin-only mode is enabled, ensure current user is admin
                 if (siteSettings.discourse_project_uniform_adminvisibility_only_enabled) {
                     const currentUser = api.getCurrentUser();
@@ -48,6 +42,24 @@ export default {
                     debugLog("[PU:init] Admin-only mode:", { currentUser: currentUser?.username, allowed });
                     if (!allowed) return;
                 }
+
+                // Remove any prior uniform canvas/placeholder immediately so the page stays blank while loading
+                const tearDownExistingUniform = () => {
+                    const existingCanvas = containerElement.querySelector(".discourse-project-uniform-canvas");
+                    if (existingCanvas) {
+                        existingCanvas._teardownTooltips?.();
+                        existingCanvas.remove();
+                        debugLog("[PU:init] Removed existing canvas on navigation");
+                    }
+
+                    const existingPlaceholder = containerElement.querySelector(".discourse-project-uniform-placeholder");
+                    if (existingPlaceholder) {
+                        existingPlaceholder.remove();
+                        debugLog("[PU:init] Removed existing placeholder on navigation");
+                    }
+                };
+
+                tearDownExistingUniform();
 
                 // Extract username (prefer controller:user, fallback to URL)
                 let username = null;

@@ -43,6 +43,19 @@ function highestIn(order, have) {
 export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC) {
     debugLog("[PU:prepare] start");
     clearTooltips(); // reset tooltips before rendering
+    const removeExistingCanvas = () => {
+        if (!container?.querySelector) {
+            return;
+        }
+        const existing = container.querySelector(".discourse-project-uniform-canvas");
+        if (existing) {
+            existing._teardownTooltips?.();
+            existing.remove();
+            debugLog("[PU:prepare] Removed existing canvas (early cleanup)");
+        }
+    };
+
+    removeExistingCanvas();
 
     let bg = "";                        // background image URL (string)
     const foregroundItems = [];         // ALWAYS push objects: { url: string|array, x?, y? }
@@ -56,18 +69,6 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             foregroundItems.push({ url: urlOrArray, x: pos.x, y: pos.y });
         } else {
             foregroundItems.push({ url: urlOrArray });
-        }
-    };
-
-    const removeExistingCanvas = () => {
-        if (!container?.querySelector) {
-            return;
-        }
-        const existing = container.querySelector(".discourse-project-uniform-canvas");
-        if (existing) {
-            existing._teardownTooltips?.();
-            existing.remove();
-            debugLog("[PU:prepare] Removed existing canvas (cleanup)");
         }
     };
 
