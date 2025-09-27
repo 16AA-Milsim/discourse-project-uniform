@@ -20,7 +20,11 @@ import {
     pilotQualificationsOrder,
     csaRibbonGroupMapLC,
     csaLeadershipOverrideByRibbonCount,
-    csaLeadershipQualificationNames
+    csaLeadershipQualificationNames,
+    paraTooltipEnlisted,
+    paraTooltipOfficer,
+    paraCollarImageEnlisted,
+    paraCollarImageOfficer
 } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
 import { mergeImagesOnCanvas } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
@@ -89,6 +93,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     // Helpers for case-insensitive work
     const groupNameSetLC = new Set(groups.map(g => toLC(g.name)));
     const is16CSMR = ["16csmr", "16csmr_ic", "16csmr_2ic"].some(n => groupNameSetLC.has(n));
+    const is7RHA = ["7rha", "7rha_ic", "7rha_2ic"].some(n => groupNameSetLC.has(n));
 
     const csaRibbonMembership = new Map();
     groups.forEach((group) => {
@@ -173,6 +178,17 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             debugLog("[PU:prepare] RAF uniform – skipping lanyard image for group:", g.name);
         }
     });
+
+    const shouldAddParaCollarImage = !isRAFUniform && !is16CSMR && !is7RHA;
+    if (shouldAddParaCollarImage) {
+        const paraCollarImage = highestRank?.category === "officer"
+            ? paraCollarImageOfficer
+            : paraCollarImageEnlisted;
+        if (paraCollarImage) {
+            pushFg(paraCollarImage);
+            debugLog("[PU:prepare] Add default Para collar image", paraCollarImage);
+        }
+    }
 
     // Determine highest leadership and marksmanship badges (case-insensitive)
     const highestLeadershipLC = highestIn(leadershipOrderLC, badgeNameSetLC);
@@ -277,6 +293,15 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
     // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
     if (bg) {
+        const csaRibbonsForService = csaRibbonsToRender.map((ribbon) => {
+            const serviceKey = highestRank?.service;
+            const variantImage = serviceKey ? ribbon?.serviceVariants?.[serviceKey] : null;
+            if (variantImage && variantImage !== ribbon.imageKey) {
+                return { ...ribbon, imageKey: variantImage };
+            }
+            return ribbon;
+        });
+
         mergeImagesOnCanvas(
             container,
             bg,
@@ -286,11 +311,17 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             adjustedQuals,
             groups,
             groupTooltipLookup,
-            csaRibbonsToRender
+            csaRibbonsForService
         );
 
         // Only register lanyard tooltips for BA uniforms
         if (!isRAFUniform) {
+            if (!is16CSMR && !is7RHA) {
+                const paraTooltip = highestRank?.category === "officer"
+                    ? paraTooltipOfficer
+                    : paraTooltipEnlisted;
+                registerCollarTooltip(paraTooltip);
+            }
             registerLanyardTooltips(groups);
         } else {
             debugLog("[PU:prepare] RAF uniform – skipping lanyard tooltips");
@@ -303,6 +334,18 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 /**
  * Registers tooltip hitboxes for any lanyards the user qualifies for.
  */
+function registerCollarTooltip(tooltip) {
+    if (!tooltip?.tooltipAreas?.length) {
+        return;
+    }
+    const content = `<img src="${tooltip.tooltipImage}"> ${tooltip.tooltipText}`;
+    tooltip.tooltipAreas.forEach(area => {
+        if (!area) return;
+        debugLog("[PU:prepare] Register collar tooltip", area);
+        registerTooltip(area.x, area.y, area.width, area.height, content);
+    });
+}
+
 function registerLanyardTooltips(groups) {
     groups.forEach(group => {
         const key = String(group?.name || "").toLowerCase();

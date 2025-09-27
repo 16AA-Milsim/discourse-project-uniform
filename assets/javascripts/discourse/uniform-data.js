@@ -54,12 +54,12 @@ const lanyardCfg = (image, groups, tipImage, tipText) => ({
 
 export const csaLeadershipOverrideByRibbonCount = deepFreeze({
   default: {
-    imagePlacement: { x: 8, y: -12 },
-    tooltipAreas: [rect(193, 194, 36, 36)],
+    imagePlacement: { x: 9, y: -11 },
+    tooltipAreas: [rect(196, 195, 36, 36)],
   },
   1: {
-    imagePlacement: { x: 6, y: -12 },
-    tooltipAreas: [rect(191, 194, 36, 36)],
+    imagePlacement: { x: 6, y: -11 },
+    tooltipAreas: [rect(191, 195, 36, 36)],
   },
 });
 
@@ -72,11 +72,12 @@ export const csaLeadershipQualificationNames = Object.freeze([
 
 const csaAliasSet = (name) => [name, `${name}_IC`, `${name}_2IC`];
 
-const csaRibbon = (name, ribbonFile, tooltipFile, tipText) => ({
+const csaRibbon = (name, ribbonFile, tooltipFile, tipText, serviceVariants = {}) => ({
   name,
   imageKey: puPaths.csaRibbon(ribbonFile),
   tooltipImage: puPaths.csaTooltip(tooltipFile),
   tooltipText: tipText,
+  serviceVariants,
   qualifyingGroups: csaAliasSet(name),
 });
 
@@ -349,10 +350,23 @@ export const enlistedRanks = deepFreeze(ranks.filter(r => r.category === "enlist
 export const rankToImageMap = deepFreeze(Object.fromEntries(ranks.map(r => [r.name, r.imageKey])));
 
 // ---------- groups/images ----------
-const paraTooltip = deepFreeze({
-  tooltipImage: puPaths.group("para.png"),
-  tooltipText:
-    "<center><b>The Parachute Regiment</b></center><br>The airborne infantry of the British Army, skilled in rapid deployment by parachute or air assault to conduct high-intensity combat, humanitarian relief, and special operations worldwide.",
+export const paraCollarImageEnlisted = puPaths.group("para.png");
+export const paraCollarImageOfficer = puPaths.group("para-officer.png");
+
+const PARA_TOOLTIP_TEXT = "<center><b>The Parachute Regiment</b></center><br>The airborne infantry of the British Army, skilled in rapid deployment by parachute or air assault to conduct high-intensity combat, humanitarian relief, and special operations worldwide.";
+
+export const paraTooltipEnlisted = deepFreeze({
+  tooltipImage: puPaths.group("para-tooltip.png"),
+  tooltipText: PARA_TOOLTIP_TEXT,
+  tooltipAreas: [
+    { x: 183, y: 27, width: 37, height: 35 },
+    { x: 477, y: 27, width: 38, height: 35 },
+  ],
+});
+
+export const paraTooltipOfficer = deepFreeze({
+  tooltipImage: puPaths.group("para-tooltip-officer.png"),
+  tooltipText: PARA_TOOLTIP_TEXT,
   tooltipAreas: [
     { x: 183, y: 27, width: 37, height: 35 },
     { x: 477, y: 27, width: 38, height: 35 },
@@ -657,37 +671,43 @@ export const csaRibbons = deepFreeze([
     "3LSR",
     "3lsr_ba.png",
     "3lsr.png",
-    "<center><b>3 Logistics Support Regiment (3LSR)</b></center><br>Tests requested mods for technical issues before they reach the field.<br>Repairs and optimises 16AA addons when faults are discovered.<br>Proactively researches and recommends new mods to enhance operations."
+    "<center><b>3 Logistics Support Regiment (3LSR)</b></center><br>Tests requested mods for technical issues before they reach the field.<br>Repairs and optimises 16AA addons when faults are discovered.<br>Proactively researches and recommends new mods to enhance operations.",
+    { RAF: puPaths.csaRibbon("3lsr_raf.png") }
   ),
   csaRibbon(
     "ITC",
     "itc_ba.png",
     "itc.png",
-    "<center><b>Infantry Training Centre (ITC)</b></center><br>Maintains company-wide lesson plans and Home Rotation material.<br>Guides recruits through Phase 1 training to 16AA standards.<br>Provides foundational soldiering instruction across the unit."
+    "<center><b>Infantry Training Centre (ITC)</b></center><br>Maintains company-wide lesson plans and Home Rotation material.<br>Guides recruits through Phase 1 training to 16AA standards.<br>Provides foundational soldiering instruction across the unit.",
+    { RAF: puPaths.csaRibbon("itc_raf.png") }
   ),
   csaRibbon(
     "MEDIA",
     "media_ba.png",
     "media.png",
-    "<center><b>Media Team</b></center><br>Produces promotional material that showcases 16AA activity.<br>Captures imagery and footage to support recruiting and morale.<br>Amplifies the unit’s presence across community channels."
+    "<center><b>Media Team</b></center><br>Produces promotional material that showcases 16AA activity.<br>Captures imagery and footage to support recruiting and morale.<br>Amplifies the unit’s presence across community channels.",
+    { RAF: puPaths.csaRibbon("media_raf.png") }
   ),
   csaRibbon(
     "REME",
     "reme_ba.png",
     "reme.png",
-    "<center><b>Royal Electrical and Mechanical Engineers (REME)</b></center><br>Builds, maintains, and improves the 16AA website, TeamSpeak, and game servers.<br>Distributes the unit modpack and curates the repository.<br>Provides technical sustainment that keeps every deployment online."
+    "<center><b>Royal Electrical and Mechanical Engineers (REME)</b></center><br>Builds, maintains, and improves the 16AA website, TeamSpeak, and game servers.<br>Distributes the unit modpack and curates the repository.<br>Provides technical sustainment that keeps every deployment online.",
+    { RAF: puPaths.csaRibbon("reme_raf.png") }
   ),
   csaRibbon(
     "RLC",
     "rlc_ba.png",
     "rlc.png",
-    "<center><b>Royal Logistics Corps (RLC)</b></center><br>Designs, enhances, and maintains 16AA missions.<br>Ensures critical equipment and logistics are ready for operations.<br>Delivers battlefield support that keeps sorties supplied."
+    "<center><b>Royal Logistics Corps (RLC)</b></center><br>Designs, enhances, and maintains 16AA missions.<br>Ensures critical equipment and logistics are ready for operations.<br>Delivers battlefield support that keeps sorties supplied.",
+    { RAF: puPaths.csaRibbon("rlc_raf.png") }
   ),
   csaRibbon(
     "RRO",
     "rro_ba.png",
     "rro.png",
-    "<center><b>Recruitment and Retention Office</b></center><br>Runs recruiting campaigns and manages applicant outreach.<br>Handles applications, interviews, and onboarding of new members.<br>Maintains personnel files to track every soldier’s service."
+    "<center><b>Recruitment and Retention Office</b></center><br>Runs recruiting campaigns and manages applicant outreach.<br>Handles applications, interviews, and onboarding of new members.<br>Maintains personnel files to track every soldier’s service.",
+    { RAF: puPaths.csaRibbon("rro_raf.png") }
   ),
 ]);
 

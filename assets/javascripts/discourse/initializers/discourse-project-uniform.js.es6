@@ -38,6 +38,8 @@ function ensureBadgeObserver(containerElement) {
     updateBadgesForContainer(containerElement);
 }
 
+function ensureUniformPlaceholder() {}
+
 function preloadStaticAssets() {
     if (STATIC_ASSETS_PRELOADED) {
         return;

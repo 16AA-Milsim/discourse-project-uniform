@@ -13,6 +13,22 @@
   margin-bottom: 1rem !important;
 }
 
+.pu-uniform-canvas {
+  opacity: 0;
+  animation: pu-uniform-fade-in 0.15s ease-in-out forwards;
+}
+
+@keyframes pu-uniform-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+
+
 .canvas-tooltip {
   position: absolute;
   background: rgba(0, 0, 0, 0.85);

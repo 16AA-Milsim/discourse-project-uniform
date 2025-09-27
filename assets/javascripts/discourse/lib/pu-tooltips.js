@@ -61,6 +61,7 @@ export function setupTooltips(canvas) {
     // Variables to store element positions and active tooltip content
     let canvasRect = null, parentRect = null, active = null;
     let scaleX = 1, scaleY = 1; // intrinsic -> display scale factors
+    let resizeObserver = null;
 
     // Recalculate bounding rectangles + scales
     const recompute = () => {
@@ -84,6 +85,13 @@ export function setupTooltips(canvas) {
     recompute();
     window.addEventListener("scroll", recompute, { passive: true, signal });
     window.addEventListener("resize", recompute, { signal });
+
+    if (window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(() => recompute());
+        resizeObserver.observe(canvas);
+    }
+
+    requestAnimationFrame(recompute);
 
     // Mouse move handler to detect tooltip region hits
     const onMove = (e) => {
@@ -180,6 +188,7 @@ export function setupTooltips(canvas) {
     // Provide teardown method to remove all tooltip functionality
     canvas._teardownTooltips = () => {
         controller.abort();
+        resizeObserver?.disconnect();
         tip.remove();
         debugLog("[tooltips] teardown");
     };

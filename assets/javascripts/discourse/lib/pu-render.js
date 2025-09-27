@@ -16,13 +16,13 @@ let renderTicket = 0;
 const RIBBON_HEIGHT_SCALE = 1.1; // stretch vertically without changing width
 const RIBBON_ROW_GAP = 3;        // intrinsic px gap between stacked rows
 const TOP_ROW_EXTRA_HEIGHT = 1;  // lift the top row upward without touching spacing below
-const RIBBON_ROTATION = -1 * Math.PI / 180;  // subtle overall CCW tilt layered on skew
+const RIBBON_ROTATION = -2 * Math.PI / 180;  // subtle overall CCW tilt layered on skew
 const RIBBON_TAPER = 0;                      // taper disabled (minimal distance change)
-const RIBBON_CURVE_DEPTH = 4;                // downward bulge in px (scaled space)
+const RIBBON_CURVE_DEPTH = 3;                // downward bulge in px (scaled space)
 const RIBBON_SKEW_STRENGTH = -0.08;          // horizontal skew (negative lifts right side upward)
 const RIBBON_SLICE_COUNT = 48;               // controls smoothness of taper/curve sampling
-const RIBBON_OFFSET_X = 3;                   // fine-tune final placement horizontally
-const RIBBON_OFFSET_Y = 5;                   // fine-tune final placement vertically
+const RIBBON_OFFSET_X = 2;                   // fine-tune final placement horizontally
+const RIBBON_OFFSET_Y = 6;                   // fine-tune final placement vertically
 const SINGLE_THIRD_ROW_OFFSET_X = 2;         // nudge lone third-row ribbon to align with perspective
 const RIBBON_SCALE = 0.29;                  // uniform scaling factor before perspective warp
 
@@ -31,15 +31,15 @@ const CSA_RIBBON_ROTATION = 1 * Math.PI / 180;   // mirrored (CW) rotation for C
 const CSA_RIBBON_SKEW_STRENGTH = 0.07;           // mirrored horizontal skew (positive lifts left side)
 const CSA_RIBBON_OFFSETS_BY_COUNT = {
     1: { x: -154, y: 181 },
-    2: { x: -151, y: 182 },
-    3: { x: -149, y: 182 },
+    2: { x: -151, y: 181 },
+    3: { x: -149, y: 181 },
 };
 const CSA_RIBBON_DEFAULT_OFFSET = CSA_RIBBON_OFFSETS_BY_COUNT[3];
 const CSA_RIBBON_SCALE = RIBBON_SCALE * 1.4;     // CSA ribbons render slightly larger than awards
 const CSA_RIBBON_CURVE_DEPTH = 2;               // shallower curve than medals for a flatter appearance
-const CSA_SHADOW_OFFSET_X = 0.5;                 // subtle mirrored shadow for CSA ribbons
-const CSA_SHADOW_BLUR = 1.2;                     // slightly stronger drop shadow for thinner CSA ribbons
-const CSA_SHADOW_COLOR = 'rgba(0,0,0,0.4)';      // drop shadow tone for CSA ribbons
+const CSA_SHADOW_OFFSET_X = 0.8;                 // subtle mirrored shadow for CSA ribbons
+const CSA_SHADOW_BLUR = 1.5;                     // slightly stronger drop shadow for thinner CSA ribbons
+const CSA_SHADOW_COLOR = 'rgba(0,0,0,0.3)';      // drop shadow tone for CSA ribbons
 const CSA_RIBBON_DRAW_ALPHA = 1.0;              // opacity when placing CSA ribbons on uniform
 const CSA_RIBBON_BRIGHTEN_ALPHA = 0;            // additional brighten overlay applied to CSA ribbons
 
@@ -303,13 +303,18 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
             const csaPairs = csaImages
                 .map((img, index) => ({ img, entry: csaRibbonEntries[index] }))
                 .filter(pair => pair.img && pair.entry);
+            const csaCount = csaPairs.length;
+            const maskRightmostQuarter =
+                highestRank?.service !== "RAF" &&
+                highestRank?.category === "officer" &&
+                csaCount === 3;
             const tooltipRects = drawCsaRibbonRow(
                 csaCtx,
                 csaPairs.map(pair => pair.img),
                 csaCanvas,
-                csaPairs.map(pair => pair.entry)
+                csaPairs.map(pair => pair.entry),
+                { maskRightmostQuarter }
             );
-            const csaCount = csaPairs.length;
             if (tooltipRects.length && csaCount) {
                 const scale = CSA_RIBBON_SCALE;
                 const scaled = document.createElement("canvas");
@@ -328,16 +333,17 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
                 const anchorX = mirroredAnchorX + offsets.x;
                 const anchorY = referencePlacement.y + offsets.y;
 
+                const skewTan = Math.tan(CSA_RIBBON_SKEW_STRENGTH);
                 ctx.save();
                 ctx.shadowColor = CSA_SHADOW_COLOR;
                 ctx.shadowBlur = CSA_SHADOW_BLUR;
                 ctx.shadowOffsetX = CSA_SHADOW_OFFSET_X;
                 ctx.shadowOffsetY = 0;
-                const skewTan = Math.tan(CSA_RIBBON_SKEW_STRENGTH);
                 ctx.translate(anchorX, anchorY);
                 ctx.transform(1, skewTan, 0, 1, 0, 0);
                 ctx.translate(destWidth / 2, destHeight / 2);
                 ctx.rotate(CSA_RIBBON_ROTATION);
+
                 const previousAlpha = ctx.globalAlpha;
                 ctx.globalAlpha = CSA_RIBBON_DRAW_ALPHA;
                 ctx.drawImage(perspectiveCanvas, -destWidth / 2, -destHeight / 2);
@@ -378,6 +384,7 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
                     const width = Math.max(0, maxX - minX - padding * 2);
                     const height = Math.max(0, maxY - minY - padding * 2);
                     registerTooltip(minX + padding, minY + padding, width, height, t.content);
+
                 });
                 debugLog("[PU:render] CSA ribbon tooltip rects registered:", tooltipRects.length);
             }
@@ -388,7 +395,9 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
 
     // Add the finished canvas to container and activate tooltips
     container.prepend(canvas);
+
     setupTooltips(canvas);
+
     debugLog("[PU:render] Canvas appended and tooltips set up");
 }
 
@@ -558,7 +567,8 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
     return tips; // return all award tooltip areas
 }
 
-function drawCsaRibbonRow(ctx, images = [], canvas, entries = []) {
+function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) {
+    const { maskRightmostQuarter = false } = options;
     const limitedImages = images.slice(0, CSA_RIBBON_MAX);
     const limitedEntries = entries.slice(0, CSA_RIBBON_MAX);
     if (!limitedImages.length) {
@@ -589,7 +599,27 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = []) {
 
         const entry = limitedEntries[index];
         const tooltipContent = entry ? `<img src="${entry.tooltipImage}"> ${entry.tooltipText}` : "";
-        tips.push({ x: drawX, y: drawY, width, height, content: tooltipContent });
+        const isLast = index === limitedImages.length - 1;
+        let effectiveWidth = width;
+        if (maskRightmostQuarter && isLast) {
+            const denominator = width <= 20 ? 4 : 5;
+            const cutWidth = Math.max(1, Math.round(width / denominator) - 3);
+            const cutHeight = Math.max(4, Math.min(height, Math.round(height * 0.65)));
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(drawX + width - cutWidth, drawY);
+            ctx.lineTo(drawX + width, drawY);
+            ctx.lineTo(drawX + width, drawY + cutHeight);
+            ctx.closePath();
+            ctx.clip();
+            ctx.clearRect(drawX + width - cutWidth, drawY, cutWidth, cutHeight);
+            ctx.restore();
+
+            effectiveWidth = width - cutWidth;
+        }
+
+        tips.push({ x: drawX, y: drawY, width: effectiveWidth, height, content: tooltipContent });
 
         currentX += width + gap;
     });
