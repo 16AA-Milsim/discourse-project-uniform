@@ -11,6 +11,33 @@ import { awards, groupTooltipMapLC, csaRibbons } from "discourse/plugins/discour
 
 let STATIC_ASSETS_PRELOADED = false;
 
+function toggleBadgesSection(hidden) {
+    const badges = document.querySelector?.(".top-section.badges-section") || document.querySelector?.(".top-section .badges-section");
+    if (!badges) {
+        return;
+    }
+    if (badges.dataset.puOriginalDisplay === undefined) {
+        badges.dataset.puOriginalDisplay = badges.style.display || "";
+    }
+    badges.style.display = hidden ? "none" : badges.dataset.puOriginalDisplay;
+}
+
+function updateBadgesForContainer(containerElement) {
+    const hasCanvas = !!containerElement?.querySelector?.(".discourse-project-uniform-canvas");
+    toggleBadgesSection(hasCanvas);
+}
+
+function ensureBadgeObserver(containerElement) {
+    if (!containerElement || containerElement._puBadgeObserver) {
+        updateBadgesForContainer(containerElement);
+        return;
+    }
+    const observer = new MutationObserver(() => updateBadgesForContainer(containerElement));
+    observer.observe(containerElement, { childList: true, subtree: true });
+    containerElement._puBadgeObserver = observer;
+    updateBadgesForContainer(containerElement);
+}
+
 function preloadStaticAssets() {
     if (STATIC_ASSETS_PRELOADED) {
         return;
@@ -50,6 +77,8 @@ function tearDownExistingUniform(containerElement = document) {
         placeholder.remove();
         debugLog("[PU:init] Removed existing placeholder", { scoped: containerElement !== document });
     }
+
+    updateBadgesForContainer(containerElement);
 }
 
 export default {
@@ -81,6 +110,8 @@ export default {
                     tearDownExistingUniform();
                     return;
                 }
+
+                ensureBadgeObserver(containerElement);
 
                 // If admin-only mode is enabled, ensure current user is admin
                 if (siteSettings.discourse_project_uniform_adminvisibility_only_enabled) {
@@ -199,6 +230,7 @@ export default {
                         prepareAndRenderImages(groups, userBadges, idToBadge, containerElement, awards, groupTooltipMapLC);
                         containerElement._puLastRenderSignature = signature;
                         containerElement._puLastUsername = username;
+                        updateBadgesForContainer(containerElement);
                         debugLog("[PU:init] prepareAndRenderImages done");
                     })
                     .catch(e => debugLog("[PU:init] Error fetching user data:", e));
