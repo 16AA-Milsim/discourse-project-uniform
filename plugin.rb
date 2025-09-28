@@ -1,6 +1,6 @@
 # name: discourse-project-uniform
 # about: Discourse Project Uniform
-# version: 0.9.0
+# version: 0.9.1
 # authors: OpenAI & Darojax
 # url: https://github.com/16AA-Milsim/discourse-project-uniform
 
@@ -12,24 +12,31 @@ add_admin_route "discourse_project_uniform.title", "discourse-project-uniform"
 register_asset "stylesheets/canvas-tooltip.scss"
 
 after_initialize do
-  # Precompute a combined cache key so asset URLs change whenever the plugin
-  # version or any tracked image asset is updated. This keeps client caches hot
-  # while still busting them automatically when new art is deployed.
+  # Precompute a combined cache key so the ?v= param on every asset changes
+  # whenever the plugin version OR any image bytes under /public/images change.
+  # This lets browsers keep a hot cache while guaranteeing fresh art after
+  # deployments.
   plugin = Discourse.plugins.find { |p| p.name == "discourse-project-uniform" }
 
-  image_cache_digest = begin
-    plugin_path = plugin&.path
-    images_path = plugin_path ? File.join(plugin_path, "public", "images") : nil
+  plugin_root =
+    if plugin&.path.present?
+      plugin.path
+    else
+      # Fallback to the directory above this file when the plugin registry
+      # has not been fully initialised (e.g. during asset precompilation).
+      File.expand_path("..", __dir__)
+    end
 
-    if images_path && Dir.exist?(images_path)
+  images_path = File.join(plugin_root, "public", "images")
+
+  image_cache_digest = begin
+    if Dir.exist?(images_path)
       digest = Digest::SHA1.new
       Dir[File.join(images_path, "**", "*")].sort.each do |path|
         next unless File.file?(path)
-        stat = File.stat(path)
         relative = path.delete_prefix("#{images_path}/")
         digest.update(relative)
-        digest.update(stat.size.to_s)
-        digest.update(stat.mtime.to_i.to_s)
+        digest.update(Digest::SHA1.file(path).digest)
       end
       digest.hexdigest
     end
@@ -39,8 +46,14 @@ after_initialize do
   end
 
   project_uniform_cache_key = begin
-    parts = [plugin&.metadata&.version, image_cache_digest].compact
-    parts.any? ? parts.join("-") : nil
+    components = [plugin&.metadata&.version, image_cache_digest].compact
+    if components.any?
+      components.join("-")
+    else
+      # Ensure we still bust caches even if digest calculation fails for any
+      # reason (e.g. permissions); this prevents serving stale assets.
+      "fallback-#{Time.now.to_i}"
+    end
   end
 
   # Expose plugin version to JS via Site serializer (safe across Discourse versions)

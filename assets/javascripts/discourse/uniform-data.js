@@ -72,6 +72,7 @@ export const csaLeadershipQualificationNames = Object.freeze([
 
 const csaAliasSet = (name) => [name, `${name}_IC`, `${name}_2IC`];
 
+// CSA ribbons now support service-specific art variants (e.g., RAF vs BA).
 const csaRibbon = (name, ribbonFile, tooltipFile, tipText, serviceVariants = {}) => ({
   name,
   imageKey: puPaths.csaRibbon(ribbonFile),

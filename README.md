@@ -4,10 +4,9 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 ![Showcase Image](./assets/showcase.png)
 
 ## Debug Mode
-Debug Mode can be set to 'true' or 'false' via the first line of code in the assets/javascripts/discourse/lib/pu-utils.js file, this will override the Debug Mode setting for the plugin in the discourse admin panel. Debug Mode will add browser dev console output and show tooltip areas outlined with red rectangles.
+Debug Mode can be toggled via the site setting `discourse_project_uniform_debug_enabled`. Setting `DEBUG_MODE` at the top of `assets/javascripts/discourse/lib/pu-utils.js` forces it on regardless of the admin value. When enabled, the browser console logs renderer events and tooltip hitboxes render as red outlines.
 
 ## To-Do
-- [ ] Quick fade-in of the rendered uniform?
 - [ ] Change RAMC collar badges to RAMS.
 - [ ] Readjust the collar badges for 16CSMR and 7RHA persective, based on the current parachute reg collar badges.
 - [ ] Tooltips for the parachute regiment collar badges.
@@ -21,6 +20,7 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 - [ ] Add and organise implementation of remaining qualifications graphics
 - [ ] Community Support Arms ?
 - [ ] Make the uniform accessible externally outside the discourse forum?
+- [ ] Major rank and other crowns should show the Tudor crown
 - [ ] More...
 
 ### Issues:
@@ -31,19 +31,19 @@ Debug Mode can be set to 'true' or 'false' via the first line of code in the ass
 ### 1) Features
 
 * **Uniform on users Summary tab**
-  Automatically renders a British-Army/RAF style uniform on a member’s Discourse user Summary page. The uniform shows rank insignia, unit/group crests, lanyards, qualifications badges, and up to 12 medal ribbons (three rows of four) with perspective-aware spacing.
+  Automatically renders a British-Army/RAF style uniform on a member’s Discourse user Summary page. The uniform shows rank insignia, unit/group crests, lanyards, qualification badges, and up to 12 medal ribbons (three rows of four) with perspective-aware spacing. The canvas fades in over 0.5 s for a cleaner load.
 
 * **Per-group visuals & lanyards (including Platoon/FSG/Signals/CSMR)**
   Group membership adds crests and appropriate **lanyard** images; each lanyard has a defined tooltip region on the canvas.
 
-* **Per-service variants for some quals**
-  Examples: **Paratrooper** badge swaps to a RAF variant when the user’s highest rank is RAF. **1st Class Marksman** does not display for 16CSMR members, flight ranks, or BA ranks of WO2 or above.
+* **Per-service variants for some quals and ribbons**
+  Examples: **Paratrooper** badge swaps to a RAF variant when the user’s highest rank is RAF, and CSA ribbons automatically switch to the RAF artwork when appropriate. **1st Class Marksman** does not display for 16CSMR members, flight ranks, or BA ranks of WO2 or above.
 
 * **Rich tooltips (hoverable hot-zones)**
   Hovering over rank patches, qualifications, lanyards, group crests, and ribbons shows image-backed tooltips (with image + text).
 
 * **Fast page loads via image caching**
-  Foreground and ribbon images are loaded with an in-memory cache to avoid re-downloads.
+  Foreground and ribbon images are loaded with an in-memory cache, while the server-side cache key automatically changes whenever the plugin version or any image bytes change, ensuring updated art is fetched immediately.
 
 ### 2) Discourse Admin Options
 

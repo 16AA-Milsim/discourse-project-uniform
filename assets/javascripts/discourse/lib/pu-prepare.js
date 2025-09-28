@@ -293,6 +293,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
     // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
     if (bg) {
+        // Swap CSA ribbon art if the current service has a dedicated variant.
         const csaRibbonsForService = csaRibbonsToRender.map((ribbon) => {
             const serviceKey = highestRank?.service;
             const variantImage = serviceKey ? ribbon?.serviceVariants?.[serviceKey] : null;

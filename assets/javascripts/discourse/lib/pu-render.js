@@ -602,6 +602,9 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) 
         const isLast = index === limitedImages.length - 1;
         let effectiveWidth = width;
         if (maskRightmostQuarter && isLast) {
+            // Trim a diagonal wedge so the top-right ribbon corner sits beneath
+            // the officer chest strap while leaving the uniform background
+            // intact.
             const denominator = width <= 20 ? 4 : 5;
             const cutWidth = Math.max(1, Math.round(width / denominator) - 3);
             const cutHeight = Math.max(4, Math.min(height, Math.round(height * 0.65)));
