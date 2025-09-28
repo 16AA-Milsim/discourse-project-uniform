@@ -88,36 +88,62 @@ function versionSuffix() {
   return cachedVersionSuffix;
 }
 
+function resolveAssetTokens() {
+  const site = lookupSiteModel();
+  if (site?.project_uniform_asset_tokens) {
+    return site.project_uniform_asset_tokens;
+  }
+  return window?.__site__?.project_uniform_asset_tokens || null;
+}
+
+function assetToken(category, fileName) {
+  if (!category || !fileName) {
+    return null;
+  }
+  const tokens = resolveAssetTokens();
+  return tokens?.[category]?.[fileName] || null;
+}
+
+function cacheBusterSuffix(category, fileName) {
+  const token = assetToken(category, fileName);
+  if (token) {
+    return `?v=${encodeURIComponent(token)}`;
+  }
+  return versionSuffix();
+}
+
 // Helper to generate canonical asset URLs for each asset category
 export const puPaths = {
-  uniform: (file) => getURL(`${BASE}/uniforms/${file}${versionSuffix()}`),
+  uniform: (file) => getURL(`${BASE}/uniforms/${file}${cacheBusterSuffix("uniforms", file)}`),
 
   rank: (fileOrKey) => {
     const m = String(fileOrKey).match(/^(.*?)(?:\.(png|jpg|jpeg))?$/i);
     const base = m ? m[1] : String(fileOrKey);
-    return EXT_CANDIDATES.map(
-      (ext) => getURL(`${BASE}/ranks/${base}.${ext}${versionSuffix()}`)
-    );
+    return EXT_CANDIDATES.map((ext) => {
+      const file = `${base}.${ext}`;
+      return getURL(`${BASE}/ranks/${file}${cacheBusterSuffix("ranks", file)}`);
+    });
   },
 
-  ribbon:  (file) => getURL(`${BASE}/ribbons/${file}${versionSuffix()}`),
-  medal:   (file) => getURL(`${BASE}/medals/${file}${versionSuffix()}`),
-  lanyard: (file) => getURL(`${BASE}/lanyards/${file}${versionSuffix()}`),
-  group:   (file) => getURL(`${BASE}/groups/${file}${versionSuffix()}`),
-  csaRibbon: (file) => getURL(`${BASE}/csa/${file}${versionSuffix()}`),
-  csaTooltip: (file) => getURL(`${BASE}/csa_tooltips/${file}${versionSuffix()}`),
+  ribbon:  (file) => getURL(`${BASE}/ribbons/${file}${cacheBusterSuffix("ribbons", file)}`),
+  medal:   (file) => getURL(`${BASE}/medals/${file}${cacheBusterSuffix("medals", file)}`),
+  lanyard: (file) => getURL(`${BASE}/lanyards/${file}${cacheBusterSuffix("lanyards", file)}`),
+  group:   (file) => getURL(`${BASE}/groups/${file}${cacheBusterSuffix("groups", file)}`),
+  csaRibbon: (file) => getURL(`${BASE}/csa/${file}${cacheBusterSuffix("csa", file)}`),
+  csaTooltip: (file) => getURL(`${BASE}/csa_tooltips/${file}${cacheBusterSuffix("csa_tooltips", file)}`),
 
   qual: (fileOrKey) => {
     const m = String(fileOrKey).match(/^(.*?)(?:\.(png|jpg|jpeg))?$/i);
     const base = m ? m[1] : String(fileOrKey);
-    return EXT_CANDIDATES.map(
-      (ext) => getURL(`${BASE}/qualifications/${base}.${ext}${versionSuffix()}`)
-    );
+    return EXT_CANDIDATES.map((ext) => {
+      const file = `${base}.${ext}`;
+      return getURL(`${BASE}/qualifications/${file}${cacheBusterSuffix("qualifications", file)}`);
+    });
   },
 
-  tooltipRank:    (file) => getURL(`${BASE}/tooltip_rankimages/${file}${versionSuffix()}`),
-  tooltipQual:    (file) => getURL(`${BASE}/tooltip_qualificationimages/${file}${versionSuffix()}`),
-  tooltipLanyard: (file) => getURL(`${BASE}/tooltip_lanyardimages/${file}${versionSuffix()}`),
+  tooltipRank:    (file) => getURL(`${BASE}/tooltip_rankimages/${file}${cacheBusterSuffix("tooltip_rankimages", file)}`),
+  tooltipQual:    (file) => getURL(`${BASE}/tooltip_qualificationimages/${file}${cacheBusterSuffix("tooltip_qualificationimages", file)}`),
+  tooltipLanyard: (file) => getURL(`${BASE}/tooltip_lanyardimages/${file}${cacheBusterSuffix("tooltip_lanyardimages", file)}`),
 };
 
 /**

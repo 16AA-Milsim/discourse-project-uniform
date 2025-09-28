@@ -1,6 +1,6 @@
 # name: discourse-project-uniform
 # about: Discourse Project Uniform
-# version: 0.9.1
+# version: 0.9.3
 # authors: OpenAI & Darojax
 # url: https://github.com/16AA-Milsim/discourse-project-uniform
 
@@ -35,71 +35,78 @@ module ::DiscourseProjectUniform
       File.join(plugin_root, "public", "images")
     end
 
-    def directory_signature
-      base = images_path
-      return nil unless Dir.exist?(base)
-
-      Dir[File.join(base, "**", "*")].filter_map do |path|
-        next unless File.file?(path)
-        File.mtime(path).to_f
-      end.max
-    rescue => e
-      Rails.logger.warn("[discourse-project-uniform] cache signature error: #{e.message}")
-      nil
+    def snapshot
+      mutex.synchronize do
+        @snapshot ||= compute_snapshot
+      end
     end
 
-    def compute_digest
+    def compute_snapshot
       base = images_path
-      return nil unless Dir.exist?(base)
-
       digest = Digest::SHA1.new
-      Dir[File.join(base, "**", "*")].sort.each do |path|
-        next unless File.file?(path)
-        relative = path.delete_prefix("#{base}/")
-        digest.update(relative)
-        digest.update(Digest::SHA1.file(path).digest)
+      assets = Hash.new { |hash, key| hash[key] = {} }
+
+      if Dir.exist?(base)
+        Dir[File.join(base, "**", "*")].sort.each do |path|
+          next unless File.file?(path)
+
+          relative = path.delete_prefix("#{base}/")
+          category, file_name = relative.split("/", 2)
+          next unless category && file_name
+
+          file_digest = Digest::SHA1.file(path).hexdigest
+          assets[category][file_name] = file_digest
+
+          digest.update(relative)
+          digest.update(file_digest)
+        end
       end
-      digest.hexdigest
+
+      aggregated_key = build_key(digest, assets)
+      { key: aggregated_key, assets: finalize_assets(assets) }
     rescue => e
       Rails.logger.warn("[discourse-project-uniform] cache digest error: #{e.message}")
-      nil
+      { key: fallback_key, assets: {} }
     end
 
-    def build_key(signature)
+    def finalize_assets(assets)
+      assets.each_with_object({}) do |(category, files), result|
+        result[category] = files.dup
+      end
+    end
+
+    def fallback_key
+      "fallback-#{Time.now.to_i}"
+    end
+
+    def build_key(digest, assets)
       components = []
       version = plugin_version
       components << version if version
-      digest = compute_digest
 
-      if digest
-        components << digest
-      elsif signature
-        components << "sig-#{signature.to_i}"
+      unless assets.empty?
+        components << digest.hexdigest
       end
 
       if components.any?
         components.join("-")
       else
-        "fallback-#{Time.now.to_i}"
+        fallback_key
       end
     end
 
     def current
-      mutex.synchronize do
-        signature = directory_signature
-        cache = @cache
-        if cache && cache[:signature] == signature && cache[:key]
-          return cache[:key]
-        end
+      snapshot[:key]
+    end
 
-        key = build_key(signature)
-        @cache = { signature: signature, key: key }
-        key
+    def assets_tokens
+      snapshot[:assets].each_with_object({}) do |(category, files), result|
+        result[category] = files.dup
       end
     end
 
     def reset!
-      mutex.synchronize { @cache = nil }
+      mutex.synchronize { @snapshot = nil }
     end
   end
 end
@@ -117,6 +124,10 @@ after_initialize do
 
   add_to_serializer(:site, :project_uniform_cache_key) do
     ::DiscourseProjectUniform::CacheKey.current
+  end
+
+  add_to_serializer(:site, :project_uniform_asset_tokens) do
+    ::DiscourseProjectUniform::CacheKey.assets_tokens
   end
 
   # Safer to keep custom routes inside after_initialize
