@@ -54,12 +54,12 @@ const lanyardCfg = (image, groups, tipImage, tipText) => ({
 
 export const csaLeadershipOverrideByRibbonCount = deepFreeze({
   default: {
-    imagePlacement: { x: 9, y: -11 },
-    tooltipAreas: [rect(196, 195, 36, 36)],
+    imagePlacement: { x: 172, y: 210 },
+    tooltipAreas: [rect(172, 210, 42, 41)],
   },
   1: {
-    imagePlacement: { x: 6, y: -11 },
-    tooltipAreas: [rect(191, 195, 36, 36)],
+    imagePlacement: { x: 169, y: 210 },
+    tooltipAreas: [rect(169, 210, 42, 41)],
   },
 });
 
@@ -555,6 +555,15 @@ export const leadershipQualificationsOrder = deepFreeze([
 ]);
 export const marksmanshipQualificationsOrder = deepFreeze(["1st Class Marksman", "Sharpshooter", "Sniper"]);
 export const pilotQualificationsOrder = deepFreeze(["Junior Pilot", "Senior Pilot"]);
+export const ctmQualificationsOrder = deepFreeze(["CTM", "CTM Bronze", "CTM Silver", "CTM Gold"]);
+export const ctmRenderDefaults = Object.freeze({
+  basePlacement: Object.freeze({ x: 202, y: 222 }),
+  rotationDegrees: 2,
+  leaderAnchorOffset: Object.freeze({ x: 30, y: 12 }),
+  plainVariantName: "CTM",
+  plainVariantExtraYOffset: 2,
+});
+
 
 export const qualifications = deepFreeze([
   // --- Senior Pilot
@@ -623,12 +632,44 @@ export const qualifications = deepFreeze([
     [{ x: 10, y: 558, width: 42, height: 72 }]
   ),
   qual(
+    "CTM Gold",
+    "ctm_gold",
+    [],
+    "ctmgold__v2.png",
+    "<center><b>CTM Gold</b></center><br>Awarded on the successful completion of the Combat Team Medic course, with a Gold Grade. Gives the individual knowledge of basic triage and care under fire.",
+    [{ x: 202, y: 222, width: 26, height: 24 }]
+  ),
+  qual(
+    "CTM Silver",
+    "ctm_silver",
+    [],
+    "ctmsilver__v2.png",
+    "<center><b>CTM Silver</b></center><br>Awarded on the successful completion of the Combat Team Medic course, with a Silver Grade. Gives the individual knowledge of basic triage and care under fire.",
+    [{ x: 202, y: 222, width: 26, height: 24 }]
+  ),
+  qual(
+    "CTM Bronze",
+    "ctm_bronze",
+    [],
+    "ctmbronze__v2.png",
+    "<center><b>CTM Bronze</b></center><br>Awarded on the successful completion of the Combat Team Medic course, with a Bronze Grade. Gives the individual knowledge of basic triage and care under fire.",
+    [{ x: 202, y: 222, width: 26, height: 24 }]
+  ),
+  qual(
+    "CTM",
+    "ctm",
+    [],
+    "ctm__v2.jpg",
+    "<center><b>Combat Team Medic (CTM)</b></center><br>Awarded on the successful completion of the Combat Team Medic course. Gives the individual knowledge of basic triage and care under fire.",
+    [{ x: 202, y: 222, width: 26, height: 24 }]
+  ),
+  qual(
     "FTCC",
     "ftcc",
     [],
-    "ftcc.jpg",
+    "ftcc__v2.jpg",
     "<center><b>Fire Team Commander's Course (FTCC)</b></center><br>Awarded on the successful completion of the FTCC course. Provides the upcoming commander with the knowledge required to command a fireteam.",
-    [{ x: 192, y: 206, width: 30, height: 38 }]
+    [{ x: 172, y: 210, width: 42, height: 41 }]
   ),
   qual(
     "CC",
@@ -636,7 +677,7 @@ export const qualifications = deepFreeze([
     [],
     "cc.png",
     "<center><b>Commander's Course (CC)</b></center><br>Awarded on the successful completion of the Commander's Course. Provides the commander with the knowledge and skills required to lead both a fireteam and a section in battle.",
-    [{ x: 188, y: 206, width: 36, height: 38 }],
+    [{ x: 172, y: 210, width: 42, height: 41 }],
     {},
     {},
     ["Commander's Course"]
@@ -656,7 +697,7 @@ export const qualifications = deepFreeze([
     [],
     "pcbc.jpg",
     "<center><b>Platoon Commander's Battle Course (PCBC)</b></center><br>Awarded on the successful completion of the PCBC course. Gives the senior commander the necessary skills and knowledge to lead a platoon.",
-    [{ x: 188, y: 206, width: 36, height: 38 }]
+    [{ x: 172, y: 210, width: 42, height: 41 }]
   ),
   qual(
     "PSBC",
@@ -664,7 +705,7 @@ export const qualifications = deepFreeze([
     [],
     "psbc.jpg",
     "<center><b>Platoon Sergeant's Battle Course (PSBC)</b></center><br>Awarded on the successful completion of the PSBC course. Prepares the junior commander for the duties and responsibilities of a Platoon Sergeant and introduces them to the command of a full rifle platoon.",
-    [{ x: 188, y: 206, width: 36, height: 38 }]
+    [{ x: 172, y: 210, width: 42, height: 41 }]
   ),
   qual(
     "SCBC",
@@ -672,7 +713,7 @@ export const qualifications = deepFreeze([
     [],
     "scbc.jpg",
     "<center><b>Section Commander's Battle Course (SCBC)</b></center><br>Awarded on the successful completion of the SCBC course. Teaches the individual the skills required to lead a section.",
-    [{ x: 188, y: 206, width: 36, height: 38 }]
+    [{ x: 172, y: 210, width: 42, height: 41 }]
   ),
   qual(
     "Sniper",

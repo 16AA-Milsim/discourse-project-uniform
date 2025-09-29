@@ -417,8 +417,25 @@ function drawImages(ctx, images = [], canvas, items = []) {
             const hasPos = it && typeof it === "object" && Number.isFinite(it.x) && Number.isFinite(it.y);
             const x = hasPos ? it.x : (canvas.width - img.naturalWidth) / 2;
             const y = hasPos ? it.y : (canvas.height - img.naturalHeight) / 2;
-            ctx.drawImage(img, x, y, img.naturalWidth, img.naturalHeight);
-            debugLog(`[PU:render] Drew foreground image ${i} at (${x}, ${y}) size ${img.naturalWidth}x${img.naturalHeight}`);
+            const rotationDegrees = it && typeof it === "object" && Number.isFinite(it.rotationDegrees)
+                ? it.rotationDegrees
+                : 0;
+            const rotationRadians = rotationDegrees ? (rotationDegrees * Math.PI) / 180 : 0;
+
+            if (rotationRadians) {
+                const cx = x + img.naturalWidth / 2;
+                const cy = y + img.naturalHeight / 2;
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rotationRadians);
+                ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2, img.naturalWidth, img.naturalHeight);
+                ctx.restore();
+            } else {
+                ctx.drawImage(img, x, y, img.naturalWidth, img.naturalHeight);
+            }
+
+            debugLog(`[PU:render] Drew foreground image ${i} at (${x}, ${y}) size ${img.naturalWidth}x${img.naturalHeight}` +
+                (rotationRadians ? ` rotated ${rotationDegrees}deg` : ""));
         } else {
             debugLog(`[PU:render] Foreground image ${i} missing dimensions`, img);
         }

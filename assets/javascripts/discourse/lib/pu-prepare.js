@@ -20,6 +20,7 @@ import {
     marksmanshipQualificationsOrder,
     pilotQualificationsOrder,
     ctmQualificationsOrder,
+    ctmRenderDefaults,
     csaRibbonGroupMapLC,
     csaLeadershipOverrideByRibbonCount,
     csaLeadershipQualificationNames,
@@ -66,9 +67,15 @@ const marksmanshipOrderLC = marksmanshipQualificationsOrder.map(toLC);
 const pilotOrderLC = pilotQualificationsOrder.map(toLC);
 const ctmOrderLC = ctmQualificationsOrder.map(toLC);
 const CTM_NAME_SET = new Set(ctmOrderLC);
-const CTM_DEFAULT_PLACEMENT = Object.freeze({ x: 202, y: 222 });
-const CTM_ROTATION_DEGREES = 3;
-const CTM_LEADERSHIP_OFFSET_X = 30;
+const CTM_BASE_PLACEMENT = Object.freeze({
+    x: Number(ctmRenderDefaults?.basePlacement?.x ?? 0),
+    y: Number(ctmRenderDefaults?.basePlacement?.y ?? 0),
+});
+const CTM_ROTATION_DEGREES = Number(ctmRenderDefaults?.rotationDegrees ?? 0);
+const CTM_ANCHOR_OFFSET_X = Number(ctmRenderDefaults?.leaderAnchorOffset?.x ?? 0);
+const CTM_ANCHOR_OFFSET_Y = Number(ctmRenderDefaults?.leaderAnchorOffset?.y ?? 0);
+const CTM_PLAIN_NAME_LC = toLC(ctmRenderDefaults?.plainVariantName || "CTM");
+const CTM_PLAIN_EXTRA_Y = Number(ctmRenderDefaults?.plainVariantExtraYOffset ?? 0);
 
 /**
  * Finds the highest-ranked name in `order` that is present in the provided set.
@@ -142,10 +149,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         .sort((a, b) => compareCsaNames(a.name, b.name))
         .slice(0, 3);
     const csaRibbonCount = csaRibbonsToRender.length;
-    const hasCsaRibbons = csaRibbonCount > 0;
-    const leadershipOverrideForCount = hasCsaRibbons
-        ? (csaLeadershipOverrideByRibbonCount[csaRibbonCount] || csaLeadershipOverrideByRibbonCount.default)
-        : null;
+    const leadershipOverrideForCount = csaLeadershipOverrideByRibbonCount[csaRibbonCount] || csaLeadershipOverrideByRibbonCount.default;
 
     // Badge name set (lowercased) the user has
     const badgeNameSetLC = new Set(
@@ -303,26 +307,23 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const hasLeadershipQual = qualsToRender.some((qual) =>
         leadershipOrderLC.includes(canonicalLeadershipName(toLC(qual.name)))
     );
+    const baseLeaderPlacement = csaLeadershipOverrideByRibbonCount?.default?.imagePlacement || { x: 0, y: 0 };
+    const activeLeaderPlacement = leadershipOverrideForCount?.imagePlacement || baseLeaderPlacement;
+
+    const adjustedQualMap = new Map();
+    const ctmTooltipBases = new Map();
 
     // Build adjusted qualification list with ribbon-row-specific tooltip boxes
     const adjustedQuals = qualsToRender.map((q) => {
         const rrAreas = q?.ribbonRowVariants?.ribbonRowTooltipAreas?.[ribbonRows];
-        let clone = q;
-        const ensureClone = () => {
-            if (clone === q) {
-                clone = { ...q };
-            }
-        };
-        const setTooltipAreas = (areas = []) => {
-            ensureClone();
-            clone.tooltipAreas = areas.map((area) => ({ ...area }));
-        };
+        const baseAreas = Array.isArray(rrAreas)
+            ? rrAreas
+            : Array.isArray(q.tooltipAreas)
+                ? q.tooltipAreas
+                : [];
 
-        if (Array.isArray(rrAreas)) {
-            setTooltipAreas(rrAreas);
-        } else if (Array.isArray(q.tooltipAreas)) {
-            setTooltipAreas(q.tooltipAreas);
-        }
+        const clonedAreas = baseAreas.map((area) => ({ ...area }));
+        const clone = { ...q, tooltipAreas: clonedAreas };
 
         const nameLC = toLC(q.name);
         const canonicalLC = canonicalLeadershipName(nameLC);
@@ -331,37 +332,29 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const isCtm = CTM_NAME_SET.has(nameLC);
 
         if (leadershipOverrideCandidate && leadershipOverrideForCount?.tooltipAreas) {
-            setTooltipAreas(leadershipOverrideForCount.tooltipAreas);
+            clone.tooltipAreas = leadershipOverrideForCount.tooltipAreas.map((area) => ({ ...area }));
         }
 
+        adjustedQualMap.set(q, clone);
+
         if (isCtm) {
-            const baseAreas = clone?.tooltipAreas?.length
-                ? clone.tooltipAreas
-                : Array.isArray(q.tooltipAreas) ? q.tooltipAreas : [];
-            if (baseAreas?.length) {
-                const offsetX = hasLeadershipQual ? CTM_LEADERSHIP_OFFSET_X : 0;
-                const offsetY = leadershipOverrideForCount?.imagePlacement?.y || 0;
-                const shiftedAreas = baseAreas.map((area) => ({
-                    ...area,
-                    x: area.x + offsetX,
-                    y: area.y + offsetY + (nameLC === toLC("CTM") ? 3 : 0),
-                }));
-                setTooltipAreas(shiftedAreas);
-            }
+            ctmTooltipBases.set(q, baseAreas.map((area) => ({ ...area })));
         }
 
         return clone;
     });
-
     // Push qualification images into foregroundItems, using absolute coords for pilots only
     const service = highestRank?.service; // "BA" | "RAF"
+    const ctmForegroundData = [];
+
     qualsToRender.forEach((q) => {
+        const adjustedQual = adjustedQualMap.get(q) || q;
         const chosenUrl = (q.serviceVariants && q.serviceVariants[service]) || q.imageKey;
 
-        // Pilot-only: absolute coords per ribbonRows, stored with the qual
         const pilotPos = q?.ribbonRowVariants?.imagePlacementByRows?.[ribbonRows];
         const nameLC = toLC(q.name);
         const canonicalLC = canonicalLeadershipName(nameLC);
+        const isLeader = leadershipOrderLC.includes(canonicalLC);
         const leadershipOverrideActive = leadershipOverrideForCount &&
             CSA_LEADERSHIP_NAMES.has(canonicalLC);
         const isCtm = CTM_NAME_SET.has(nameLC);
@@ -370,40 +363,72 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         if (!finalPos && leadershipOverrideActive && leadershipOverrideForCount?.imagePlacement) {
             finalPos = { ...leadershipOverrideForCount.imagePlacement };
         }
-
-        if (isCtm) {
-            if (!finalPos) {
-                finalPos = { ...CTM_DEFAULT_PLACEMENT };
-            }
-
-            const offsetY = leadershipOverrideForCount?.imagePlacement?.y || 0;
-            if (offsetY) {
-                finalPos = { ...finalPos, y: finalPos.y + offsetY };
-            }
-
-            if (hasLeadershipQual) {
-                finalPos = { ...finalPos, x: finalPos.x + CTM_LEADERSHIP_OFFSET_X };
-            }
-
-            if (nameLC === toLC("CTM")) {
-                finalPos = { ...finalPos, y: finalPos.y + 2 };
-            }
+        if (!finalPos && isLeader) {
+            finalPos = { ...activeLeaderPlacement };
         }
 
-        let pushOptions = finalPos ? { ...finalPos } : null;
         if (isCtm) {
-            pushOptions = pushOptions ? { ...pushOptions } : {};
-            pushOptions.rotationDegrees = CTM_ROTATION_DEGREES;
-        }
+            const pushOptions = { ...CTM_BASE_PLACEMENT };
+            if (CTM_ROTATION_DEGREES) {
+                pushOptions.rotationDegrees = CTM_ROTATION_DEGREES;
+            }
 
-        if (pushOptions) {
-            pushFg(chosenUrl, pushOptions);
+            const fgEntry = pushFg(chosenUrl, pushOptions);
+
+            ctmForegroundData.push({
+                adjustedQual,
+                baseTooltip: ctmTooltipBases.get(q) || [],
+                fgEntry,
+                isPlain: nameLC === CTM_PLAIN_NAME_LC,
+            });
+
+            debugLog("[PU:prepare] Queue CTM image (pending alignment):", q.name);
         } else {
-            // Other quals: centered by renderer
-            pushFg(chosenUrl);
+            const pushOptions = finalPos ? { ...finalPos } : null;
+            pushFg(chosenUrl, pushOptions);
+            debugLog("[PU:prepare] Add qualification image (post-awards):", q.name, finalPos || "(centered)");
+        }
+    });
+
+    const leaderPlacement = hasLeadershipQual
+        ? {
+            x: Number(activeLeaderPlacement?.x ?? baseLeaderPlacement.x),
+            y: Number(activeLeaderPlacement?.y ?? baseLeaderPlacement.y),
+        }
+        : null;
+
+    ctmForegroundData.forEach((entry) => {
+        let finalPosX = CTM_BASE_PLACEMENT.x;
+        let finalPosY = CTM_BASE_PLACEMENT.y;
+
+        if (leaderPlacement) {
+            finalPosX = leaderPlacement.x + CTM_ANCHOR_OFFSET_X;
+            finalPosY = leaderPlacement.y + CTM_ANCHOR_OFFSET_Y;
         }
 
-        debugLog("[PU:prepare] Add qualification image (post-awards):", q.name, finalPos || "(centered)");
+        if (entry.isPlain && CTM_PLAIN_EXTRA_Y) {
+            finalPosY += CTM_PLAIN_EXTRA_Y;
+        }
+
+        if (entry.fgEntry) {
+            entry.fgEntry.x = finalPosX;
+            entry.fgEntry.y = finalPosY;
+        }
+
+        const baseTooltip = entry.baseTooltip.length
+            ? entry.baseTooltip
+            : entry.adjustedQual.tooltipAreas || [];
+        if (baseTooltip.length) {
+            const deltaX = finalPosX - CTM_BASE_PLACEMENT.x;
+            const deltaY = finalPosY - CTM_BASE_PLACEMENT.y;
+            entry.adjustedQual.tooltipAreas = baseTooltip.map((area) => ({
+                ...area,
+                x: area.x + deltaX,
+                y: area.y + deltaY,
+            }));
+        }
+
+        debugLog("[PU:prepare] Align CTM image with leadership:", entry.adjustedQual.name, { x: finalPosX, y: finalPosY });
     });
 
     // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
