@@ -66,9 +66,15 @@ export const csaLeadershipOverrideByRibbonCount = deepFreeze({
 export const csaLeadershipQualificationNames = Object.freeze([
   "FTCC",
   "SCBC",
+  "CC",
+  "Commander's Course",
   "PSBC",
   "PCBC",
 ]);
+
+export const leadershipQualificationAliases = Object.freeze({
+  "Commander's Course": "CC",
+});
 
 const csaAliasSet = (name) => [name, `${name}_IC`, `${name}_2IC`];
 
@@ -82,8 +88,19 @@ const csaRibbon = (name, ribbonFile, tooltipFile, tipText, serviceVariants = {})
   qualifyingGroups: csaAliasSet(name),
 });
 
-const qual = (name, key, restrictedRanks, tipImg, tipText, areas, serviceVariants = {}, ribbonRowVariants = {}) => ({
+const qual = (
   name,
+  key,
+  restrictedRanks,
+  tipImg,
+  tipText,
+  areas,
+  serviceVariants = {},
+  ribbonRowVariants = {},
+  aliases = []
+) => ({
+  name,
+  aliases,
   imageKey: puPaths.qual(`${key}.png`),
   restrictedRanks,
   tooltipImage: puPaths.tooltipQual(tipImg),
@@ -529,7 +546,13 @@ export const lanyardToImageMapLC = deepFreeze(
 );
 
 // ---------- qualifications ----------
-export const leadershipQualificationsOrder = deepFreeze(["FTCC", "SCBC", "PSBC", "PCBC"]);
+export const leadershipQualificationsOrder = deepFreeze([
+  "FTCC",
+  "SCBC",
+  "CC",
+  "PSBC",
+  "PCBC",
+]);
 export const marksmanshipQualificationsOrder = deepFreeze(["1st Class Marksman", "Sharpshooter", "Sniper"]);
 export const pilotQualificationsOrder = deepFreeze(["Junior Pilot", "Senior Pilot"]);
 
@@ -608,6 +631,17 @@ export const qualifications = deepFreeze([
     [{ x: 192, y: 206, width: 30, height: 38 }]
   ),
   qual(
+    "CC",
+    "cc",
+    [],
+    "cc.png",
+    "<center><b>Commander's Course (CC)</b></center><br>Awarded on the successful completion of the Commander's Course. Provides the commander with the knowledge and skills required to lead both a fireteam and a section in battle.",
+    [{ x: 188, y: 206, width: 36, height: 38 }],
+    {},
+    {},
+    ["Commander's Course"]
+  ),
+  qual(
     "Paratrooper",
     "paratrooper",
     [],
@@ -659,11 +693,23 @@ export const qualifications = deepFreeze([
 ]);
 
 export const qualificationToImageMap = deepFreeze(
-  Object.fromEntries(qualifications.map((q) => [q.name, q.imageKey]))
+  Object.fromEntries(
+    qualifications.flatMap((q) => {
+      const entries = [[q.name, q.imageKey]];
+      (q.aliases || []).forEach((alias) => entries.push([alias, q.imageKey]));
+      return entries;
+    })
+  )
 );
 
 export const qualificationsByNameLC = deepFreeze(
-  Object.fromEntries(qualifications.map((q) => [q.name.toLowerCase(), q]))
+  Object.fromEntries(
+    qualifications.flatMap((q) => {
+      const entries = [[q.name.toLowerCase(), q]];
+      (q.aliases || []).forEach((alias) => entries.push([alias.toLowerCase(), q]));
+      return entries;
+    })
+  )
 );
 
 // ---------- CSA ribbons ----------

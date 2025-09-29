@@ -7,6 +7,8 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 Debug Mode can be toggled via the site setting `discourse_project_uniform_debug_enabled`. Setting `DEBUG_MODE` at the top of `assets/javascripts/discourse/lib/pu-utils.js` forces it on regardless of the admin value. When enabled, the browser console logs renderer events and tooltip hitboxes render as red outlines.
 
 ## To-Do
+- [ ] Go over all tooltip text to ensure proper line breaks.
+- [ ] Readjust tooltips so they attempt to respect and stay within the uniform canvas, even the lower edge of the canvas.
 - [ ] Change RAMC collar badges to RAMS.
 - [ ] Readjust the collar badges for 16CSMR and 7RHA persective, based on the current parachute reg collar badges.
 - [ ] Tooltips for the parachute regiment collar badges.
@@ -119,10 +121,11 @@ Debug Mode can be toggled via the site setting `discourse_project_uniform_debug_
 
 **Leadership track (only highest shown):**
 
-* **PCBC** (Platoon Commanders Battle Course)
-* **PSBC** (Platoon Sergeants Battle Course)
-* **SCBC** (Section Commanders Battle Course)
-* **FTCC** (Fire Team Commanders Course)
+* **PCBC** (Platoon Commander's Battle Course)
+* **PSBC** (Platoon Sergeant's Battle Course)
+* **SCBC** (Section Commander's Battle Course)
+* **CC** (Commander's Course)
+* **FTCC** (Fire Team Commander's Course)
 
 **Other notable quals:**
 

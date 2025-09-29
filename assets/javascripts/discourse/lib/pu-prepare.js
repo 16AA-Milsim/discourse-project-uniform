@@ -16,6 +16,7 @@ import {
     groupTooltipMapLC,
     awardsByNameLC,
     leadershipQualificationsOrder,
+    leadershipQualificationAliases,
     marksmanshipQualificationsOrder,
     pilotQualificationsOrder,
     csaRibbonGroupMapLC,
@@ -42,9 +43,24 @@ const compareCsaNames = (a, b) => {
     return String(a || "").localeCompare(String(b || ""), undefined, { sensitivity: "base", numeric: true });
 };
 
-const CSA_LEADERSHIP_NAMES = new Set(csaLeadershipQualificationNames);
+const leadershipAliasMapLC = Object.freeze(
+    Object.fromEntries(
+        Object.entries(leadershipQualificationAliases || {}).map(([alias, canonical]) => [
+            toLC(alias),
+            toLC(canonical)
+        ])
+    )
+);
 
-const leadershipOrderLC = leadershipQualificationsOrder.map(toLC);
+const canonicalLeadershipName = (value) => leadershipAliasMapLC[value] || value;
+
+const CSA_LEADERSHIP_NAMES = new Set(
+    csaLeadershipQualificationNames.map((name) => canonicalLeadershipName(toLC(name)))
+);
+
+const leadershipOrderLC = leadershipQualificationsOrder
+    .map((name) => canonicalLeadershipName(toLC(name)))
+    .filter((name, idx, arr) => arr.indexOf(name) === idx);
 const marksmanshipOrderLC = marksmanshipQualificationsOrder.map(toLC);
 const pilotOrderLC = pilotQualificationsOrder.map(toLC);
 
@@ -115,6 +131,9 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     // Badge name set (lowercased) the user has
     const badgeNameSetLC = new Set(
         userBadges.map(ub => toLC(idToBadge.get(ub.badge_id)?.name)).filter(Boolean)
+    );
+    const leadershipBadgeNameSetLC = new Set(
+        [...badgeNameSetLC].map((name) => canonicalLeadershipName(name))
     );
     debugLog("[PU:prepare] Inputs:", { groups: groups.map(g => g.name), is16CSMR, badgeNames: [...badgeNameSetLC], csaRibbons: csaRibbonsToRender.map(r => r.name) });
 
@@ -191,7 +210,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     }
 
     // Determine highest leadership and marksmanship badges (case-insensitive)
-    const highestLeadershipLC = highestIn(leadershipOrderLC, badgeNameSetLC);
+    const highestLeadershipLC = highestIn(leadershipOrderLC, leadershipBadgeNameSetLC);
 
     const highestMarksmanshipLC = highestIn(marksmanshipOrderLC, badgeNameSetLC);
 
@@ -206,6 +225,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const badge = idToBadge.get(ub.badge_id); if (!badge) return;
         const name = badge.name;
         const nameLC = toLC(name);
+        const canonicalNameLC = canonicalLeadershipName(nameLC);
 
         // Skip certain marksmanship badges for 16CSMR
         if (is16CSMR && marksmanshipOrderLC.includes(nameLC)) {
@@ -214,12 +234,12 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         }
 
         const q = qualificationsByNameLC[nameLC];
-        const isLeader = leadershipOrderLC.includes(nameLC);
+        const isLeader = leadershipOrderLC.includes(canonicalNameLC);
         const isMarks = marksmanshipOrderLC.includes(nameLC);
         const isPilot = pilotOrderLC.includes(nameLC);
 
         // Skip lower leadership/marksmanship/pilot badges
-        if ((isLeader && nameLC !== highestLeadershipLC) ||
+        if ((isLeader && canonicalNameLC !== highestLeadershipLC) ||
             (isMarks && nameLC !== highestMarksmanshipLC) ||
             (isPilot && nameLC !== highestPilotLC)) {
             debugLog("[PU:prepare] Skip (not highest in pilot/leader/marks):", name);
@@ -257,7 +277,8 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const adjustedQuals = qualsToRender.map((q) => {
         const rrAreas = q?.ribbonRowVariants?.ribbonRowTooltipAreas?.[ribbonRows];
         let clone = rrAreas ? { ...q, tooltipAreas: rrAreas } : q;
-        if (leadershipOverrideForCount && CSA_LEADERSHIP_NAMES.has(q.name)) {
+        if (leadershipOverrideForCount &&
+            CSA_LEADERSHIP_NAMES.has(canonicalLeadershipName(toLC(q.name)))) {
             const override = leadershipOverrideForCount;
             if (override.tooltipAreas) {
                 if (clone === q) {
@@ -276,7 +297,8 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
         // Pilot-only: absolute coords per ribbonRows, stored with the qual
         const pilotPos = q?.ribbonRowVariants?.imagePlacementByRows?.[ribbonRows];
-        const leadershipOverride = leadershipOverrideForCount && CSA_LEADERSHIP_NAMES.has(q.name)
+        const leadershipOverride = leadershipOverrideForCount &&
+            CSA_LEADERSHIP_NAMES.has(canonicalLeadershipName(toLC(q.name)))
             ? leadershipOverrideForCount
             : null;
         const finalPos = pilotPos || leadershipOverride?.imagePlacement;

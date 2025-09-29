@@ -108,6 +108,7 @@ const RENAMED_FILES = Object.freeze({
     },
     'qualifications': {
       '1st_class_marksman.png': "1st_class_marksman__v2.png",
+      'cc.png': "cc__v2.png",
       'cmt.png': "cmt__v2.png",
       'ftcc.png': "ftcc__v2.png",
       'juniorpilot2.png': "juniorpilot2__v2.png",
@@ -185,6 +186,7 @@ const RENAMED_FILES = Object.freeze({
       'basicsignals.jpg': "basicsignals__v2.jpg",
       'cicp1.png': "cicp1__v2.png",
       'cicp2.png': "cicp2__v2.png",
+      'cc.png': "cc__v2.png",
       'cmt.jpg': "cmt__v2.jpg",
       'ctm.jpg': "ctm__v2.jpg",
       'ctmbronze.png': "ctmbronze__v2.png",
@@ -242,6 +244,7 @@ const RENAMED_FILES = Object.freeze({
 const RENAMED_BASES = Object.freeze({
     'qualifications': {
       '1st_class_marksman': "1st_class_marksman__v2",
+      'cc': "cc__v2",
       'cmt': "cmt__v2",
       'ftcc': "ftcc__v2",
       'juniorpilot2': "juniorpilot2__v2",
