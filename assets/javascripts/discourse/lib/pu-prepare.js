@@ -19,6 +19,7 @@ import {
     leadershipQualificationAliases,
     marksmanshipQualificationsOrder,
     pilotQualificationsOrder,
+    ctmQualificationsOrder,
     csaRibbonGroupMapLC,
     csaLeadershipOverrideByRibbonCount,
     csaLeadershipQualificationNames,
@@ -63,6 +64,11 @@ const leadershipOrderLC = leadershipQualificationsOrder
     .filter((name, idx, arr) => arr.indexOf(name) === idx);
 const marksmanshipOrderLC = marksmanshipQualificationsOrder.map(toLC);
 const pilotOrderLC = pilotQualificationsOrder.map(toLC);
+const ctmOrderLC = ctmQualificationsOrder.map(toLC);
+const CTM_NAME_SET = new Set(ctmOrderLC);
+const CTM_DEFAULT_PLACEMENT = Object.freeze({ x: 202, y: 222 });
+const CTM_ROTATION_DEGREES = 3;
+const CTM_LEADERSHIP_OFFSET_X = 30;
 
 /**
  * Finds the highest-ranked name in `order` that is present in the provided set.
@@ -97,10 +103,23 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const qualsToRender = [];           // qualification objects we’ll still pass to renderer (for tooltips)
 
     // Helper: always push as object so the renderer sees `.url`
-    const pushFg = (urlOrArray, pos) => {
-        if (!urlOrArray) return;
-        if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
-            foregroundItems.push({ url: urlOrArray, x: pos.x, y: pos.y });
+    const pushFg = (urlOrArray, options) => {
+        if (!urlOrArray) {
+            return;
+        }
+
+        if (options && typeof options === "object") {
+            const item = { url: urlOrArray };
+            if (Number.isFinite(options.x)) {
+                item.x = options.x;
+            }
+            if (Number.isFinite(options.y)) {
+                item.y = options.y;
+            }
+            if (Number.isFinite(options.rotationDegrees)) {
+                item.rotationDegrees = options.rotationDegrees;
+            }
+            foregroundItems.push(item);
         } else {
             foregroundItems.push({ url: urlOrArray });
         }
@@ -216,9 +235,11 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
     // Pilot quals: prefer Senior over Junior if both present
     const highestPilotLC = highestIn(pilotOrderLC, badgeNameSetLC);
+    const highestCtmLC = highestIn(ctmOrderLC, badgeNameSetLC);
 
     const highestRankLC = toLC(highestRank?.name);
     const cmtKeyLC = toLC("CMT");
+    const hasLegacyCmt = badgeNameSetLC.has(cmtKeyLC);
 
     // Process each badge for qualifications and awards
     userBadges.forEach(ub => {
@@ -237,12 +258,19 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const isLeader = leadershipOrderLC.includes(canonicalNameLC);
         const isMarks = marksmanshipOrderLC.includes(nameLC);
         const isPilot = pilotOrderLC.includes(nameLC);
+        const isCtm = CTM_NAME_SET.has(nameLC);
 
-        // Skip lower leadership/marksmanship/pilot badges
+        // Skip lower leadership/marksmanship/pilot/ctm badges
+        if (isCtm && hasLegacyCmt) {
+            debugLog("[PU:prepare] Skip CTM (legacy CMT present)", name);
+            return;
+        }
+
         if ((isLeader && canonicalNameLC !== highestLeadershipLC) ||
             (isMarks && nameLC !== highestMarksmanshipLC) ||
-            (isPilot && nameLC !== highestPilotLC)) {
-            debugLog("[PU:prepare] Skip (not highest in pilot/leader/marks):", name);
+            (isPilot && nameLC !== highestPilotLC) ||
+            (isCtm && nameLC !== highestCtmLC)) {
+            debugLog("[PU:prepare] Skip (not highest in pilot/leader/marks/ctm):", name);
             return;
         }
 
@@ -272,21 +300,56 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const maxRibbonRows = 3;
     const clampedAwards = Math.min(awardUrls.length, perRowCapacity * maxRibbonRows);
     const ribbonRows = clampedAwards === 0 ? 0 : Math.ceil(clampedAwards / perRowCapacity);
+    const hasLeadershipQual = qualsToRender.some((qual) =>
+        leadershipOrderLC.includes(canonicalLeadershipName(toLC(qual.name)))
+    );
 
     // Build adjusted qualification list with ribbon-row-specific tooltip boxes
     const adjustedQuals = qualsToRender.map((q) => {
         const rrAreas = q?.ribbonRowVariants?.ribbonRowTooltipAreas?.[ribbonRows];
-        let clone = rrAreas ? { ...q, tooltipAreas: rrAreas } : q;
-        if (leadershipOverrideForCount &&
-            CSA_LEADERSHIP_NAMES.has(canonicalLeadershipName(toLC(q.name)))) {
-            const override = leadershipOverrideForCount;
-            if (override.tooltipAreas) {
-                if (clone === q) {
-                    clone = { ...q };
-                }
-                clone.tooltipAreas = override.tooltipAreas;
+        let clone = q;
+        const ensureClone = () => {
+            if (clone === q) {
+                clone = { ...q };
+            }
+        };
+        const setTooltipAreas = (areas = []) => {
+            ensureClone();
+            clone.tooltipAreas = areas.map((area) => ({ ...area }));
+        };
+
+        if (Array.isArray(rrAreas)) {
+            setTooltipAreas(rrAreas);
+        } else if (Array.isArray(q.tooltipAreas)) {
+            setTooltipAreas(q.tooltipAreas);
+        }
+
+        const nameLC = toLC(q.name);
+        const canonicalLC = canonicalLeadershipName(nameLC);
+        const leadershipOverrideCandidate = leadershipOverrideForCount &&
+            CSA_LEADERSHIP_NAMES.has(canonicalLC);
+        const isCtm = CTM_NAME_SET.has(nameLC);
+
+        if (leadershipOverrideCandidate && leadershipOverrideForCount?.tooltipAreas) {
+            setTooltipAreas(leadershipOverrideForCount.tooltipAreas);
+        }
+
+        if (isCtm) {
+            const baseAreas = clone?.tooltipAreas?.length
+                ? clone.tooltipAreas
+                : Array.isArray(q.tooltipAreas) ? q.tooltipAreas : [];
+            if (baseAreas?.length) {
+                const offsetX = hasLeadershipQual ? CTM_LEADERSHIP_OFFSET_X : 0;
+                const offsetY = leadershipOverrideForCount?.imagePlacement?.y || 0;
+                const shiftedAreas = baseAreas.map((area) => ({
+                    ...area,
+                    x: area.x + offsetX,
+                    y: area.y + offsetY + (nameLC === toLC("CTM") ? 3 : 0),
+                }));
+                setTooltipAreas(shiftedAreas);
             }
         }
+
         return clone;
     });
 
@@ -297,14 +360,44 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
         // Pilot-only: absolute coords per ribbonRows, stored with the qual
         const pilotPos = q?.ribbonRowVariants?.imagePlacementByRows?.[ribbonRows];
-        const leadershipOverride = leadershipOverrideForCount &&
-            CSA_LEADERSHIP_NAMES.has(canonicalLeadershipName(toLC(q.name)))
-            ? leadershipOverrideForCount
-            : null;
-        const finalPos = pilotPos || leadershipOverride?.imagePlacement;
+        const nameLC = toLC(q.name);
+        const canonicalLC = canonicalLeadershipName(nameLC);
+        const leadershipOverrideActive = leadershipOverrideForCount &&
+            CSA_LEADERSHIP_NAMES.has(canonicalLC);
+        const isCtm = CTM_NAME_SET.has(nameLC);
 
-        if (finalPos) {
-            pushFg(chosenUrl, finalPos);
+        let finalPos = pilotPos ? { ...pilotPos } : null;
+        if (!finalPos && leadershipOverrideActive && leadershipOverrideForCount?.imagePlacement) {
+            finalPos = { ...leadershipOverrideForCount.imagePlacement };
+        }
+
+        if (isCtm) {
+            if (!finalPos) {
+                finalPos = { ...CTM_DEFAULT_PLACEMENT };
+            }
+
+            const offsetY = leadershipOverrideForCount?.imagePlacement?.y || 0;
+            if (offsetY) {
+                finalPos = { ...finalPos, y: finalPos.y + offsetY };
+            }
+
+            if (hasLeadershipQual) {
+                finalPos = { ...finalPos, x: finalPos.x + CTM_LEADERSHIP_OFFSET_X };
+            }
+
+            if (nameLC === toLC("CTM")) {
+                finalPos = { ...finalPos, y: finalPos.y + 2 };
+            }
+        }
+
+        let pushOptions = finalPos ? { ...finalPos } : null;
+        if (isCtm) {
+            pushOptions = pushOptions ? { ...pushOptions } : {};
+            pushOptions.rotationDegrees = CTM_ROTATION_DEGREES;
+        }
+
+        if (pushOptions) {
+            pushFg(chosenUrl, pushOptions);
         } else {
             // Other quals: centered by renderer
             pushFg(chosenUrl);
