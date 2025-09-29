@@ -450,7 +450,7 @@ export const lanyardGroupsConfig = deepFreeze([
     "lightblue_and_maroon_lanyard.png",
     ["Coy_IC", "Coy_2IC", "Coy_Sergeant_Major"],
     "hq_dzf.png",
-    "<center><b>Company HQ</b></center><br>The command element of<br>A Company, providing leadership, coordination, and oversight of all platoons and attachments<br>within 16AA."
+    "<center><b>Company HQ</b></center><br>A Company HQ is the command element of 16AA, providing leadership, coordination, and oversight of all platoons and attachments within the unit."
   ),
   lanyardCfg(
     "red_lanyard.png",
@@ -563,7 +563,7 @@ export const qualifications = deepFreeze([
     "seniorpilot2",
     [],
     "seniorpilot.jpg",
-    "<center><b>Senior Pilot</b></center><br>Awarded on successful completion of the Advanced Flight Qualification.<br>Trains advanced fixed-wing and rotary-wing flight. Qualifies the pilot to serve as Pilot-in-Command.",
+    "<center><b>Senior Pilot</b></center><br>Awarded on successful completion of the Advanced Flight Qualification. Trains the pilot in advanced fixed-wing and rotary-wing flight. Holder is qualified to assume Pilot-in-Command duties.",
     [{ x: 450, y: 182, width: 74, height: 41 }], // default/fallback
     {},
     {
