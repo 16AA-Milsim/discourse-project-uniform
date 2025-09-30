@@ -8,12 +8,9 @@ Debug Mode can be toggled via the site setting `discourse_project_uniform_debug_
 
 ## To-Do
 - [ ] Make CMT qualification show for non 16CSMR member by having a small badge, placed in the same place as CTM badges?
-- [ ] CSA Ribbon brighter appearance?
-- [ ] Leadership courses make non visible on flight ranks?
-- [ ] CSA Ribbon textures texture.
+- [ ] CSA Ribbon textures texture and brightness.
 - [ ] ITC Instructor patch texture.
-- [ ] Go over all tooltip text to ensure proper line breaks.
-- [ ] Readjust tooltips so they attempt to respect and stay within the uniform canvas, even the lower edge of the canvas.
+- [ ] Go over all tooltip text to ensure proper line breaks (Have done all ranks so far).
 - [ ] Change RAMC collar badges to RAMS.
 - [ ] Readjust the collar badges for 16CSMR and 7RHA persective, based on the current parachute reg collar badges.
 - [ ] Verify dev console for deprecated stuff

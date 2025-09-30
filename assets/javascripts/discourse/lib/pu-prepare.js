@@ -311,6 +311,13 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const isMarks = marksmanshipOrderLC.includes(nameLC);
         const isPilot = pilotOrderLC.includes(nameLC);
         const isCtm = CTM_NAME_SET.has(nameLC);
+        
+        // Hide leadership qualification badges on all RAF ranks,
+        // including Sergeant Aircrew and Flight Sergeant Aircrew.
+        if (isLeader && highestRank?.service === "RAF") {
+            debugLog("[PU:prepare] Skip leadership (RAF rank):", name, "for", highestRank?.name);
+            return;
+        }
 
         // Skip lower leadership/marksmanship/pilot/ctm badges
         if (isCtm && hasLegacyCmt) {
