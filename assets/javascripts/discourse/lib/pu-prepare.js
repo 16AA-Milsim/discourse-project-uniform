@@ -439,7 +439,11 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         }
     });
 
-    const leaderPlacement = hasLeadershipQual
+    const hasCtm = ctmForegroundData.length > 0;
+    const borrowYOnly = hasCtm && csaRibbonCount > 0; // CSA present, nudge CTM upward
+    const borrowFull = hasLeadershipQual;             // true leadership badge present
+    const wantsLeaderAnchor = borrowYOnly || borrowFull;
+    const leaderPlacement = wantsLeaderAnchor
         ? {
             x: Number(activeLeaderPlacement?.x ?? baseLeaderPlacement.x),
             y: Number(activeLeaderPlacement?.y ?? baseLeaderPlacement.y),
@@ -451,8 +455,12 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         let finalPosY = CTM_BASE_PLACEMENT.y;
 
         if (leaderPlacement) {
-            finalPosX = leaderPlacement.x + CTM_ANCHOR_OFFSET_X;
+            // Always borrow Y so CTM lifts above CSA rows.
             finalPosY = leaderPlacement.y + CTM_ANCHOR_OFFSET_Y;
+            // Only borrow X when a leadership qual is actually displayed.
+            if (borrowFull) {
+                finalPosX = leaderPlacement.x + CTM_ANCHOR_OFFSET_X;
+            }
         }
 
         if (entry.isPlain && CTM_PLAIN_EXTRA_Y) {
