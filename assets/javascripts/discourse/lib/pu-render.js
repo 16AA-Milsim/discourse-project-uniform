@@ -56,6 +56,58 @@ function getAwardPlacement(count) {
     return AWARD_PLACEMENTS[count] || AWARD_PLACEMENTS.default;
 }
 
+function detachExistingCanvas(container) {
+    const existing = container?.querySelector?.(".discourse-project-uniform-canvas");
+    if (existing) {
+        existing._teardownTooltips?.();
+        existing.remove();
+        debugLog("[PU:render] Removed previous canvas instance");
+    }
+}
+
+function createCanvasSurface() {
+    const canvas = document.createElement("canvas");
+    canvas.className = "discourse-project-uniform-canvas";
+    Object.assign(canvas.style, { position: "relative", zIndex: "0", pointerEvents: "auto", display: "block", margin: "0 auto" });
+    return canvas;
+}
+
+function loadRenderAssets(backgroundImageUrl, foregroundUrls, awardUrls, csaUrls) {
+    return Promise.all([
+        loadImageCached(backgroundImageUrl || ""),
+        ...foregroundUrls.map(u => loadImageCached(u || "")),
+        ...awardUrls.map(u => loadImageCached(u || "")),
+        ...csaUrls.map(u => loadImageCached(u || "")),
+    ]).then(([background, ...rest]) => {
+        const fg = rest.slice(0, foregroundUrls.length);
+        const aw = rest.slice(foregroundUrls.length, foregroundUrls.length + awardUrls.length);
+        const csa = rest.slice(foregroundUrls.length + awardUrls.length);
+        return { background, foreground: fg, awards: aw, csa };
+    });
+}
+
+function applyAltTextMetadata(awardImages, csaImages, csaRibbonEntries) {
+    awardImages.forEach((img) => {
+        if (!img) {
+            return;
+        }
+        const imgPath = normalizePath(img.src);
+        const match = awards.find(a => normalizePath(a.imageKey) === imgPath);
+        img.alt = match?.name || "";
+    });
+
+    csaImages.forEach((img, index) => {
+        if (!img) {
+            return;
+        }
+        const entry = csaRibbonEntries[index];
+        if (!entry) {
+            return;
+        }
+        img.alt = entry.name;
+    });
+}
+
 /**
  * Builds the Project Uniform canvas inside `container`, loading every layer in parallel
  * before delegating to the drawing pipeline.
@@ -66,69 +118,37 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
         container._puRenderId = renderId;
     }
 
-    const fgUrls = (foregroundItems || []).map(it => (typeof it === "string" ? it : it?.url));
-    const csaImageUrls = (csaRibbonEntries || []).map(entry => entry?.imageKey).filter(Boolean);
+    const foregroundUrls = (foregroundItems || []).map((item) => (typeof item === "string" ? item : item?.url));
+    const csaImageUrls = (csaRibbonEntries || []).map((entry) => entry?.imageKey).filter(Boolean);
+
     debugLog("[PU:render] mergeImagesOnCanvas", {
         backgroundImageUrl,
-        fgCount: fgUrls.length,
+        fgCount: foregroundUrls.length,
         awardCount: awardImageUrls.length,
         csaCount: csaImageUrls.length,
         highestRank: highestRank?.name
     });
 
-    // Remove old canvas if it exists
-    const old = container.querySelector(".discourse-project-uniform-canvas");
-    if (old) {
-        old._teardownTooltips?.();
-        old.remove();
-        debugLog("[PU:render] Removed previous canvas instance");
-    }
+    detachExistingCanvas(container);
 
-    // Create fresh canvas surface
-    const canvas = document.createElement("canvas");
-    canvas.className = "discourse-project-uniform-canvas";
-    Object.assign(canvas.style, { position: "relative", zIndex: "0", pointerEvents: "auto", display: "block", margin: "0 auto" });
+    const canvas = createCanvasSurface();
     const ctx = canvas.getContext("2d");
 
-    // Load all images (background, foreground, awards) in parallel
-    Promise.all([
-        loadImageCached(backgroundImageUrl || ""),
-        ...fgUrls.map(u => loadImageCached(u || "")),
-        ...awardImageUrls.map(u => loadImageCached(u || "")),
-        ...csaImageUrls.map(u => loadImageCached(u || "")),
-    ])
-        .then(([bg, ...rest]) => {
+    loadRenderAssets(backgroundImageUrl, foregroundUrls, awardImageUrls, csaImageUrls)
+        .then(({ background, foreground, awards: awardImages, csa: csaImages }) => {
             if (!container || container._puRenderId !== renderId) {
                 debugLog("[PU:render] Stale render resolved – skipping append", { renderId });
                 return;
             }
-            debugLog("[PU:render] Images loaded for render");
-            const fg = rest.slice(0, fgUrls.length);
-            const aw = rest.slice(fgUrls.length, fgUrls.length + awardImageUrls.length);
-            const csaImages = rest.slice(fgUrls.length + awardImageUrls.length);
 
-            // Add alt text to award images using award metadata
-            aw.forEach(img => {
-                if (!img) return;
-                const imgPath = normalizePath(img.src);
-                const match = awards.find(a => normalizePath(a.imageKey) === imgPath);
-                img.alt = match?.name || "";
-            });
+            applyAltTextMetadata(awardImages, csaImages, csaRibbonEntries);
 
-            csaImages.forEach((img, index) => {
-                if (!img) return;
-                const entry = csaRibbonEntries[index];
-                if (!entry) return;
-                img.alt = entry.name;
-            });
-
-            drawEverything(
+            renderCanvasContents(
                 ctx,
                 canvas,
-                container,
-                bg,
-                fg,
-                aw,
+                background,
+                foreground,
+                awardImages,
                 highestRank,
                 qualificationsToRender,
                 groups,
@@ -137,37 +157,56 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
                 csaImages,
                 csaRibbonEntries
             );
+
+            prependCanvas(container, canvas);
         })
-        .catch(e => debugLog("[PU:render] Error loading images:", e));
+        .catch((e) => debugLog("[PU:render] Error loading images:", e));
 }
 
 /**
  * Coordinates drawing the background, foreground overlays, ribbons, and tooltip regions.
  */
-function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = [], csaImages = [], csaRibbonEntries = []) {
-    // Set canvas size to background image size
-    canvas.width = bgImage?.naturalWidth || 1;
-    canvas.height = bgImage?.naturalHeight || 1;
-    debugLog("[PU:render] Canvas size:", { w: canvas.width, h: canvas.height });
-    ctx.imageSmoothingEnabled = true;
-
-    // Draw background with shadow
-    if (bgImage) {
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 10; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
-        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
-        ctx.restore();
-    }
-
-    // Draw all foreground layers (centered by default; absolute if {x,y} provided)
+function renderCanvasContents(ctx, canvas, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = [], csaImages = [], csaRibbonEntries = []) {
+    resizeCanvasToBackground(canvas, ctx, bgImage);
+    drawBackgroundLayer(ctx, canvas, bgImage);
     drawImages(ctx, fgImages, canvas, foregroundItems);
 
-    // Register tooltips for groups
+    registerGroupTooltipsForCanvas(groups, groupTooltipMap);
+    registerRankTooltipsForCanvas(canvas, fgImages, highestRank);
+    registerQualificationTooltipsForCanvas(qualificationsToRender);
+
+    renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender);
+    renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank);
+}
+
+function resizeCanvasToBackground(canvas, ctx, bgImage) {
+    canvas.width = bgImage?.naturalWidth || 1;
+    canvas.height = bgImage?.naturalHeight || 1;
+    ctx.imageSmoothingEnabled = true;
+    debugLog("[PU:render] Canvas size:", { w: canvas.width, h: canvas.height });
+}
+
+function drawBackgroundLayer(ctx, canvas, bgImage) {
+    if (!bgImage) {
+        return;
+    }
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+}
+
+function registerGroupTooltipsForCanvas(groups, groupTooltipMap) {
     let groupTipCount = 0;
+    if (!groups?.length || !groupTooltipMap) {
+        debugLog("[PU:render] Group tooltips registered:", groupTipCount);
+        return groupTipCount;
+    }
+
     const resolveGroupTooltip = (name) => {
-        if (!groupTooltipMap) {
-            return null;
-        }
         const key = String(name || "");
         const keyLC = key.toLowerCase();
         if (typeof groupTooltipMap.get === "function") {
@@ -175,48 +214,58 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
         }
         return groupTooltipMap[keyLC] || groupTooltipMap[key] || null;
     };
-    groups.forEach(g => {
-        const data = resolveGroupTooltip(g.name);
-        if (data?.tooltipAreas) {
-            data.tooltipAreas.forEach(a => {
-                registerTooltip(a.x, a.y, a.width, a.height, `<img src="${data.tooltipImage}"> ${data.tooltipText}`);
-                groupTipCount++;
-            });
-        }
-    });
-    debugLog("[PU:render] Group tooltips registered:", groupTipCount);
 
-    // Register tooltips for rank. If there is no rank image (e.g., Private/Gunner),
-    // fall back to absolute coordinates.
-    if (highestRank && highestRank.tooltipAreas) {
-        const rankImg = fgImages.length ? fgImages[0] : null;
-        const x = rankImg?.naturalWidth ? (canvas.width - rankImg.naturalWidth) / 2 : 0;
-        const y = rankImg?.naturalHeight ? (canvas.height - rankImg.naturalHeight) / 2 : 0;
-        const tip =
-            (highestRank.tooltipImage ? `<img src="${highestRank.tooltipImage}"> ` : "") +
-            (highestRank.tooltipText || "");
-        highestRank.tooltipAreas.forEach(a =>
-            registerTooltip(x + a.x, y + a.y, a.width, a.height, tip)
-        );
-        debugLog("[PU:render] Rank tooltips registered:", highestRank.tooltipAreas.length);
+    groups.forEach((group) => {
+        const data = resolveGroupTooltip(group.name);
+        data?.tooltipAreas?.forEach((area) => {
+            registerTooltip(area.x, area.y, area.width, area.height, `<img src="${data.tooltipImage}"> ${data.tooltipText}`);
+            groupTipCount++;
+        });
+    });
+
+    debugLog("[PU:render] Group tooltips registered:", groupTipCount);
+    return groupTipCount;
+}
+
+function registerRankTooltipsForCanvas(canvas, fgImages, highestRank) {
+    if (!(highestRank && highestRank.tooltipAreas)) {
+        return 0;
     }
 
-    // Register tooltips for qualifications
+    const rankImg = fgImages.length ? fgImages[0] : null;
+    const x = rankImg?.naturalWidth ? (canvas.width - rankImg.naturalWidth) / 2 : 0;
+    const y = rankImg?.naturalHeight ? (canvas.height - rankImg.naturalHeight) / 2 : 0;
+    const tip =
+        (highestRank.tooltipImage ? `<img src="${highestRank.tooltipImage}"> ` : "") +
+        (highestRank.tooltipText || "");
+
+    highestRank.tooltipAreas.forEach((area) => {
+        registerTooltip(x + area.x, y + area.y, area.width, area.height, tip);
+    });
+
+    debugLog("[PU:render] Rank tooltips registered:", highestRank.tooltipAreas.length);
+    return highestRank.tooltipAreas.length;
+}
+
+function registerQualificationTooltipsForCanvas(qualifications = []) {
     let qualTipCount = 0;
-    qualificationsToRender.forEach(q => {
-        q.tooltipAreas?.forEach(a => {
-            registerTooltip(a.x, a.y, a.width, a.height, `<img src="${q.tooltipImage}"> ${q.tooltipText}`);
+    qualifications.forEach((qual) => {
+        qual.tooltipAreas?.forEach((area) => {
+            registerTooltip(area.x, area.y, area.width, area.height, `<img src="${qual.tooltipImage}"> ${qual.tooltipText}`);
             qualTipCount++;
         });
     });
     debugLog("[PU:render] Qualification tooltips registered:", qualTipCount);
+    return qualTipCount;
+}
 
-    // Process and draw awards (ribbons) with tooltips
+function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender) {
     try {
         const awardsCanvas = document.createElement("canvas");
-        awardsCanvas.width = canvas.width; awardsCanvas.height = canvas.height;
+        awardsCanvas.width = canvas.width;
+        awardsCanvas.height = canvas.height;
         const aCtx = awardsCanvas.getContext("2d");
-        const hasSeniorPilot = qualificationsToRender.some(q => q?.name === "Senior Pilot");
+        const hasSeniorPilot = qualificationsToRender.some((q) => q?.name === "Senior Pilot");
         const tooltipRects = drawAwards(
             aCtx,
             awardImages.filter(Boolean),
@@ -225,14 +274,12 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
             hasSeniorPilot
         );
 
-        // Scale ribbons before placing on uniform
         const scale = RIBBON_SCALE;
         const scaled = document.createElement("canvas");
         scaled.width = awardsCanvas.width * scale;
         scaled.height = awardsCanvas.height * scale;
         scaled.getContext("2d").drawImage(awardsCanvas, 0, 0, scaled.width, scaled.height);
 
-        // Set ribbon position based on count
         const count = awardImages.length;
         debugLog("[PU:render] Awards placed (count):", count);
         const { x: awardsX, y: awardsY } = getAwardPlacement(count);
@@ -244,7 +291,7 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
 
         ctx.save();
         ctx.shadowColor = 'rgba(0,0,0,0.4)';
-        ctx.shadowBlur = 2.0; // slightly softer shadow without bleeding onto lower row
+        ctx.shadowBlur = 2.0;
         ctx.shadowOffsetX = -0.75;
         ctx.shadowOffsetY = 0;
         const skewTan = Math.tan(RIBBON_SKEW_STRENGTH);
@@ -258,14 +305,13 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
         const cos = Math.cos(RIBBON_ROTATION);
         const sin = Math.sin(RIBBON_ROTATION);
 
-        // Map tooltip rectangles through the perspective + skew + rotation transform
-        tooltipRects.forEach(t => {
+        tooltipRects.forEach((tooltip) => {
             const corners = [
-                { x: t.x, y: t.y },
-                { x: t.x + t.width, y: t.y },
-                { x: t.x, y: t.y + t.height },
-                { x: t.x + t.width, y: t.y + t.height },
-            ].map(pt => {
+                { x: tooltip.x, y: tooltip.y },
+                { x: tooltip.x + tooltip.width, y: tooltip.y },
+                { x: tooltip.x, y: tooltip.y + tooltip.height },
+                { x: tooltip.x + tooltip.width, y: tooltip.y + tooltip.height },
+            ].map((pt) => {
                 const sx = pt.x * scale;
                 const sy = pt.y * scale;
                 const mapped = perspective.mapPoint(sx, sy);
@@ -282,122 +328,129 @@ function drawEverything(ctx, canvas, container, bgImage, fgImages, awardImages, 
                 };
             });
 
-            const minX = Math.min(...corners.map(c => c.x));
-            const maxX = Math.max(...corners.map(c => c.x));
-            const minY = Math.min(...corners.map(c => c.y));
-            const maxY = Math.max(...corners.map(c => c.y));
+            const minX = Math.min(...corners.map((c) => c.x));
+            const maxX = Math.max(...corners.map((c) => c.x));
+            const minY = Math.min(...corners.map((c) => c.y));
+            const maxY = Math.max(...corners.map((c) => c.y));
             const padding = 1;
             const width = Math.max(0, maxX - minX - padding * 2);
             const height = Math.max(0, maxY - minY - padding * 2);
-            registerTooltip(minX + padding, minY + padding, width, height, t.content);
+            registerTooltip(minX + padding, minY + padding, width, height, tooltip.content);
         });
+
         debugLog("[PU:render] Award tooltip rects registered:", tooltipRects.length);
-    } catch (e) {
-        debugLog("[PU:render] Error processing awards:", e);
+    } catch (error) {
+        debugLog("[PU:render] Error processing awards:", error);
+    }
+}
+
+function renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank) {
+    if (!csaImages.length || !csaRibbonEntries.length) {
+        return;
     }
 
-    if (csaImages.length && csaRibbonEntries.length) {
-        try {
-            const csaCanvas = document.createElement("canvas");
-            const csaCtx = csaCanvas.getContext("2d");
-            const csaPairs = csaImages
-                .map((img, index) => ({ img, entry: csaRibbonEntries[index] }))
-                .filter(pair => pair.img && pair.entry);
-            const csaCount = csaPairs.length;
-            const maskRightmostQuarter =
-                highestRank?.service !== "RAF" &&
-                highestRank?.category === "officer" &&
-                csaCount === 3;
-            const tooltipRects = drawCsaRibbonRow(
-                csaCtx,
-                csaPairs.map(pair => pair.img),
-                csaCanvas,
-                csaPairs.map(pair => pair.entry),
-                { maskRightmostQuarter }
-            );
-            if (tooltipRects.length && csaCount) {
-                const scale = CSA_RIBBON_SCALE;
-                const scaled = document.createElement("canvas");
-                scaled.width = Math.max(1, Math.round(csaCanvas.width * scale));
-                scaled.height = Math.max(1, Math.round(csaCanvas.height * scale));
-                scaled.getContext("2d").drawImage(csaCanvas, 0, 0, scaled.width, scaled.height);
+    try {
+        const csaCanvas = document.createElement("canvas");
+        const csaCtx = csaCanvas.getContext("2d");
+        const csaPairs = csaImages
+            .map((img, index) => ({ img, entry: csaRibbonEntries[index] }))
+            .filter((pair) => pair.img && pair.entry);
+        const csaCount = csaPairs.length;
+        const maskRightmostQuarter =
+            highestRank?.service !== "RAF" &&
+            highestRank?.category === "officer" &&
+            csaCount === 3;
+        const tooltipRects = drawCsaRibbonRow(
+            csaCtx,
+            csaPairs.map((pair) => pair.img),
+            csaCanvas,
+            csaPairs.map((pair) => pair.entry),
+            { maskRightmostQuarter }
+        );
 
-                const perspective = buildRibbonPerspectiveCanvas(scaled, { curveDepth: CSA_RIBBON_CURVE_DEPTH });
-                const perspectiveCanvas = perspective.canvas;
-                const destWidth = perspectiveCanvas.width;
-                const destHeight = perspectiveCanvas.height;
-
-                const referencePlacement = getAwardPlacement(CSA_RIBBON_MAX);
-                const offsets = CSA_RIBBON_OFFSETS_BY_COUNT[csaCount] || CSA_RIBBON_DEFAULT_OFFSET;
-                const mirroredAnchorX = canvas.width - (referencePlacement.x + RIBBON_OFFSET_X);
-                const anchorX = mirroredAnchorX + offsets.x;
-                const anchorY = referencePlacement.y + offsets.y;
-
-                const skewTan = Math.tan(CSA_RIBBON_SKEW_STRENGTH);
-                ctx.save();
-                ctx.shadowColor = CSA_SHADOW_COLOR;
-                ctx.shadowBlur = CSA_SHADOW_BLUR;
-                ctx.shadowOffsetX = CSA_SHADOW_OFFSET_X;
-                ctx.shadowOffsetY = 0;
-                ctx.translate(anchorX, anchorY);
-                ctx.transform(1, skewTan, 0, 1, 0, 0);
-                ctx.translate(destWidth / 2, destHeight / 2);
-                ctx.rotate(CSA_RIBBON_ROTATION);
-
-                const previousAlpha = ctx.globalAlpha;
-                ctx.globalAlpha = CSA_RIBBON_DRAW_ALPHA;
-                ctx.drawImage(perspectiveCanvas, -destWidth / 2, -destHeight / 2);
-                ctx.globalAlpha = previousAlpha;
-                ctx.restore();
-
-                const cos = Math.cos(CSA_RIBBON_ROTATION);
-                const sin = Math.sin(CSA_RIBBON_ROTATION);
-
-                tooltipRects.forEach(t => {
-                    const corners = [
-                        { x: t.x, y: t.y },
-                        { x: t.x + t.width, y: t.y },
-                        { x: t.x, y: t.y + t.height },
-                        { x: t.x + t.width, y: t.y + t.height },
-                    ].map(pt => {
-                        const sx = pt.x * scale;
-                        const sy = pt.y * scale;
-                        const mapped = perspective.mapPoint(sx, sy);
-                        const localX = mapped.x - destWidth / 2;
-                        const localY = mapped.y - destHeight / 2;
-                        const rotX = localX * cos - localY * sin;
-                        const rotY = localX * sin + localY * cos;
-                        const afterRotX = rotX + destWidth / 2;
-                        const afterRotY = rotY + destHeight / 2;
-                        const skewY = afterRotY + afterRotX * skewTan;
-                        return {
-                            x: anchorX + afterRotX,
-                            y: anchorY + skewY,
-                        };
-                    });
-
-                    const minX = Math.min(...corners.map(c => c.x));
-                    const maxX = Math.max(...corners.map(c => c.x));
-                    const minY = Math.min(...corners.map(c => c.y));
-                    const maxY = Math.max(...corners.map(c => c.y));
-                    const padding = 1;
-                    const width = Math.max(0, maxX - minX - padding * 2);
-                    const height = Math.max(0, maxY - minY - padding * 2);
-                    registerTooltip(minX + padding, minY + padding, width, height, t.content);
-
-                });
-                debugLog("[PU:render] CSA ribbon tooltip rects registered:", tooltipRects.length);
-            }
-        } catch (e) {
-            debugLog("[PU:render] Error processing CSA ribbons:", e);
+        if (!tooltipRects.length || !csaCount) {
+            return;
         }
+
+        const scale = CSA_RIBBON_SCALE;
+        const scaled = document.createElement("canvas");
+        scaled.width = Math.max(1, Math.round(csaCanvas.width * scale));
+        scaled.height = Math.max(1, Math.round(csaCanvas.height * scale));
+        scaled.getContext("2d").drawImage(csaCanvas, 0, 0, scaled.width, scaled.height);
+
+        const perspective = buildRibbonPerspectiveCanvas(scaled, { curveDepth: CSA_RIBBON_CURVE_DEPTH });
+        const perspectiveCanvas = perspective.canvas;
+        const destWidth = perspectiveCanvas.width;
+        const destHeight = perspectiveCanvas.height;
+
+        const referencePlacement = getAwardPlacement(CSA_RIBBON_MAX);
+        const offsets = CSA_RIBBON_OFFSETS_BY_COUNT[csaCount] || CSA_RIBBON_DEFAULT_OFFSET;
+        const mirroredAnchorX = canvas.width - (referencePlacement.x + RIBBON_OFFSET_X);
+        const anchorX = mirroredAnchorX + offsets.x;
+        const anchorY = referencePlacement.y + offsets.y;
+
+        const skewTan = Math.tan(CSA_RIBBON_SKEW_STRENGTH);
+        ctx.save();
+        ctx.shadowColor = CSA_SHADOW_COLOR;
+        ctx.shadowBlur = CSA_SHADOW_BLUR;
+        ctx.shadowOffsetX = CSA_SHADOW_OFFSET_X;
+        ctx.shadowOffsetY = 0;
+        ctx.translate(anchorX, anchorY);
+        ctx.transform(1, skewTan, 0, 1, 0, 0);
+        ctx.translate(destWidth / 2, destHeight / 2);
+        ctx.rotate(CSA_RIBBON_ROTATION);
+
+        const previousAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = CSA_RIBBON_DRAW_ALPHA;
+        ctx.drawImage(perspectiveCanvas, -destWidth / 2, -destHeight / 2);
+        ctx.globalAlpha = previousAlpha;
+        ctx.restore();
+
+        const cos = Math.cos(CSA_RIBBON_ROTATION);
+        const sin = Math.sin(CSA_RIBBON_ROTATION);
+
+        tooltipRects.forEach((tooltip) => {
+            const corners = [
+                { x: tooltip.x, y: tooltip.y },
+                { x: tooltip.x + tooltip.width, y: tooltip.y },
+                { x: tooltip.x, y: tooltip.y + tooltip.height },
+                { x: tooltip.x + tooltip.width, y: tooltip.y + tooltip.height },
+            ].map((pt) => {
+                const sx = pt.x * scale;
+                const sy = pt.y * scale;
+                const mapped = perspective.mapPoint(sx, sy);
+                const localX = mapped.x - destWidth / 2;
+                const localY = mapped.y - destHeight / 2;
+                const rotX = localX * cos - localY * sin;
+                const rotY = localX * sin + localY * cos;
+                const afterRotX = rotX + destWidth / 2;
+                const afterRotY = rotY + destHeight / 2;
+                const skewY = afterRotY + afterRotX * skewTan;
+                return {
+                    x: anchorX + afterRotX,
+                    y: anchorY + skewY,
+                };
+            });
+
+            const minX = Math.min(...corners.map((c) => c.x));
+            const maxX = Math.max(...corners.map((c) => c.x));
+            const minY = Math.min(...corners.map((c) => c.y));
+            const maxY = Math.max(...corners.map((c) => c.y));
+            const padding = 1;
+            const width = Math.max(0, maxX - minX - padding * 2);
+            const height = Math.max(0, maxY - minY - padding * 2);
+            registerTooltip(minX + padding, minY + padding, width, height, tooltip.content);
+        });
+
+        debugLog("[PU:render] CSA ribbon tooltip rects registered:", tooltipRects.length);
+    } catch (error) {
+        debugLog("[PU:render] Error processing CSA ribbons:", error);
     }
+}
 
-    // Add the finished canvas to container and activate tooltips
+function prependCanvas(container, canvas) {
     container.prepend(canvas);
-
     setupTooltips(canvas);
-
     debugLog("[PU:render] Canvas appended and tooltips set up");
 }
 
@@ -522,67 +575,72 @@ function buildRibbonPerspectiveCanvas(sourceCanvas, options = {}) {
 function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
     const perRow = [4, 4, 4];
     const maxRibbons = perRow.reduce((sum, count) => sum + count, 0);
-    const sorted = [...awardImages]
-        .sort((a, b) => (AWARD_INDEX[a.alt] ?? Infinity) - (AWARD_INDEX[b.alt] ?? Infinity))
+    const ranked = awardImages.filter(Boolean);
+    const final = ranked
+        .sort((a, b) => (AWARD_INDEX[a?.alt] ?? Infinity) - (AWARD_INDEX[b?.alt] ?? Infinity))
         .slice(0, maxRibbons)
         .reverse();
-    const final = sorted;
 
-    const rowCounts = Array(perRow.length).fill(0);
-    const rows = [];
-    let r = 0;
+    const rowCounts = perRow.map(() => 0);
+    const rowAssignments = [];
+    let activeRow = 0;
 
-    final.forEach((_img) => {
-        while (r < perRow.length - 1 && rowCounts[r] >= perRow[r]) {
-            r++;
+    final.forEach((_img, idx) => {
+        while (activeRow < perRow.length && rowCounts[activeRow] >= perRow[activeRow]) {
+            activeRow++;
         }
-        rows.push(r);
-        rowCounts[r]++;
+        if (activeRow >= perRow.length) {
+            return;
+        }
+        rowAssignments[idx] = activeRow;
+        rowCounts[activeRow]++;
+    });
+
+    const rowOffsets = [];
+    let consumed = 0;
+    rowCounts.forEach((count, row) => {
+        rowOffsets[row] = consumed;
+        consumed += count;
     });
 
     debugLog("[PU:render] Awards layout:", { total: awardImages.length, considered: final.length, rowCounts });
 
     const tips = [];
-    final.forEach((img, i) => {
-        if (!img?.naturalWidth || !img?.naturalHeight) return;
-        const row = rows[i], inRow = rowCounts[row];
-        let col = i - rows.findIndex(x => x === row);
-
-        // Calculate starting X based on row layout rules
-        let startX;
-        if (row <= 3) {
-            startX = (canvas.width - (inRow * (img.naturalWidth + 1))) / 2;
-        } else if (row === 4) {
-            startX = inRow === 1
-                ? (canvas.width - img.naturalWidth) / 2
-                : canvas.width - (perRow[row] * (img.naturalWidth + 1)) - 146;
-        } else if (row === 5) {
-            startX = canvas.width - (perRow[row] * (img.naturalWidth + 1)) - 150;
-        } else { // row 6
-            startX = canvas.width - img.naturalWidth - 155;
+    final.forEach((img, idx) => {
+        if (!img?.naturalWidth || !img?.naturalHeight) {
+            return;
         }
+        const row = rowAssignments[idx];
+        if (row === undefined) {
+            return;
+        }
+        const inRow = rowCounts[row];
+        const col = idx - (rowOffsets[row] ?? 0);
 
-        // Draw award at calculated position
-        const ribbonHeight = Math.round(img.naturalHeight * RIBBON_HEIGHT_SCALE);
-        const rowHeight = ribbonHeight + RIBBON_ROW_GAP;
-        let x = startX + ((inRow - 1 - col) * img.naturalWidth);
+        const gap = 1;
+        const rowWidth = inRow * img.naturalWidth + Math.max(0, inRow - 1) * gap;
+        const startX = (canvas.width - rowWidth) / 2;
+
+        let x = startX + (inRow - 1 - col) * (img.naturalWidth + gap);
         if (hasSeniorPilot && row === 2 && inRow === 1 && final.length === 9) {
-            // Special-case: 9 ribbons produce a single badge on the third row; nudge into perspective line
             x += SINGLE_THIRD_ROW_OFFSET_X;
         }
+
+        const ribbonHeight = Math.round(img.naturalHeight * RIBBON_HEIGHT_SCALE);
+        const rowHeight = ribbonHeight + RIBBON_ROW_GAP;
         const extraHeight = row === 0 ? TOP_ROW_EXTRA_HEIGHT : 0;
-        const y = canvas.height - ribbonHeight - (row * rowHeight);
+        const y = canvas.height - ribbonHeight - row * rowHeight;
         const drawY = y - extraHeight;
         ctx.drawImage(img, x, drawY, img.naturalWidth, ribbonHeight + extraHeight);
 
-        // Build tooltip content for award
         const srcPath = normalizePath(img.src);
         const meta = awards.find(a => normalizePath(a.imageKey) === srcPath || a.name === img.alt) || {};
         const content = `<img src="${meta.tooltipImage || meta.imageKey}"> ${meta.tooltipText || meta.name}`;
         tips.push({ x, y: drawY, width: img.naturalWidth, height: ribbonHeight + extraHeight, content });
     });
-    return tips; // return all award tooltip areas
+    return tips;
 }
+
 
 function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) {
     const { maskRightmostQuarter = false } = options;

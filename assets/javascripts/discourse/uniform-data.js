@@ -53,13 +53,21 @@ const lanyardCfg = (image, groups, tipImage, tipText) => ({
 });
 
 export const csaLeadershipOverrideByRibbonCount = deepFreeze({
-  default: {
-    imagePlacement: { x: 172, y: 210 },
-    tooltipAreas: [rect(172, 210, 42, 41)],
+  0: {
+    imagePlacement: { x: 190, y: 208 },
+    tooltipAreas: [rect(193, 212, 34, 31)],
   },
   1: {
-    imagePlacement: { x: 169, y: 210 },
-    tooltipAreas: [rect(169, 210, 42, 41)],
+    imagePlacement: { x: 191, y: 195 },
+    tooltipAreas: [rect(194, 198, 34, 30)],
+  },
+  2: {
+    imagePlacement: { x: 196, y: 194 },
+    tooltipAreas: [rect(199, 197, 34, 31)],
+  },
+  3: {
+    imagePlacement: { x: 196, y: 194 },
+    tooltipAreas: [rect(199, 197, 34, 31)],
   },
 });
 
@@ -377,8 +385,8 @@ export const paraTooltipEnlisted = deepFreeze({
   tooltipImage: puPaths.group("para-tooltip.png"),
   tooltipText: PARA_TOOLTIP_TEXT,
   tooltipAreas: [
-    { x: 183, y: 27, width: 37, height: 35 },
-    { x: 477, y: 27, width: 38, height: 35 },
+    { x: 183, y: 30, width: 37, height: 35 },
+    { x: 470, y: 27, width: 38, height: 35 },
   ],
 });
 
@@ -386,8 +394,8 @@ export const paraTooltipOfficer = deepFreeze({
   tooltipImage: puPaths.group("para-tooltip-officer.png"),
   tooltipText: PARA_TOOLTIP_TEXT,
   tooltipAreas: [
-    { x: 183, y: 27, width: 37, height: 35 },
-    { x: 477, y: 27, width: 38, height: 35 },
+    { x: 183, y: 30, width: 37, height: 35 },
+    { x: 470, y: 27, width: 38, height: 35 },
   ],
 });
 
@@ -559,7 +567,7 @@ export const ctmQualificationsOrder = deepFreeze(["CTM", "CTM Bronze", "CTM Silv
 export const ctmRenderDefaults = Object.freeze({
   basePlacement: Object.freeze({ x: 202, y: 222 }),
   rotationDegrees: 2,
-  leaderAnchorOffset: Object.freeze({ x: 30, y: 12 }),
+  leaderAnchorOffset: Object.freeze({ x: 40, y: 16 }),
   plainVariantName: "CTM",
   plainVariantExtraYOffset: 2,
 });
@@ -634,34 +642,34 @@ export const qualifications = deepFreeze([
   qual(
     "CTM Gold",
     "ctm_gold",
-    [],
+    ["Warrant_Officer_Class_2", ...officerRanks],
     "ctmgold__v2.png",
     "<center><b>CTM Gold</b></center><br>Awarded on the successful completion of the Combat Team Medic course, with a Gold Grade. Gives the individual knowledge of basic triage and care under fire.",
-    [{ x: 202, y: 222, width: 26, height: 24 }]
+    [{ x: 202, y: 222, width: 21, height: 20 }]
   ),
   qual(
     "CTM Silver",
     "ctm_silver",
-    [],
+    ["Warrant_Officer_Class_2", ...officerRanks],
     "ctmsilver__v2.png",
     "<center><b>CTM Silver</b></center><br>Awarded on the successful completion of the Combat Team Medic course, with a Silver Grade. Gives the individual knowledge of basic triage and care under fire.",
-    [{ x: 202, y: 222, width: 26, height: 24 }]
+    [{ x: 202, y: 222, width: 21, height: 20 }]
   ),
   qual(
     "CTM Bronze",
     "ctm_bronze",
-    [],
+    ["Warrant_Officer_Class_2", ...officerRanks],
     "ctmbronze__v2.png",
     "<center><b>CTM Bronze</b></center><br>Awarded on the successful completion of the Combat Team Medic course, with a Bronze Grade. Gives the individual knowledge of basic triage and care under fire.",
-    [{ x: 202, y: 222, width: 26, height: 24 }]
+    [{ x: 202, y: 222, width: 21, height: 20 }]
   ),
   qual(
     "CTM",
     "ctm",
-    [],
+    ["Warrant_Officer_Class_2", ...officerRanks],
     "ctm__v2.jpg",
     "<center><b>Combat Team Medic (CTM)</b></center><br>Awarded on the successful completion of the Combat Team Medic course. Gives the individual knowledge of basic triage and care under fire.",
-    [{ x: 202, y: 222, width: 26, height: 24 }]
+    [{ x: 202, y: 222, width: 18, height: 18 }]
   ),
   qual(
     "FTCC",
@@ -681,6 +689,20 @@ export const qualifications = deepFreeze([
     {},
     {},
     ["Commander's Course"]
+  ),
+  qual(
+    "ITC Instructor",
+    "itc-instructor",
+    [],
+    "itcinstructor__v2.png",
+    "<center><b>ITC Instructor</b></center><br>Qualified Instructor of the Infantry Training Centre training team.",
+    [{ x: 612, y: 120, width: 35, height: 64 }],
+    { RAF: puPaths.qual("itc-instructor.png") },
+    {
+      imagePlacementByRows: {
+        default: { x: 617, y: 124 },
+      }
+    }
   ),
   qual(
     "Paratrooper",

@@ -84,39 +84,26 @@ function highestIn(order, have) {
     for (let i = order.length - 1; i >= 0; i--) if (have.has(order[i])) return order[i];
 }
 
-/**
- * Assembles all imagery for the supplied user state and triggers `mergeImagesOnCanvas`.
- */
-export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC) {
-    debugLog("[PU:prepare] start");
-    clearTooltips(); // reset tooltips before rendering
-    const removeExistingCanvas = () => {
-        if (!container?.querySelector) {
-            return;
-        }
-        const existing = container.querySelector(".discourse-project-uniform-canvas");
-        if (existing) {
-            existing._teardownTooltips?.();
-            existing.remove();
-            debugLog("[PU:prepare] Removed existing canvas (early cleanup)");
-        }
-    };
+function removeExistingCanvas(container) {
+    if (!container?.querySelector) {
+        return;
+    }
+    const existing = container.querySelector(".discourse-project-uniform-canvas");
+    if (existing) {
+        existing._teardownTooltips?.();
+        existing.remove();
+        debugLog("[PU:prepare] Removed existing canvas (early cleanup)");
+    }
+}
 
-    removeExistingCanvas();
-
-    let bg = "";                        // background image URL (string)
-    const foregroundItems = [];         // ALWAYS push objects: { url: string|array, x?, y? }
-    const awardUrls = [];               // award ribbons (strings)
-    const qualsToRender = [];           // qualification objects we’ll still pass to renderer (for tooltips)
-
-    // Helper: always push as object so the renderer sees `.url`
-    const pushFg = (urlOrArray, options) => {
+function createForegroundAdder(store) {
+    return (urlOrArray, options) => {
         if (!urlOrArray) {
-            return;
+            return null;
         }
 
+        const item = { url: urlOrArray };
         if (options && typeof options === "object") {
-            const item = { url: urlOrArray };
             if (Number.isFinite(options.x)) {
                 item.x = options.x;
             }
@@ -126,73 +113,134 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             if (Number.isFinite(options.rotationDegrees)) {
                 item.rotationDegrees = options.rotationDegrees;
             }
-            foregroundItems.push(item);
-        } else {
-            foregroundItems.push({ url: urlOrArray });
         }
-    };
 
-    // Helpers for case-insensitive work
-    const groupNameSetLC = new Set(groups.map(g => toLC(g.name)));
+        store.push(item);
+        return item;
+    };
+}
+
+function buildGroupContext(groups) {
+    const groupNameSetLC = new Set(groups.map(g => toLC(g?.name)));
     const is16CSMR = ["16csmr", "16csmr_ic", "16csmr_2ic"].some(n => groupNameSetLC.has(n));
     const is7RHA = ["7rha", "7rha_ic", "7rha_2ic"].some(n => groupNameSetLC.has(n));
+    return { groupNameSetLC, is16CSMR, is7RHA };
+}
 
-    const csaRibbonMembership = new Map();
-    groups.forEach((group) => {
-        const ribbon = csaRibbonGroupMapLC[toLC(group.name)];
-        if (ribbon) {
-            csaRibbonMembership.set(ribbon.name, ribbon);
-        }
-    });
-
-    const csaRibbonsToRender = [...csaRibbonMembership.values()]
-        .sort((a, b) => compareCsaNames(a.name, b.name))
-        .slice(0, 3);
-    const csaRibbonCount = csaRibbonsToRender.length;
-    const leadershipOverrideForCount = csaLeadershipOverrideByRibbonCount[csaRibbonCount] || csaLeadershipOverrideByRibbonCount.default;
-
-    // Badge name set (lowercased) the user has
-    const badgeNameSetLC = new Set(
-        userBadges.map(ub => toLC(idToBadge.get(ub.badge_id)?.name)).filter(Boolean)
-    );
+function buildBadgeContext(userBadges, idToBadge) {
+    const badgeNames = userBadges
+        .map(ub => idToBadge.get(ub.badge_id)?.name)
+        .filter(Boolean);
+    const badgeNameSetLC = new Set(badgeNames.map(toLC));
     const leadershipBadgeNameSetLC = new Set(
         [...badgeNameSetLC].map((name) => canonicalLeadershipName(name))
     );
-    debugLog("[PU:prepare] Inputs:", { groups: groups.map(g => g.name), is16CSMR, badgeNames: [...badgeNameSetLC], csaRibbons: csaRibbonsToRender.map(r => r.name) });
+    return { badgeNames, badgeNameSetLC, leadershipBadgeNameSetLC };
+}
 
-    // Find highest rank first (case-insensitive)
-    const highestRank = ranks.find(r => groupNameSetLC.has(toLC(r.name)));
-    debugLog("[PU:prepare] Highest rank:", highestRank?.name || null);
-    if (highestRank && toLC(highestRank.name) === "recruit") {
-        debugLog("[PU:prepare] Recruit rank detected – skipping uniform render");
-        removeExistingCanvas();
-        return;
-    }
-    const isRAFUniform = highestRank?.service === "RAF";
+function resolveHighestRank(groupNameSetLC) {
+    return ranks.find(r => groupNameSetLC.has(toLC(r.name))) || null;
+}
 
-    // Decide background from service + category, else fall back
+function determineBackgroundInfo(highestRank, groupNameSetLC) {
+    let background = "";
+
     if (highestRank) {
         if (highestRank.service === "RAF" && highestRank.category === "officer") {
-            bg = backgroundImages.rafOfficer; debugLog("[PU:prepare] Background=RAF officer");
+            background = backgroundImages.rafOfficer;
+            debugLog("[PU:prepare] Background=RAF officer");
         } else if (highestRank.service === "RAF" && highestRank.category === "enlisted") {
-            bg = backgroundImages.rafEnlisted; debugLog("[PU:prepare] Background=RAF enlisted");
+            background = backgroundImages.rafEnlisted;
+            debugLog("[PU:prepare] Background=RAF enlisted");
         } else if (highestRank.category === "officer") {
-            bg = backgroundImages.officer; debugLog("[PU:prepare] Background=BA officer");
+            background = backgroundImages.officer;
+            debugLog("[PU:prepare] Background=BA officer");
         } else if (highestRank.category === "enlisted") {
-            bg = backgroundImages.enlisted; debugLog("[PU:prepare] Background=BA enlisted");
+            background = backgroundImages.enlisted;
+            debugLog("[PU:prepare] Background=BA enlisted");
         }
     } else {
-        // legacy fallback using group presence if no rank matched
         const officerRanksLC = officerRanks.map(toLC);
         const enlistedRanksLC = enlistedRanks.map(toLC);
         if ([...groupNameSetLC].some(n => officerRanksLC.includes(n))) {
-            bg = backgroundImages.officer; debugLog("[PU:prepare] Background=BA officer (fallback)");
+            background = backgroundImages.officer;
+            debugLog("[PU:prepare] Background=BA officer (fallback)");
         } else if ([...groupNameSetLC].some(n => enlistedRanksLC.includes(n))) {
-            bg = backgroundImages.enlisted; debugLog("[PU:prepare] Background=BA enlisted (fallback)");
+            background = backgroundImages.enlisted;
+            debugLog("[PU:prepare] Background=BA enlisted (fallback)");
         } else {
             debugLog("[PU:prepare] Background not determined (no rank match)");
         }
     }
+
+    return { background, isRAFUniform: highestRank?.service === "RAF" };
+}
+
+function shouldSkipRenderForRecruit(highestRank) {
+    return !!highestRank && toLC(highestRank.name) === "recruit";
+}
+
+function buildCsaContext(groups) {
+    const membership = new Map();
+    groups.forEach((group) => {
+        const ribbon = csaRibbonGroupMapLC[toLC(group?.name)];
+        if (ribbon) {
+            membership.set(ribbon.name, ribbon);
+        }
+    });
+
+    const ribbonsToRender = [...membership.values()]
+        .sort((a, b) => compareCsaNames(a.name, b.name))
+        .slice(0, 3);
+    const count = ribbonsToRender.length;
+    const leadershipOverrideForCount =
+        csaLeadershipOverrideByRibbonCount[count] || csaLeadershipOverrideByRibbonCount.default;
+
+    return { membership, ribbonsToRender, count, leadershipOverrideForCount };
+}
+
+function swapCsaVariantsForService(ribbons, service) {
+    if (!service) {
+        return ribbons;
+    }
+
+    return ribbons.map((ribbon) => {
+        const variantImage = ribbon?.serviceVariants?.[service];
+        if (variantImage && variantImage !== ribbon.imageKey) {
+            return { ...ribbon, imageKey: variantImage };
+        }
+        return ribbon;
+    });
+}
+
+/**
+ * Assembles all imagery for the supplied user state and triggers `mergeImagesOnCanvas`.
+ */
+export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC) {
+    debugLog("[PU:prepare] start");
+    clearTooltips();
+    removeExistingCanvas(container);
+
+    const foregroundItems = [];         // ALWAYS push objects: { url: string|array, x?, y? }
+    const awardUrls = [];               // award ribbons (strings)
+    const qualsToRender = [];           // qualification objects we’ll still pass to renderer (for tooltips)
+
+    const pushFg = createForegroundAdder(foregroundItems);
+
+    const { groupNameSetLC, is16CSMR, is7RHA } = buildGroupContext(groups);
+    const { badgeNames, badgeNameSetLC, leadershipBadgeNameSetLC } = buildBadgeContext(userBadges, idToBadge);
+    const { ribbonsToRender: csaRibbonsToRender, count: csaRibbonCount, leadershipOverrideForCount } = buildCsaContext(groups);
+
+    debugLog("[PU:prepare] Inputs:", { groups: groups.map(g => g.name), is16CSMR, badgeNames, csaRibbons: csaRibbonsToRender.map(r => r.name) });
+
+    const highestRank = resolveHighestRank(groupNameSetLC);
+    debugLog("[PU:prepare] Highest rank:", highestRank?.name || null);
+    if (shouldSkipRenderForRecruit(highestRank)) {
+        debugLog("[PU:prepare] Recruit rank detected – skipping uniform render");
+        return;
+    }
+
+    const { background: bg, isRAFUniform } = determineBackgroundInfo(highestRank, groupNameSetLC);
 
     // Highest rank image (may be an array of candidate URLs) — push as object
     if (highestRank?.imageKey) {
@@ -351,7 +399,8 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const adjustedQual = adjustedQualMap.get(q) || q;
         const chosenUrl = (q.serviceVariants && q.serviceVariants[service]) || q.imageKey;
 
-        const pilotPos = q?.ribbonRowVariants?.imagePlacementByRows?.[ribbonRows];
+        const placementByRows = q?.ribbonRowVariants?.imagePlacementByRows;
+        const pilotPos = placementByRows?.[ribbonRows] || placementByRows?.default || placementByRows?.all;
         const nameLC = toLC(q.name);
         const canonicalLC = canonicalLeadershipName(nameLC);
         const isLeader = leadershipOrderLC.includes(canonicalLC);
@@ -434,14 +483,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
     if (bg) {
         // Swap CSA ribbon art if the current service has a dedicated variant.
-        const csaRibbonsForService = csaRibbonsToRender.map((ribbon) => {
-            const serviceKey = highestRank?.service;
-            const variantImage = serviceKey ? ribbon?.serviceVariants?.[serviceKey] : null;
-            if (variantImage && variantImage !== ribbon.imageKey) {
-                return { ...ribbon, imageKey: variantImage };
-            }
-            return ribbon;
-        });
+        const csaRibbonsForService = swapCsaVariantsForService(csaRibbonsToRender, highestRank?.service);
 
         mergeImagesOnCanvas(
             container,
