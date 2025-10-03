@@ -1,6 +1,6 @@
 # name: discourse-project-uniform
 # about: Discourse Project Uniform
-# version: 0.9.6
+# version: 0.9.7
 # authors: OpenAI & Darojax
 # url: https://github.com/16AA-Milsim/discourse-project-uniform
 

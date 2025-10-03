@@ -30,7 +30,7 @@ import {
     paraCollarImageOfficer
 } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
-import { mergeImagesOnCanvas } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
+import { mergeImagesOnCanvas, PU_FILTERS } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
 import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
 import { debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
@@ -76,7 +76,6 @@ const CTM_ANCHOR_OFFSET_X = Number(ctmRenderDefaults?.leaderAnchorOffset?.x ?? 0
 const CTM_ANCHOR_OFFSET_Y = Number(ctmRenderDefaults?.leaderAnchorOffset?.y ?? 0);
 const CTM_PLAIN_NAME_LC = toLC(ctmRenderDefaults?.plainVariantName || "CTM");
 const CTM_PLAIN_EXTRA_Y = Number(ctmRenderDefaults?.plainVariantExtraYOffset ?? 0);
-
 /**
  * Finds the highest-ranked name in `order` that is present in the provided set.
  */
@@ -430,6 +429,9 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             }
 
             const fgEntry = pushFg(chosenUrl, pushOptions);
+            if (fgEntry) {
+                fgEntry.filter = PU_FILTERS.qualificationMuted;
+            }
 
             ctmForegroundData.push({
                 adjustedQual,
@@ -441,7 +443,10 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             debugLog("[PU:prepare] Queue CTM image (pending alignment):", q.name);
         } else {
             const pushOptions = finalPos ? { ...finalPos } : null;
-            pushFg(chosenUrl, pushOptions);
+            const fgEntry = pushFg(chosenUrl, pushOptions);
+            if (fgEntry && isLeader) {
+                fgEntry.filter = PU_FILTERS.qualificationMuted;
+            }
             debugLog("[PU:prepare] Add qualification image (post-awards):", q.name, finalPos || "(centered)");
         }
     });

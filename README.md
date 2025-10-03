@@ -7,6 +7,7 @@ This plugin shows a dynamically updating uniform for the 16AA member showing gro
 Debug Mode can be toggled via the site setting `discourse_project_uniform_debug_enabled`. Setting `DEBUG_MODE` at the top of `assets/javascripts/discourse/lib/pu-utils.js` forces it on regardless of the admin value. When enabled, the browser console logs renderer events and tooltip hitboxes render as red outlines.
 
 ## To-Do
+- [ ] Implement colour gradient for CSA ribbons, bright to dark from left to right?
 - [ ] Make CMT qualification show for non 16CSMR member by having a small badge, placed in the same place as CTM badges?
 - [ ] CSA Ribbon textures texture and brightness.
 - [ ] ITC Instructor patch texture.

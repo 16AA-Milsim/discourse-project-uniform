@@ -43,6 +43,12 @@ const CSA_SHADOW_COLOR = 'rgba(0,0,0,0.3)';      // drop shadow tone for CSA rib
 const CSA_RIBBON_DRAW_ALPHA = 1.0;              // opacity when placing CSA ribbons on uniform
 const CSA_RIBBON_BRIGHTEN_ALPHA = 0;            // additional brighten overlay applied to CSA ribbons
 
+export const PU_FILTERS = Object.freeze({
+    qualificationMuted: "saturate(0.85) brightness(0.85)", // shared CTM/leadership tone adjustment
+    medalRibbonTone: "saturate(0.8) brightness(0.9)",       // medal ribbon tone adjustment
+    csaRibbonTone: "saturate(1) brightness(1)",         // CSA ribbon tone adjustment
+});
+
 const PERSPECTIVE_CACHE = new Map();
 
 const AWARD_PLACEMENTS = {
@@ -401,8 +407,11 @@ function renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, 
         ctx.rotate(CSA_RIBBON_ROTATION);
 
         const previousAlpha = ctx.globalAlpha;
+        const previousFilter = ctx.filter;
         ctx.globalAlpha = CSA_RIBBON_DRAW_ALPHA;
+        ctx.filter = PU_FILTERS.csaRibbonTone;
         ctx.drawImage(perspectiveCanvas, -destWidth / 2, -destHeight / 2);
+        ctx.filter = previousFilter;
         ctx.globalAlpha = previousAlpha;
         ctx.restore();
 
@@ -474,6 +483,7 @@ function drawImages(ctx, images = [], canvas, items = []) {
                 ? it.rotationDegrees
                 : 0;
             const rotationRadians = rotationDegrees ? (rotationDegrees * Math.PI) / 180 : 0;
+            const filter = typeof it?.filter === "string" && it.filter.trim() ? it.filter : null;
 
             if (rotationRadians) {
                 const cx = x + img.naturalWidth / 2;
@@ -481,10 +491,20 @@ function drawImages(ctx, images = [], canvas, items = []) {
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.rotate(rotationRadians);
+                if (filter) {
+                    ctx.filter = filter;
+                }
                 ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2, img.naturalWidth, img.naturalHeight);
                 ctx.restore();
             } else {
-                ctx.drawImage(img, x, y, img.naturalWidth, img.naturalHeight);
+                if (filter) {
+                    ctx.save();
+                    ctx.filter = filter;
+                    ctx.drawImage(img, x, y, img.naturalWidth, img.naturalHeight);
+                    ctx.restore();
+                } else {
+                    ctx.drawImage(img, x, y, img.naturalWidth, img.naturalHeight);
+                }
             }
 
             debugLog(`[PU:render] Drew foreground image ${i} at (${x}, ${y}) size ${img.naturalWidth}x${img.naturalHeight}` +
@@ -606,6 +626,13 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
     debugLog("[PU:render] Awards layout:", { total: awardImages.length, considered: final.length, rowCounts });
 
     const tips = [];
+    const gradientBounds = {
+        left: Number.POSITIVE_INFINITY,
+        right: 0,
+        top: Number.POSITIVE_INFINITY,
+        bottom: 0,
+    };
+
     final.forEach((img, idx) => {
         if (!img?.naturalWidth || !img?.naturalHeight) {
             return;
@@ -631,13 +658,37 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
         const extraHeight = row === 0 ? TOP_ROW_EXTRA_HEIGHT : 0;
         const y = canvas.height - ribbonHeight - row * rowHeight;
         const drawY = y - extraHeight;
+        ctx.save();
+        ctx.filter = PU_FILTERS.medalRibbonTone;
         ctx.drawImage(img, x, drawY, img.naturalWidth, ribbonHeight + extraHeight);
+        ctx.restore();
+
+        gradientBounds.left = Math.min(gradientBounds.left, x);
+        gradientBounds.right = Math.max(gradientBounds.right, x + img.naturalWidth);
+        gradientBounds.top = Math.min(gradientBounds.top, drawY);
+        gradientBounds.bottom = Math.max(gradientBounds.bottom, drawY + ribbonHeight + extraHeight);
 
         const srcPath = normalizePath(img.src);
         const meta = awards.find(a => normalizePath(a.imageKey) === srcPath || a.name === img.alt) || {};
         const content = `<img src="${meta.tooltipImage || meta.imageKey}"> ${meta.tooltipText || meta.name}`;
         tips.push({ x, y: drawY, width: img.naturalWidth, height: ribbonHeight + extraHeight, content });
     });
+
+    if (gradientBounds.right > gradientBounds.left && gradientBounds.bottom > gradientBounds.top) {
+        const gradient = ctx.createLinearGradient(gradientBounds.left, 0, gradientBounds.right, 0);
+        gradient.addColorStop(0, "rgba(0, 0, 0, 0.00)");
+        gradient.addColorStop(0.55, "rgba(0, 0, 0, 0.1)");
+        gradient.addColorStop(1, "rgba(0, 0, 0, 0.2)");
+        ctx.save();
+        ctx.fillStyle = gradient;
+        ctx.fillRect(
+            gradientBounds.left,
+            Math.max(0, gradientBounds.top - 1),
+            Math.max(1, gradientBounds.right - gradientBounds.left),
+            Math.max(1, gradientBounds.bottom - gradientBounds.top + 2)
+        );
+        ctx.restore();
+    }
     return tips;
 }
 
@@ -707,6 +758,17 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) 
         ctx.globalCompositeOperation = "screen";
         ctx.globalAlpha = CSA_RIBBON_BRIGHTEN_ALPHA;
         ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+    }
+
+    if (canvas.width > 0 && canvas.height > 0) {
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        gradient.addColorStop(0, "rgba(0, 0, 0, 0.00)");
+        gradient.addColorStop(0.6, "rgba(0, 0, 0, 0.15)");
+        gradient.addColorStop(1, "rgba(0, 0, 0, 0.20)");
+        ctx.save();
+        ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
     }
