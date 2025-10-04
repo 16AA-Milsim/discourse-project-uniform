@@ -34,8 +34,11 @@ import { mergeImagesOnCanvas, PU_FILTERS } from "discourse/plugins/discourse-pro
 import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
 import { debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
+// Normalizes potentially nullish values into lowercase strings for set lookups.
 const toLC = (value) => String(value || "").toLowerCase();
+// Flags strings that begin with a digit so CSA ribbons can be sorted numerically first.
 const startsWithDigit = (value) => /^\d/.test(String(value || ""));
+// Compares CSA ribbon names with numeric awareness and case-insensitive locale order.
 const compareCsaNames = (a, b) => {
     const aDigit = startsWithDigit(a);
     const bDigit = startsWithDigit(b);
@@ -54,6 +57,7 @@ const leadershipAliasMapLC = Object.freeze(
     )
 );
 
+// Resolves leadership qualification aliases to their canonical lowercase names.
 const canonicalLeadershipName = (value) => leadershipAliasMapLC[value] || value;
 
 const CSA_LEADERSHIP_NAMES = new Set(
@@ -76,13 +80,15 @@ const CTM_ANCHOR_OFFSET_X = Number(ctmRenderDefaults?.leaderAnchorOffset?.x ?? 0
 const CTM_ANCHOR_OFFSET_Y = Number(ctmRenderDefaults?.leaderAnchorOffset?.y ?? 0);
 const CTM_PLAIN_NAME_LC = toLC(ctmRenderDefaults?.plainVariantName || "CTM");
 const CTM_PLAIN_EXTRA_Y = Number(ctmRenderDefaults?.plainVariantExtraYOffset ?? 0);
-/**
- * Finds the highest-ranked name in `order` that is present in the provided set.
- */
+const officerRankNameSetLC = new Set(officerRanks.map(toLC));
+const enlistedRankNameSetLC = new Set(enlistedRanks.map(toLC));
+
+// Finds the highest-ranked name in the supplied order that the caller possesses.
 function highestIn(order, have) {
     for (let i = order.length - 1; i >= 0; i--) if (have.has(order[i])) return order[i];
 }
 
+// Removes any existing Project Uniform canvas (and its tooltip wiring) from the container.
 function removeExistingCanvas(container) {
     if (!container?.querySelector) {
         return;
@@ -95,6 +101,7 @@ function removeExistingCanvas(container) {
     }
 }
 
+// Produces a helper that records foreground overlay metadata in insertion order.
 function createForegroundAdder(store) {
     return (urlOrArray, options) => {
         if (!urlOrArray) {
@@ -119,6 +126,7 @@ function createForegroundAdder(store) {
     };
 }
 
+// Collates group membership flags used by later rendering rules.
 function buildGroupContext(groups) {
     const groupNameSetLC = new Set(groups.map(g => toLC(g?.name)));
     const is16CSMR = ["16csmr", "16csmr_ic", "16csmr_2ic"].some(n => groupNameSetLC.has(n));
@@ -126,6 +134,7 @@ function buildGroupContext(groups) {
     return { groupNameSetLC, is16CSMR, is7RHA };
 }
 
+// Maps badge names into lookup sets for qualification and award filtering.
 function buildBadgeContext(userBadges, idToBadge) {
     const badgeNames = userBadges
         .map(ub => idToBadge.get(ub.badge_id)?.name)
@@ -137,10 +146,12 @@ function buildBadgeContext(userBadges, idToBadge) {
     return { badgeNames, badgeNameSetLC, leadershipBadgeNameSetLC };
 }
 
+// Chooses the highest-priority rank based on the user's group memberships.
 function resolveHighestRank(groupNameSetLC) {
     return ranks.find(r => groupNameSetLC.has(toLC(r.name))) || null;
 }
 
+// Determines the uniform background and RAF flag using rank or group hints.
 function determineBackgroundInfo(highestRank, groupNameSetLC) {
     let background = "";
 
@@ -159,12 +170,10 @@ function determineBackgroundInfo(highestRank, groupNameSetLC) {
             debugLog("[PU:prepare] Background=BA enlisted");
         }
     } else {
-        const officerRanksLC = officerRanks.map(toLC);
-        const enlistedRanksLC = enlistedRanks.map(toLC);
-        if ([...groupNameSetLC].some(n => officerRanksLC.includes(n))) {
+        if ([...groupNameSetLC].some(n => officerRankNameSetLC.has(n))) {
             background = backgroundImages.officer;
             debugLog("[PU:prepare] Background=BA officer (fallback)");
-        } else if ([...groupNameSetLC].some(n => enlistedRanksLC.includes(n))) {
+        } else if ([...groupNameSetLC].some(n => enlistedRankNameSetLC.has(n))) {
             background = backgroundImages.enlisted;
             debugLog("[PU:prepare] Background=BA enlisted (fallback)");
         } else {
@@ -175,10 +184,12 @@ function determineBackgroundInfo(highestRank, groupNameSetLC) {
     return { background, isRAFUniform: highestRank?.service === "RAF" };
 }
 
+// Skips rendering entirely when the user is still a recruit.
 function shouldSkipRenderForRecruit(highestRank) {
     return !!highestRank && toLC(highestRank.name) === "recruit";
 }
 
+// Derives CSA ribbon membership and leadership overrides from group assignments.
 function buildCsaContext(groups) {
     const membership = new Map();
     groups.forEach((group) => {
@@ -198,6 +209,7 @@ function buildCsaContext(groups) {
     return { membership, ribbonsToRender, count, leadershipOverrideForCount };
 }
 
+// Replaces CSA ribbon imagery with service-specific variants when available.
 function swapCsaVariantsForService(ribbons, service) {
     if (!service) {
         return ribbons;
@@ -212,9 +224,7 @@ function swapCsaVariantsForService(ribbons, service) {
     });
 }
 
-/**
- * Assembles all imagery for the supplied user state and triggers `mergeImagesOnCanvas`.
- */
+// Assembles all imagery for the supplied user state and triggers canvas rendering.
 export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC) {
     debugLog("[PU:prepare] start");
     clearTooltips();
@@ -534,9 +544,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     }
 }
 
-/**
- * Registers tooltip hitboxes for any lanyards the user qualifies for.
- */
+// Registers tooltip hitboxes covering the collar insignia region.
 function registerCollarTooltip(tooltip) {
     if (!tooltip?.tooltipAreas?.length) {
         return;
@@ -549,6 +557,7 @@ function registerCollarTooltip(tooltip) {
     });
 }
 
+// Registers tooltip hitboxes for any lanyards the user qualifies for.
 function registerLanyardTooltips(groups) {
     groups.forEach(group => {
         const key = String(group?.name || "").toLowerCase();

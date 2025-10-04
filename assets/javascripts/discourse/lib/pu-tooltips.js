@@ -7,26 +7,19 @@ import { isDebugEnabled, debugLog } from "discourse/plugins/discourse-project-un
 // Stores tooltip hit regions
 const tooltipRegions = [];
 
-/**
- * Clears all registered tooltip regions. Useful before rebuilding the canvas.
- */
+// Clears all registered tooltip regions prior to rebuilding the canvas.
 export function clearTooltips() {
     tooltipRegions.length = 0;
     debugLog("[tooltips] cleared");
 }
 
-/**
- * Registers a tooltip area with coordinates, size, and rendered HTML content.
- */
+// Registers a tooltip area with coordinates, size, and rendered HTML content.
 export function registerTooltip(x, y, width, height, content) {
     debugLog("[tooltips] register:", { x, y, width, height, hasImg: /<img/i.test(content), len: content?.length });
     tooltipRegions.push({ x, y, width, height, content });
 }
 
-/**
- * Attaches tooltip behaviour to the supplied canvas. Handles hit testing, positioning,
- * accessibility attributes, and optional debug overlays.
- */
+// Attaches tooltip behaviour to the supplied canvas including hit testing and overlays.
 export function setupTooltips(canvas) {
     canvas.classList.add("pu-uniform-canvas");
     const cssMax = canvas.width; // e.g., 695

@@ -58,10 +58,12 @@ const AWARD_PLACEMENTS = {
     default: { x: 380, y: 46 },
 };
 
+// Retrieves the anchor placement used for a given award ribbon count.
 function getAwardPlacement(count) {
     return AWARD_PLACEMENTS[count] || AWARD_PLACEMENTS.default;
 }
 
+// Cleans up any previously rendered uniform canvas from the container.
 function detachExistingCanvas(container) {
     const existing = container?.querySelector?.(".discourse-project-uniform-canvas");
     if (existing) {
@@ -71,6 +73,7 @@ function detachExistingCanvas(container) {
     }
 }
 
+// Creates a canvas element pre-configured for uniform rendering.
 function createCanvasSurface() {
     const canvas = document.createElement("canvas");
     canvas.className = "discourse-project-uniform-canvas";
@@ -78,6 +81,7 @@ function createCanvasSurface() {
     return canvas;
 }
 
+// Loads background, foreground, award, and CSA imagery in parallel.
 function loadRenderAssets(backgroundImageUrl, foregroundUrls, awardUrls, csaUrls) {
     return Promise.all([
         loadImageCached(backgroundImageUrl || ""),
@@ -92,6 +96,7 @@ function loadRenderAssets(backgroundImageUrl, foregroundUrls, awardUrls, csaUrls
     });
 }
 
+// Ensures award and CSA images inherit meaningful alt text for accessibility.
 function applyAltTextMetadata(awardImages, csaImages, csaRibbonEntries) {
     awardImages.forEach((img) => {
         if (!img) {
@@ -114,10 +119,7 @@ function applyAltTextMetadata(awardImages, csaImages, csaRibbonEntries) {
     });
 }
 
-/**
- * Builds the Project Uniform canvas inside `container`, loading every layer in parallel
- * before delegating to the drawing pipeline.
- */
+// Builds, populates, and attaches the Project Uniform canvas for the supplied state.
 export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundItems, awardImageUrls, highestRank, qualificationsToRender, groups, groupTooltipMap, csaRibbonEntries = []) {
     const renderId = ++renderTicket;
     if (container) {
@@ -169,9 +171,7 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
         .catch((e) => debugLog("[PU:render] Error loading images:", e));
 }
 
-/**
- * Coordinates drawing the background, foreground overlays, ribbons, and tooltip regions.
- */
+// Coordinates drawing the background, overlays, ribbons, and associated tooltips.
 function renderCanvasContents(ctx, canvas, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = [], csaImages = [], csaRibbonEntries = []) {
     resizeCanvasToBackground(canvas, ctx, bgImage);
     drawBackgroundLayer(ctx, canvas, bgImage);
@@ -185,6 +185,7 @@ function renderCanvasContents(ctx, canvas, bgImage, fgImages, awardImages, highe
     renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank);
 }
 
+// Matches the canvas size to the loaded background image dimensions.
 function resizeCanvasToBackground(canvas, ctx, bgImage) {
     canvas.width = bgImage?.naturalWidth || 1;
     canvas.height = bgImage?.naturalHeight || 1;
@@ -192,6 +193,7 @@ function resizeCanvasToBackground(canvas, ctx, bgImage) {
     debugLog("[PU:render] Canvas size:", { w: canvas.width, h: canvas.height });
 }
 
+// Paints the uniform background layer with a subtle drop shadow.
 function drawBackgroundLayer(ctx, canvas, bgImage) {
     if (!bgImage) {
         return;
@@ -205,6 +207,7 @@ function drawBackgroundLayer(ctx, canvas, bgImage) {
     ctx.restore();
 }
 
+// Registers tooltip regions for each qualifying group insignia.
 function registerGroupTooltipsForCanvas(groups, groupTooltipMap) {
     let groupTipCount = 0;
     if (!groups?.length || !groupTooltipMap) {
@@ -233,6 +236,7 @@ function registerGroupTooltipsForCanvas(groups, groupTooltipMap) {
     return groupTipCount;
 }
 
+// Registers tooltip regions for the rank overlay based on intrinsic offsets.
 function registerRankTooltipsForCanvas(canvas, fgImages, highestRank) {
     if (!(highestRank && highestRank.tooltipAreas)) {
         return 0;
@@ -253,6 +257,7 @@ function registerRankTooltipsForCanvas(canvas, fgImages, highestRank) {
     return highestRank.tooltipAreas.length;
 }
 
+// Registers tooltip regions for qualification badges on the canvas.
 function registerQualificationTooltipsForCanvas(qualifications = []) {
     let qualTipCount = 0;
     qualifications.forEach((qual) => {
@@ -265,6 +270,7 @@ function registerQualificationTooltipsForCanvas(qualifications = []) {
     return qualTipCount;
 }
 
+// Renders medal ribbons with perspective and registers associated tooltip geometry.
 function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender) {
     try {
         const awardsCanvas = document.createElement("canvas");
@@ -350,6 +356,7 @@ function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRend
     }
 }
 
+// Renders CSA ribbons with service offsets and registers tooltip geometry.
 function renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank) {
     if (!csaImages.length || !csaRibbonEntries.length) {
         return;
@@ -457,15 +464,14 @@ function renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, 
     }
 }
 
+// Inserts the rendered canvas into the DOM and wires up tooltips.
 function prependCanvas(container, canvas) {
     container.prepend(canvas);
     setupTooltips(canvas);
     debugLog("[PU:render] Canvas appended and tooltips set up");
 }
 
-/**
- * Draws foreground overlays while keeping the image/item index alignment intact.
- */
+// Draws foreground overlays while keeping image/item index alignment intact.
 function drawImages(ctx, images = [], canvas, items = []) {
     images.forEach((img, i) => {
         const it = items[i];
@@ -515,10 +521,7 @@ function drawImages(ctx, images = [], canvas, items = []) {
     });
 }
 
-/**
- * Applies a subtle taper and downward curve to the ribbon block before the final rotation.
- * Returns both the warped canvas and a helper that maps points through the same transform.
- */
+// Applies taper and curve transforms to ribbon blocks and returns the mapping helper.
 function buildRibbonPerspectiveCanvas(sourceCanvas, options = {}) {
     const width = sourceCanvas.width || 1;
     const height = sourceCanvas.height || 1;
@@ -589,9 +592,7 @@ function buildRibbonPerspectiveCanvas(sourceCanvas, options = {}) {
     return { canvas, mapPoint };
 }
 
-/**
- * Lays out up to three rows of award ribbons and returns tooltip rectangles for each.
- */
+// Lays out up to three rows of award ribbons and returns tooltip rectangles for each.
 function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
     const perRow = [4, 4, 4];
     const maxRibbons = perRow.reduce((sum, count) => sum + count, 0);
@@ -717,6 +718,7 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
 }
 
 
+// Draws the CSA ribbon row with optional strap masking and tooltip geometry.
 function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) {
     const { maskRightmostQuarter = false } = options;
     const limitedImages = images.slice(0, CSA_RIBBON_MAX);
