@@ -626,12 +626,13 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
     debugLog("[PU:render] Awards layout:", { total: awardImages.length, considered: final.length, rowCounts });
 
     const tips = [];
-    const gradientBounds = {
+    const rowGradientBounds = perRow.map(() => ({
         left: Number.POSITIVE_INFINITY,
-        right: 0,
+        right: Number.NEGATIVE_INFINITY,
         top: Number.POSITIVE_INFINITY,
-        bottom: 0,
-    };
+        bottom: Number.NEGATIVE_INFINITY,
+    }));
+    const rowRibbonRects = perRow.map(() => []);
 
     final.forEach((img, idx) => {
         if (!img?.naturalWidth || !img?.naturalHeight) {
@@ -663,10 +664,18 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
         ctx.drawImage(img, x, drawY, img.naturalWidth, ribbonHeight + extraHeight);
         ctx.restore();
 
-        gradientBounds.left = Math.min(gradientBounds.left, x);
-        gradientBounds.right = Math.max(gradientBounds.right, x + img.naturalWidth);
-        gradientBounds.top = Math.min(gradientBounds.top, drawY);
-        gradientBounds.bottom = Math.max(gradientBounds.bottom, drawY + ribbonHeight + extraHeight);
+        const rowBounds = rowGradientBounds[row];
+        rowBounds.left = Math.min(rowBounds.left, x);
+        rowBounds.right = Math.max(rowBounds.right, x + img.naturalWidth);
+        rowBounds.top = Math.min(rowBounds.top, drawY);
+        rowBounds.bottom = Math.max(rowBounds.bottom, drawY + ribbonHeight + extraHeight);
+
+        rowRibbonRects[row].push({
+            x,
+            y: drawY,
+            width: img.naturalWidth,
+            height: ribbonHeight + extraHeight,
+        });
 
         const srcPath = normalizePath(img.src);
         const meta = awards.find(a => normalizePath(a.imageKey) === srcPath || a.name === img.alt) || {};
@@ -674,21 +683,36 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
         tips.push({ x, y: drawY, width: img.naturalWidth, height: ribbonHeight + extraHeight, content });
     });
 
-    if (gradientBounds.right > gradientBounds.left && gradientBounds.bottom > gradientBounds.top) {
-        const gradient = ctx.createLinearGradient(gradientBounds.left, 0, gradientBounds.right, 0);
+    rowGradientBounds.forEach((bounds, row) => {
+        if (!(bounds.right > bounds.left && bounds.bottom > bounds.top)) {
+            return;
+        }
+
+        const gradient = ctx.createLinearGradient(bounds.left, 0, bounds.right, 0);
         gradient.addColorStop(0, "rgba(0, 0, 0, 0.00)");
         gradient.addColorStop(0.55, "rgba(0, 0, 0, 0.1)");
         gradient.addColorStop(1, "rgba(0, 0, 0, 0.2)");
+
+        const rects = rowRibbonRects[row];
+        if (!rects.length) {
+            return;
+        }
+
         ctx.save();
+        ctx.beginPath();
+        rects.forEach(rect => {
+            ctx.rect(rect.x, rect.y, rect.width, rect.height);
+        });
+        ctx.clip();
         ctx.fillStyle = gradient;
         ctx.fillRect(
-            gradientBounds.left,
-            Math.max(0, gradientBounds.top - 1),
-            Math.max(1, gradientBounds.right - gradientBounds.left),
-            Math.max(1, gradientBounds.bottom - gradientBounds.top + 2)
+            bounds.left,
+            Math.max(0, bounds.top - 1),
+            Math.max(1, bounds.right - bounds.left),
+            Math.max(1, bounds.bottom - bounds.top + 2)
         );
         ctx.restore();
-    }
+    });
     return tips;
 }
 
@@ -715,6 +739,14 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) 
     canvas.height = Math.max(1, maxHeight);
 
     const tips = [];
+    const ribbonShapes = [];
+    const gradientBounds = {
+        left: Number.POSITIVE_INFINITY,
+        right: Number.NEGATIVE_INFINITY,
+        top: Number.POSITIVE_INFINITY,
+        bottom: Number.NEGATIVE_INFINITY,
+    };
+
     let currentX = (canvas.width - totalRibbonWidth) / 2;
     limitedImages.forEach((img, index) => {
         const width = widths[index];
@@ -727,13 +759,16 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) 
         const tooltipContent = entry ? `<img src="${entry.tooltipImage}"> ${entry.tooltipText}` : "";
         const isLast = index === limitedImages.length - 1;
         let effectiveWidth = width;
+        let cutWidth = 0;
+        let cutHeight = 0;
+        let hasCut = false;
         if (maskRightmostQuarter && isLast) {
             // Trim a diagonal wedge so the top-right ribbon corner sits beneath
             // the officer chest strap while leaving the uniform background
             // intact.
             const denominator = width <= 20 ? 4 : 5;
-            const cutWidth = Math.max(1, Math.round(width / denominator) - 3);
-            const cutHeight = Math.max(4, Math.min(height, Math.round(height * 0.65)));
+            cutWidth = Math.max(1, Math.round(width / denominator) - 3);
+            cutHeight = Math.max(4, Math.min(height, Math.round(height * 0.65)));
 
             ctx.save();
             ctx.beginPath();
@@ -746,9 +781,25 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) 
             ctx.restore();
 
             effectiveWidth = width - cutWidth;
+            hasCut = true;
         }
 
         tips.push({ x: drawX, y: drawY, width: effectiveWidth, height, content: tooltipContent });
+
+        gradientBounds.left = Math.min(gradientBounds.left, drawX);
+        gradientBounds.right = Math.max(gradientBounds.right, drawX + width);
+        gradientBounds.top = Math.min(gradientBounds.top, drawY);
+        gradientBounds.bottom = Math.max(gradientBounds.bottom, drawY + height);
+
+        ribbonShapes.push({
+            x: drawX,
+            y: drawY,
+            width,
+            height,
+            cutWidth,
+            cutHeight,
+            hasCut,
+        });
 
         currentX += width + gap;
     });
@@ -762,14 +813,38 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) 
         ctx.restore();
     }
 
-    if (canvas.width > 0 && canvas.height > 0) {
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+    if (
+        ribbonShapes.length &&
+        gradientBounds.right > gradientBounds.left &&
+        gradientBounds.bottom > gradientBounds.top
+    ) {
+        const gradient = ctx.createLinearGradient(gradientBounds.left, 0, gradientBounds.right, 0);
         gradient.addColorStop(0, "rgba(0, 0, 0, 0.00)");
         gradient.addColorStop(0.6, "rgba(0, 0, 0, 0.15)");
         gradient.addColorStop(1, "rgba(0, 0, 0, 0.20)");
         ctx.save();
+        ctx.beginPath();
+        ribbonShapes.forEach(shape => {
+            ctx.moveTo(shape.x, shape.y);
+            if (shape.hasCut) {
+                ctx.lineTo(shape.x + shape.width - shape.cutWidth, shape.y);
+                ctx.lineTo(shape.x + shape.width, shape.y + shape.cutHeight);
+                ctx.lineTo(shape.x + shape.width, shape.y + shape.height);
+            } else {
+                ctx.lineTo(shape.x + shape.width, shape.y);
+                ctx.lineTo(shape.x + shape.width, shape.y + shape.height);
+            }
+            ctx.lineTo(shape.x, shape.y + shape.height);
+            ctx.closePath();
+        });
+        ctx.clip();
         ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(
+            gradientBounds.left,
+            Math.max(0, gradientBounds.top),
+            Math.max(1, gradientBounds.right - gradientBounds.left),
+            Math.max(1, gradientBounds.bottom - gradientBounds.top)
+        );
         ctx.restore();
     }
 
