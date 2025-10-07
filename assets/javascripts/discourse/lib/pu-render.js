@@ -51,6 +51,7 @@ export const PU_FILTERS = Object.freeze({
 
 const PERSPECTIVE_CACHE = new Map();
 const FONT_LOAD_PROMISES = new Map();
+const INJECTED_FONT_RULES = new Set();
 
 const AWARD_PLACEMENTS = {
     1: { x: 385, y: 45 },
@@ -544,6 +545,8 @@ function ensureFontsLoaded(fontSpecs = []) {
         return Promise.resolve();
     }
 
+    sanitized.forEach(injectFontFaceRule);
+
     return Promise.all(sanitized.map(loadFontFace)).then(() => undefined);
 }
 
@@ -573,13 +576,23 @@ function loadFontFace(spec) {
 
     let promise;
     if (url && typeof FontFace !== "undefined") {
-        const face = new FontFace(family, `url(${url})`, { style, weight, stretch });
+        const source = fontFaceSourceFor(url);
+        const face = new FontFace(family, source, { style, weight, stretch });
+        if (face.display === undefined) {
+            try {
+                face.display = "swap";
+            } catch { /* noop */ }
+        }
         promise = face.load().then((loadedFace) => {
             document.fonts?.add(loadedFace);
             debugLog("[PU:render] FontFace loaded", { family, url });
         });
     } else if (document.fonts?.load) {
-        promise = document.fonts.load(`1em "${family}"`);
+        injectFontFaceRule(spec);
+        promise = document.fonts.load(`1em "${family}"`, null).catch((error) => {
+            debugLog("[PU:render] document.fonts.load failed", { family, error });
+            throw error;
+        });
     } else {
         promise = Promise.resolve();
     }
@@ -604,6 +617,68 @@ function resolveShear(rawShear, degrees) {
     }
     const deg = Number(degrees) || 0;
     return deg ? Math.tan(toRadians(deg)) : 0;
+}
+
+function fontFaceSourceFor(url) {
+    const lower = String(url || "").toLowerCase();
+    if (lower.endsWith(".woff2")) {
+        return `url(${url}) format("woff2")`;
+    }
+    if (lower.endsWith(".woff")) {
+        return `url(${url}) format("woff")`;
+    }
+    if (lower.endsWith(".ttf") || lower.endsWith(".otf")) {
+        return `url(${url}) format("truetype")`;
+    }
+    return `url(${url})`;
+}
+
+function injectFontFaceRule(spec) {
+    if (typeof document === "undefined") {
+        return;
+    }
+
+    const family = spec.family;
+    const url = spec.url;
+
+    if (!family || !url) {
+        return;
+    }
+
+    const weight = spec.weight || "400";
+    const style = spec.style || "normal";
+    const stretch = spec.stretch || "normal";
+    const key = [family, weight, style, stretch, url].join("|");
+    if (INJECTED_FONT_RULES.has(key)) {
+        return;
+    }
+
+    const sources = [
+        `local("${family}")`,
+        fontFaceSourceFor(url)
+    ];
+
+    const css = [
+        "@font-face {",
+        `    font-family: "${family}";`,
+        `    src: ${sources.join(", ")};`,
+        `    font-weight: ${weight};`,
+        `    font-style: ${style};`,
+        `    font-stretch: ${stretch};`,
+        "    font-display: swap;",
+        "}"
+    ].join("\n");
+
+    let styleEl = document.getElementById("pu-dynamic-fonts");
+    if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = "pu-dynamic-fonts";
+        styleEl.type = "text/css";
+        document.head.appendChild(styleEl);
+    }
+
+    styleEl.appendChild(document.createTextNode(css));
+    INJECTED_FONT_RULES.add(key);
 }
 
 function drawTextOverlays(ctx, canvas, overlays = []) {

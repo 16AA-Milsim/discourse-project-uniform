@@ -5,6 +5,7 @@
 # url: https://github.com/16AA-Milsim/discourse-project-uniform
 
 require "digest"
+require_dependency "jobs/base"
 
 module ::DiscourseProjectUniform
   module CacheKey
@@ -230,18 +231,6 @@ module ::DiscourseProjectUniform
   end
 end
 
-module ::Jobs
-  class CleanupProjectUniformRecruitNumbers < ::Jobs::Scheduled
-    every 1.day
-
-    def execute(_args)
-      ::DiscourseProjectUniform::RecruitNumber.cleanup_stale_entries!
-    rescue => e
-      Rails.logger.warn("[discourse-project-uniform] cleanup job failed: #{e.message}")
-    end
-  end
-end
-
 enabled_site_setting :discourse_project_uniform_enabled
 
 add_admin_route "discourse_project_uniform.title", "discourse-project-uniform"
@@ -263,6 +252,18 @@ after_initialize do
 
   add_to_serializer(:user, :project_uniform_recruit_number) do
     ::DiscourseProjectUniform::RecruitNumber.number_for(object)
+  end
+
+  module ::Jobs
+    class CleanupProjectUniformRecruitNumbers < ::Jobs::Scheduled
+      every 1.day
+
+      def execute(_args)
+        ::DiscourseProjectUniform::RecruitNumber.cleanup_stale_entries!
+      rescue => e
+        Rails.logger.warn("[discourse-project-uniform] cleanup job failed: #{e.message}")
+      end
+    end
   end
 
   # Safer to keep custom routes inside after_initialize
