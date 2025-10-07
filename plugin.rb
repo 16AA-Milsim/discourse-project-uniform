@@ -195,6 +195,40 @@ module ::DiscourseProjectUniform
       number = value.to_i
       format("%03d", number)
     end
+
+    def cleanup_stale_entries!
+      with_mutex do
+        PluginStoreRow
+          .where(plugin_name: STORE_NAMESPACE)
+          .where("key LIKE ?", "#{FORWARD_PREFIX}%")
+          .find_each do |row|
+            user_key = row.key.delete_prefix(FORWARD_PREFIX)
+            next if user_key.blank?
+            next if User.exists?(id: user_key)
+
+            code = store.get(row.key)
+            store.delete(row.key)
+
+            formatted = format_code(code)
+            store.delete(reverse_key(formatted)) if formatted
+            Rails.logger.info(
+              "[discourse-project-uniform] cleaned recruit number #{formatted} for missing user_id=#{user_key}"
+            )
+          end
+      end
+    end
+  end
+end
+
+module ::Jobs
+  class CleanupProjectUniformRecruitNumbers < ::Jobs::Scheduled
+    every 1.day
+
+    def execute(_args)
+      ::DiscourseProjectUniform::RecruitNumber.cleanup_stale_entries!
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] cleanup job failed: #{e.message}")
+    end
   end
 end
 
