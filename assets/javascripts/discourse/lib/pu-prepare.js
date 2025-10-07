@@ -87,10 +87,11 @@ const ANALOG_FONT_SPEC = Object.freeze({ family: "Analog", url: puPaths.font("AN
 
 // White chest patch name placement (tweak margins/rotation/scale here)
 const RECRUIT_NAME_LAYOUT = Object.freeze({
-    patchRect: Object.freeze({ x: 443, y: 143, width: 118, height: 62 }),
-    marginX: 5,
+    patchRect: Object.freeze({ x: 443, y: 142, width: 118, height: 62 }),
+    marginLeft: 7,
+    marginRight: 6,
     marginY: 4,
-    rotationDegrees: -5.5,
+    rotationDegrees: -6,
     scaleX: 1,
     scaleY: 2,
     maxFontSize: 26,
@@ -146,18 +147,20 @@ function removeExistingCanvas(container) {
     }
 }
 
-function shrinkRect(rect, marginX = 0, marginY = 0) {
+function shrinkRect(rect, marginLeft = 0, marginRight = marginLeft, marginTop = 0, marginBottom = marginTop) {
     const x = Number(rect?.x) || 0;
     const y = Number(rect?.y) || 0;
     const width = Math.max(0, Number(rect?.width) || 0);
     const height = Math.max(0, Number(rect?.height) || 0);
-    const shrinkX = Math.max(0, Number(marginX) || 0);
-    const shrinkY = Math.max(0, Number(marginY) || 0);
+    const shrinkLeft = Math.max(0, Number(marginLeft) || 0);
+    const shrinkRight = Math.max(0, Number(marginRight) || 0);
+    const shrinkTop = Math.max(0, Number(marginTop) || 0);
+    const shrinkBottom = Math.max(0, Number(marginBottom) || 0);
     return {
-        x: x + shrinkX,
-        y: y + shrinkY,
-        width: Math.max(0, width - shrinkX * 2),
-        height: Math.max(0, height - shrinkY * 2),
+        x: x + shrinkLeft,
+        y: y + shrinkTop,
+        width: Math.max(0, width - shrinkLeft - shrinkRight),
+        height: Math.max(0, height - shrinkTop - shrinkBottom),
     };
 }
 
@@ -314,7 +317,13 @@ function renderRecruitUniform(container, user) {
 
     const displayName = sanitizeRecruitDisplayName(user);
     const recruitNumber = resolveRecruitNumber(user);
-    const nameRect = shrinkRect(RECRUIT_NAME_LAYOUT.patchRect, RECRUIT_NAME_LAYOUT.marginX, RECRUIT_NAME_LAYOUT.marginY);
+    const nameRect = shrinkRect(
+        RECRUIT_NAME_LAYOUT.patchRect,
+        RECRUIT_NAME_LAYOUT.marginLeft,
+        RECRUIT_NAME_LAYOUT.marginRight,
+        RECRUIT_NAME_LAYOUT.marginY,
+        RECRUIT_NAME_LAYOUT.marginY
+    );
     const numberRect = rectFromCenter(RECRUIT_NUMBER_LAYOUT.center, RECRUIT_NUMBER_LAYOUT.width, RECRUIT_NUMBER_LAYOUT.height);
 
     const textOverlays = [

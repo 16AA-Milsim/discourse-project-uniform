@@ -725,7 +725,7 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
         const maxFontSize = Number(overlay.maxFontSize) > 0 ? Number(overlay.maxFontSize) : 32;
         const minFontSize = Number(overlay.minFontSize) > 0 ? Number(overlay.minFontSize) : Math.min(16, maxFontSize);
         const textAlign = overlay.textAlign || "center";
-        const textBaseline = overlay.textBaseline || "middle";
+        const requestedBaseline = overlay.textBaseline || "middle";
         const fillStyle = overlay.fillStyle || "#111";
         const shadowColor = overlay.shadowColor;
         const shadowBlur = Number(overlay.shadowBlur) || 0;
@@ -753,7 +753,8 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
         ctx.save();
         ctx.fillStyle = fillStyle;
         ctx.textAlign = textAlign;
-        ctx.textBaseline = textBaseline;
+        const baselineForCanvas = requestedBaseline === "middle" ? "alphabetic" : requestedBaseline;
+        ctx.textBaseline = baselineForCanvas;
         ctx.direction = overlay.direction || "ltr";
 
         if (shadowColor) {
@@ -788,6 +789,8 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
                     baseMetrics,
                     widthWithSpacing: perspectiveMeasure.totalWidth,
                     textHeight: perspectiveMeasure.height,
+                    ascent: perspectiveMeasure.ascent,
+                    descent: perspectiveMeasure.descent,
                 };
             }
 
@@ -797,7 +800,7 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
             const ascent = baseMetrics.actualBoundingBoxAscent || fontSize * 0.8;
             const descent = baseMetrics.actualBoundingBoxDescent || fontSize * 0.2;
             const textHeight = ascent + descent;
-            return { baseMetrics, widthWithSpacing, textHeight };
+            return { baseMetrics, widthWithSpacing, textHeight, ascent, descent };
         };
 
         let measurement = computeMetrics();
@@ -872,12 +875,19 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
         drawX += overlayOffsetX;
 
         let drawY = rectY + rectHeight / 2;
-        if (textBaseline === "top") {
+        if (requestedBaseline === "top") {
             drawY = rectY;
-        } else if (textBaseline === "bottom") {
+        } else if (requestedBaseline === "bottom") {
             drawY = rectY + rectHeight;
         }
         drawY += overlayOffsetY;
+
+        const ascent = Number.isFinite(measurement.ascent) ? measurement.ascent : measurement.textHeight / 2;
+        const descent = Number.isFinite(measurement.descent) ? measurement.descent : measurement.textHeight / 2;
+        let baselineY = drawY;
+        if (requestedBaseline === "middle") {
+            baselineY = drawY + (ascent - descent) / 2;
+        }
 
         let pivotX;
         if (Number.isFinite(overlay.pivotX)) {
@@ -924,11 +934,11 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
         ctx.translate(-pivotX, -pivotY);
 
         if (perspectiveActive && perspectiveMeasure) {
-            drawTextWithPerspective(ctx, text, drawX, drawY, totalWidth, perspectiveMeasure);
+            drawTextWithPerspective(ctx, text, drawX, baselineY, totalWidth, perspectiveMeasure);
         } else if (letterSpacing) {
-            drawTextWithLetterSpacing(ctx, text, drawX, drawY, letterSpacing, totalWidth);
+            drawTextWithLetterSpacing(ctx, text, drawX, baselineY, letterSpacing, totalWidth);
         } else {
-            ctx.fillText(text, drawX, drawY);
+            ctx.fillText(text, drawX, baselineY);
         }
 
         ctx.restore();
@@ -947,6 +957,7 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
             textHeight: measurement.textHeight,
             perspectiveActive,
             perspectiveStep,
+            baselineY,
         });
     });
 }
@@ -1048,6 +1059,8 @@ function computePerspectiveData(ctx, text, fontSize, letterSpacing, step, origin
         charData: entries,
         totalWidth,
         height: maxAscent + maxDescent,
+        ascent: maxAscent,
+        descent: maxDescent,
     };
 }
 
