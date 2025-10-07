@@ -87,14 +87,14 @@ const ANALOG_FONT_SPEC = Object.freeze({ family: "Analog", url: puPaths.font("AN
 
 // White chest patch name placement (tweak margins/rotation/scale here)
 const RECRUIT_NAME_LAYOUT = Object.freeze({
-    patchRect: Object.freeze({ x: 443, y: 142, width: 118, height: 62 }),
+    patchRect: Object.freeze({ x: 443, y: 143, width: 118, height: 62 }),
     marginLeft: 7,
     marginRight: 6,
     marginY: 4,
     rotationDegrees: -6,
     scaleX: 1,
     scaleY: 2,
-    maxFontSize: 26,
+    maxFontSize: 28,
     minFontSize: 18,
     fillStyle: "#1b1d22dd",
     pivot: "center",
@@ -110,7 +110,7 @@ const RECRUIT_NAME_LAYOUT = Object.freeze({
 
 // Sleeve patch number placement (center anchor, rotation, scale, skew are tweakable)
 const RECRUIT_NUMBER_LAYOUT = Object.freeze({
-    center: Object.freeze({ x: 660, y: 281 }),
+    center: Object.freeze({ x: 658, y: 278 }),
     width: 140,
     height: 120,
     rotationDegrees: -45,
