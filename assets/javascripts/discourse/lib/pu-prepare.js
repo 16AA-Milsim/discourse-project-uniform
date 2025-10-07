@@ -32,7 +32,7 @@ import {
 
 import { mergeImagesOnCanvas, PU_FILTERS } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
 import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
-import { debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { debugLog, puPaths } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // Normalizes potentially nullish values into lowercase strings for set lookups.
 const toLC = (value) => String(value || "").toLowerCase();
@@ -83,6 +83,48 @@ const CTM_PLAIN_EXTRA_Y = Number(ctmRenderDefaults?.plainVariantExtraYOffset ?? 
 const officerRankNameSetLC = new Set(officerRanks.map(toLC));
 const enlistedRankNameSetLC = new Set(enlistedRanks.map(toLC));
 
+const ANALOG_FONT_SPEC = Object.freeze({ family: "Analog", url: puPaths.font("ANALOG.TTF") });
+
+// White chest patch name placement (tweak margins/rotation/scale here)
+const RECRUIT_NAME_LAYOUT = Object.freeze({
+    patchRect: Object.freeze({ x: 441, y: 142, width: 118, height: 62 }),
+    marginX: 6,
+    marginY: 4,
+    rotationDegrees: -6,
+    scaleX: 1,
+    scaleY: 2,
+    maxFontSize: 26,
+    minFontSize: 18,
+    fillStyle: "#1b1d22dd",
+    pivot: "center",
+    letterSpacing: 0,
+    pivotOffsetX: 0,
+    pivotOffsetY: 0,
+    skewXDegrees: -4,
+    skewYDegrees: 0,
+});
+
+// Sleeve patch number placement (center anchor, rotation, scale, skew are tweakable)
+const RECRUIT_NUMBER_LAYOUT = Object.freeze({
+    center: Object.freeze({ x: 660, y: 281 }),
+    width: 140,
+    height: 120,
+    rotationDegrees: -45,
+    scaleX: 0.6,
+    scaleY: 1,
+    skewXDegrees: -26,
+    skewYDegrees: 0,
+    maxFontSize: 35,
+    minFontSize: 24,
+    fillStyle: "#1b1d22",
+    letterSpacing: -1,
+    pivot: "center",
+    offsetX: 0,
+    offsetY: 0,
+    pivotOffsetX: 0,
+    pivotOffsetY: 0,
+});
+
 // Finds the highest-ranked name in the supplied order that the caller possesses.
 function highestIn(order, have) {
     for (let i = order.length - 1; i >= 0; i--) if (have.has(order[i])) return order[i];
@@ -99,6 +141,34 @@ function removeExistingCanvas(container) {
         existing.remove();
         debugLog("[PU:prepare] Removed existing canvas (early cleanup)");
     }
+}
+
+function shrinkRect(rect, marginX = 0, marginY = 0) {
+    const x = Number(rect?.x) || 0;
+    const y = Number(rect?.y) || 0;
+    const width = Math.max(0, Number(rect?.width) || 0);
+    const height = Math.max(0, Number(rect?.height) || 0);
+    const shrinkX = Math.max(0, Number(marginX) || 0);
+    const shrinkY = Math.max(0, Number(marginY) || 0);
+    return {
+        x: x + shrinkX,
+        y: y + shrinkY,
+        width: Math.max(0, width - shrinkX * 2),
+        height: Math.max(0, height - shrinkY * 2),
+    };
+}
+
+function rectFromCenter(center, width, height) {
+    const w = Math.max(0, Number(width) || 0);
+    const h = Math.max(0, Number(height) || 0);
+    const cx = Number(center?.x) || 0;
+    const cy = Number(center?.y) || 0;
+    return {
+        x: cx - w / 2,
+        y: cy - h / 2,
+        width: w,
+        height: h,
+    };
 }
 
 // Produces a helper that records foreground overlay metadata in insertion order.
@@ -184,9 +254,126 @@ function determineBackgroundInfo(highestRank, groupNameSetLC) {
     return { background, isRAFUniform: highestRank?.service === "RAF" };
 }
 
-// Skips rendering entirely when the user is still a recruit.
-function shouldSkipRenderForRecruit(highestRank) {
+function isRecruitRank(highestRank) {
     return !!highestRank && toLC(highestRank.name) === "recruit";
+}
+
+function sanitizeRecruitDisplayName(user) {
+    const name = (user?.name || "").trim();
+    if (name) {
+        return name;
+    }
+    const username = (user?.username || user?.username_lower || "").trim();
+    return username || "Recruit";
+}
+
+function resolveRecruitNumber(user) {
+    const raw = user?.project_uniform_recruit_number;
+    if (typeof raw === "string" && raw.trim()) {
+        return raw.trim().padStart(3, "0").slice(-3);
+    }
+    if (Number.isFinite(raw)) {
+        return String(Math.trunc(raw)).padStart(3, "0").slice(-3);
+    }
+    const fallback = generateFallbackRecruitNumber(user);
+    debugLog("[PU:prepare] Recruit number fallback applied", { userId: user?.id, fallback });
+    return fallback;
+}
+
+function generateFallbackRecruitNumber(user) {
+    const seedParts = [
+        user?.id,
+        user?.username_lower,
+        user?.username,
+        user?.created_at
+    ].filter(Boolean);
+
+    if (seedParts.length === 0) {
+        return "000";
+    }
+
+    let hash = 0x811c9dc5; // FNV-1a 32-bit offset basis
+    const source = seedParts.join("|");
+    for (let i = 0; i < source.length; i++) {
+        hash ^= source.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193); // FNV-1a prime
+    }
+    const normalized = Math.abs(hash) % 900;
+    return String(normalized + 100).padStart(3, "0");
+}
+
+function renderRecruitUniform(container, user) {
+    const backgroundUrl = backgroundImages.recruit;
+    if (!backgroundUrl) {
+        debugLog("[PU:prepare] Recruit background unavailable");
+        return;
+    }
+
+    const displayName = sanitizeRecruitDisplayName(user);
+    const recruitNumber = resolveRecruitNumber(user);
+    const nameRect = shrinkRect(RECRUIT_NAME_LAYOUT.patchRect, RECRUIT_NAME_LAYOUT.marginX, RECRUIT_NAME_LAYOUT.marginY);
+    const numberRect = rectFromCenter(RECRUIT_NUMBER_LAYOUT.center, RECRUIT_NUMBER_LAYOUT.width, RECRUIT_NUMBER_LAYOUT.height);
+
+    const textOverlays = [
+        {
+            text: displayName,
+            rect: nameRect,
+            fontFamily: ANALOG_FONT_SPEC.family,
+            fontWeight: "400",
+            maxFontSize: RECRUIT_NAME_LAYOUT.maxFontSize,
+            minFontSize: RECRUIT_NAME_LAYOUT.minFontSize,
+            fillStyle: RECRUIT_NAME_LAYOUT.fillStyle,
+            textAlign: "center",
+            textBaseline: "middle",
+            transform: "uppercase",
+            rotationDegrees: RECRUIT_NAME_LAYOUT.rotationDegrees,
+            scaleX: RECRUIT_NAME_LAYOUT.scaleX,
+            scaleY: RECRUIT_NAME_LAYOUT.scaleY,
+            pivot: RECRUIT_NAME_LAYOUT.pivot,
+            letterSpacing: RECRUIT_NAME_LAYOUT.letterSpacing,
+            pivotOffsetX: RECRUIT_NAME_LAYOUT.pivotOffsetX,
+            pivotOffsetY: RECRUIT_NAME_LAYOUT.pivotOffsetY,
+            skewXDegrees: RECRUIT_NAME_LAYOUT.skewXDegrees,
+            skewYDegrees: RECRUIT_NAME_LAYOUT.skewYDegrees,
+        },
+        {
+            text: recruitNumber,
+            rect: numberRect,
+            fontFamily: ANALOG_FONT_SPEC.family,
+            fontWeight: "400",
+            maxFontSize: RECRUIT_NUMBER_LAYOUT.maxFontSize,
+            minFontSize: RECRUIT_NUMBER_LAYOUT.minFontSize,
+            fillStyle: RECRUIT_NUMBER_LAYOUT.fillStyle,
+            textAlign: "center",
+            textBaseline: "middle",
+            rotationDegrees: RECRUIT_NUMBER_LAYOUT.rotationDegrees,
+            scaleX: RECRUIT_NUMBER_LAYOUT.scaleX,
+            scaleY: RECRUIT_NUMBER_LAYOUT.scaleY,
+            skewXDegrees: RECRUIT_NUMBER_LAYOUT.skewXDegrees,
+            skewYDegrees: RECRUIT_NUMBER_LAYOUT.skewYDegrees,
+            letterSpacing: RECRUIT_NUMBER_LAYOUT.letterSpacing,
+            pivot: RECRUIT_NUMBER_LAYOUT.pivot,
+            offsetX: RECRUIT_NUMBER_LAYOUT.offsetX,
+            offsetY: RECRUIT_NUMBER_LAYOUT.offsetY,
+            pivotOffsetX: RECRUIT_NUMBER_LAYOUT.pivotOffsetX,
+            pivotOffsetY: RECRUIT_NUMBER_LAYOUT.pivotOffsetY,
+        }
+    ];
+
+    debugLog("[PU:prepare] Recruit uniform render", { displayName, recruitNumber });
+
+    mergeImagesOnCanvas(
+        container,
+        backgroundUrl,
+        [],
+        [],
+        null,
+        [],
+        [],
+        null,
+        [],
+        { textOverlays, fonts: [ANALOG_FONT_SPEC] }
+    );
 }
 
 // Derives CSA ribbon membership and leadership overrides from group assignments.
@@ -225,7 +412,7 @@ function swapCsaVariantsForService(ribbons, service) {
 }
 
 // Assembles all imagery for the supplied user state and triggers canvas rendering.
-export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC) {
+export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC, user = null) {
     debugLog("[PU:prepare] start");
     clearTooltips();
     removeExistingCanvas(container);
@@ -244,8 +431,8 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
     const highestRank = resolveHighestRank(groupNameSetLC);
     debugLog("[PU:prepare] Highest rank:", highestRank?.name || null);
-    if (shouldSkipRenderForRecruit(highestRank)) {
-        debugLog("[PU:prepare] Recruit rank detected – skipping uniform render");
+    if (isRecruitRank(highestRank)) {
+        renderRecruitUniform(container, user || {});
         return;
     }
 

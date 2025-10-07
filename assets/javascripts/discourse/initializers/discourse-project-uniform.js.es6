@@ -195,7 +195,9 @@ export default {
                         debugLog("[PU:init] User snapshot:", {
                             groups: groups.map(g => g.name),
                             badgeCount: userBadges.length,
-                            badgeNames: userBadges.map(ub => idToBadge.get(ub.badge_id)?.name).filter(Boolean)
+                            badgeNames: userBadges.map(ub => idToBadge.get(ub.badge_id)?.name).filter(Boolean),
+                            displayName: (userSummaryData.user?.name || "").trim() || (userSummaryData.user?.username || "").trim(),
+                            recruitNumber: userSummaryData.user?.project_uniform_recruit_number || null
                         });
 
                         const badgeNames = userBadges.map(ub => idToBadge.get(ub.badge_id)?.name).filter(Boolean);
@@ -215,9 +217,15 @@ export default {
                             existingInfo?.remove();
                         }
 
+                        const userRecord = userSummaryData.user;
+                        const displayName = (userRecord?.name || "").trim() || (userRecord?.username || "").trim();
+                        const recruitNumber = userRecord?.project_uniform_recruit_number || null;
+
                         const signature = JSON.stringify({
                             groups: groups.map(g => g.name).sort(),
                             badges: userBadges.map(ub => ub.badge_id).sort((a, b) => a - b),
+                            displayName,
+                            recruitNumber,
                         });
 
                         if (containerElement._puLastRenderSignature === signature) {
@@ -229,7 +237,7 @@ export default {
 
                         // Call render pipeline
                         debugLog("[PU:init] Calling prepareAndRenderImages...");
-                        prepareAndRenderImages(groups, userBadges, idToBadge, containerElement, awards, groupTooltipMapLC);
+                        prepareAndRenderImages(groups, userBadges, idToBadge, containerElement, awards, groupTooltipMapLC, userRecord);
                         containerElement._puLastRenderSignature = signature;
                         containerElement._puLastUsername = username;
                         updateBadgesForContainer(containerElement);

@@ -137,6 +137,7 @@ export const backgroundImages = deepFreeze({
   enlisted: puPaths.uniform("ba_enlisted_uniform__v2.png"),
   rafOfficer: puPaths.uniform("raf_officers_uniform__v2.png"),
   rafEnlisted: puPaths.uniform("raf_enlisted_uniform__v2.png"),
+  recruit: puPaths.uniform("recruit_combat_dress.png"),
 });
 
 // ---------- ranks ----------

@@ -47,6 +47,7 @@ export const puPaths = {
     tooltipRank: (file) => getURL(`${BASE}/tooltip_rankimages/${file}`),
     tooltipQual: (file) => getURL(`${BASE}/tooltip_qualificationimages/${file}`),
     tooltipLanyard: (file) => getURL(`${BASE}/tooltip_lanyardimages/${file}`),
+    font: (file) => getURL("/plugins/discourse-project-uniform/fonts/" + file),
 };
 
 // Loads an image (trying multiple candidates) and caches it for reuse.

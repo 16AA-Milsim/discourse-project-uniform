@@ -109,6 +109,93 @@ module ::DiscourseProjectUniform
       mutex.synchronize { @snapshot = nil }
     end
   end
+
+  module RecruitNumber
+    extend self
+
+    RANGE = (100..999).freeze
+    MUTEX_NAME = "discourse-project-uniform:recruit-number".freeze
+    STORE_NAMESPACE = "discourse-project-uniform".freeze
+    FORWARD_PREFIX = "recruit-number:uid:".freeze
+    REVERSE_PREFIX = "recruit-number:code:".freeze
+
+    def number_for(user)
+      return nil unless user
+      return nil unless recruit_group_member?(user)
+
+      with_mutex do
+        user_key = user.id.to_s
+        existing = store.get(forward_key(user_key))
+        return format_code(existing) if existing.present?
+
+        candidate = initial_candidate(user)
+        assigned = ensure_unique_number(candidate, user_key)
+        code = format_code(assigned)
+
+        store.set(forward_key(user_key), code)
+        store.set(reverse_key(code), user_key)
+        code
+      end
+    end
+
+    private
+
+    def store
+      @store ||= PluginStore.new(STORE_NAMESPACE)
+    end
+
+    def forward_key(user_key)
+      "#{FORWARD_PREFIX}#{user_key}"
+    end
+
+    def reverse_key(code)
+      "#{REVERSE_PREFIX}#{code}"
+    end
+
+    def recruit_group
+      @recruit_group ||= Group
+        .where("LOWER(name) = ?", "recruit")
+        .select(:id)
+        .first
+    end
+
+    def recruit_group_member?(user)
+      group = recruit_group
+      return false unless group
+
+      GroupUser.exists?(user_id: user.id, group_id: group.id)
+    end
+
+    def with_mutex(&block)
+      DistributedMutex.synchronize(MUTEX_NAME, &block)
+    end
+
+    def initial_candidate(user)
+      seed = "#{user.id}-#{user.username_lower || user.username || ''}-#{user.created_at.to_i}"
+      digest = Digest::SHA1.hexdigest(seed)
+      RANGE.begin + (digest.to_i(16) % RANGE.size)
+    end
+
+    def ensure_unique_number(start_value, user_key)
+      range = RANGE.to_a
+      start_index = range.index(start_value) || 0
+      ordered = range.slice(start_index, range.length) + range.slice(0, start_index)
+
+      ordered.each do |candidate|
+        code = format_code(candidate)
+        owner = store.get(reverse_key(code))
+        return candidate if owner.blank? || owner.to_s == user_key
+      end
+
+      raise Discourse::InvalidParameters.new("No recruit numbers available for assignment")
+    end
+
+    def format_code(value)
+      return nil if value.blank?
+      number = value.to_i
+      format("%03d", number)
+    end
+  end
 end
 
 enabled_site_setting :discourse_project_uniform_enabled
@@ -128,6 +215,10 @@ after_initialize do
 
   add_to_serializer(:site, :project_uniform_asset_tokens) do
     ::DiscourseProjectUniform::CacheKey.assets_tokens
+  end
+
+  add_to_serializer(:user, :project_uniform_recruit_number) do
+    ::DiscourseProjectUniform::RecruitNumber.number_for(object)
   end
 
   # Safer to keep custom routes inside after_initialize

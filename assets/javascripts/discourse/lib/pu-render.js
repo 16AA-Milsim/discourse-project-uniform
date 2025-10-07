@@ -50,6 +50,7 @@ export const PU_FILTERS = Object.freeze({
 });
 
 const PERSPECTIVE_CACHE = new Map();
+const FONT_LOAD_PROMISES = new Map();
 
 const AWARD_PLACEMENTS = {
     1: { x: 385, y: 45 },
@@ -120,7 +121,7 @@ function applyAltTextMetadata(awardImages, csaImages, csaRibbonEntries) {
 }
 
 // Builds, populates, and attaches the Project Uniform canvas for the supplied state.
-export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundItems, awardImageUrls, highestRank, qualificationsToRender, groups, groupTooltipMap, csaRibbonEntries = []) {
+export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundItems, awardImageUrls, highestRank, qualificationsToRender, groups, groupTooltipMap, csaRibbonEntries = [], options = {}) {
     const renderId = ++renderTicket;
     if (container) {
         container._puRenderId = renderId;
@@ -128,13 +129,15 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
 
     const foregroundUrls = (foregroundItems || []).map((item) => (typeof item === "string" ? item : item?.url));
     const csaImageUrls = (csaRibbonEntries || []).map((entry) => entry?.imageKey).filter(Boolean);
+    const { textOverlays = [], fonts = [] } = options || {};
 
     debugLog("[PU:render] mergeImagesOnCanvas", {
         backgroundImageUrl,
         fgCount: foregroundUrls.length,
         awardCount: awardImageUrls.length,
         csaCount: csaImageUrls.length,
-        highestRank: highestRank?.name
+        highestRank: highestRank?.name,
+        textOverlayCount: textOverlays.length
     });
 
     detachExistingCanvas(container);
@@ -142,13 +145,18 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
     const canvas = createCanvasSurface();
     const ctx = canvas.getContext("2d");
 
-    loadRenderAssets(backgroundImageUrl, foregroundUrls, awardImageUrls, csaImageUrls)
-        .then(({ background, foreground, awards: awardImages, csa: csaImages }) => {
+    const fontPromise = ensureFontsLoaded(fonts);
+    Promise.all([
+        loadRenderAssets(backgroundImageUrl, foregroundUrls, awardImageUrls, csaImageUrls),
+        fontPromise
+    ])
+        .then(([assetPayload]) => {
             if (!container || container._puRenderId !== renderId) {
                 debugLog("[PU:render] Stale render resolved – skipping append", { renderId });
                 return;
             }
 
+            const { background, foreground, awards: awardImages, csa: csaImages } = assetPayload;
             applyAltTextMetadata(awardImages, csaImages, csaRibbonEntries);
 
             renderCanvasContents(
@@ -163,7 +171,8 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
                 groupTooltipMap,
                 foregroundItems,
                 csaImages,
-                csaRibbonEntries
+                csaRibbonEntries,
+                textOverlays
             );
 
             prependCanvas(container, canvas);
@@ -172,7 +181,7 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
 }
 
 // Coordinates drawing the background, overlays, ribbons, and associated tooltips.
-function renderCanvasContents(ctx, canvas, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = [], csaImages = [], csaRibbonEntries = []) {
+function renderCanvasContents(ctx, canvas, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = [], csaImages = [], csaRibbonEntries = [], textOverlays = []) {
     resizeCanvasToBackground(canvas, ctx, bgImage);
     drawBackgroundLayer(ctx, canvas, bgImage);
     drawImages(ctx, fgImages, canvas, foregroundItems);
@@ -183,6 +192,7 @@ function renderCanvasContents(ctx, canvas, bgImage, fgImages, awardImages, highe
 
     renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender);
     renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank);
+    drawTextOverlays(ctx, canvas, textOverlays);
 }
 
 // Matches the canvas size to the loaded background image dimensions.
@@ -519,6 +529,336 @@ function drawImages(ctx, images = [], canvas, items = []) {
             debugLog(`[PU:render] Foreground image ${i} missing dimensions`, img);
         }
     });
+}
+
+function ensureFontsLoaded(fontSpecs = []) {
+    if (typeof document === "undefined" || !Array.isArray(fontSpecs) || fontSpecs.length === 0) {
+        return Promise.resolve();
+    }
+
+    const sanitized = fontSpecs
+        .map((spec) => (typeof spec === "string" ? { family: spec } : spec))
+        .filter((spec) => spec && spec.family);
+
+    if (sanitized.length === 0) {
+        return Promise.resolve();
+    }
+
+    return Promise.all(sanitized.map(loadFontFace)).then(() => undefined);
+}
+
+function loadFontFace(spec) {
+    const family = spec.family;
+    if (!family || typeof document === "undefined") {
+        return Promise.resolve();
+    }
+
+    const style = spec.style || "normal";
+    const weight = spec.weight || "400";
+    const stretch = spec.stretch || "normal";
+    const url = spec.url;
+    const cacheKey = [family, style, weight, stretch, url || ""].join("|");
+
+    try {
+        if (document.fonts?.check(`1em "${family}"`)) {
+            return Promise.resolve();
+        }
+    } catch (e) {
+        debugLog("[PU:render] Font check error", { family, error: e });
+    }
+
+    if (FONT_LOAD_PROMISES.has(cacheKey)) {
+        return FONT_LOAD_PROMISES.get(cacheKey);
+    }
+
+    let promise;
+    if (url && typeof FontFace !== "undefined") {
+        const face = new FontFace(family, `url(${url})`, { style, weight, stretch });
+        promise = face.load().then((loadedFace) => {
+            document.fonts?.add(loadedFace);
+            debugLog("[PU:render] FontFace loaded", { family, url });
+        });
+    } else if (document.fonts?.load) {
+        promise = document.fonts.load(`1em "${family}"`);
+    } else {
+        promise = Promise.resolve();
+    }
+
+    const trackedPromise = promise.catch((error) => {
+        debugLog("[PU:render] Font load failed", { family, url, error });
+        FONT_LOAD_PROMISES.delete(cacheKey);
+        throw error;
+    });
+
+    FONT_LOAD_PROMISES.set(cacheKey, trackedPromise);
+    return trackedPromise;
+}
+
+function toRadians(value) {
+    return (Number(value) || 0) * (Math.PI / 180);
+}
+
+function resolveShear(rawShear, degrees) {
+    if (Number.isFinite(rawShear)) {
+        return rawShear;
+    }
+    const deg = Number(degrees) || 0;
+    return deg ? Math.tan(toRadians(deg)) : 0;
+}
+
+function drawTextOverlays(ctx, canvas, overlays = []) {
+    if (!Array.isArray(overlays) || overlays.length === 0) {
+        return;
+    }
+
+    overlays.forEach((overlay, index) => {
+        if (!overlay) {
+            return;
+        }
+
+        let rawText = overlay.text;
+        if (rawText === null || rawText === undefined) {
+            return;
+        }
+        rawText = typeof rawText === "string" ? rawText : String(rawText);
+        if (!rawText.trim()) {
+            return;
+        }
+
+        const transform = overlay.transform;
+        let text = rawText;
+        if (transform === "uppercase") {
+            text = rawText.toUpperCase();
+        } else if (transform === "lowercase") {
+            text = rawText.toLowerCase();
+        } else if (transform === "capitalize") {
+            text = rawText.replace(/\b\w/g, (char) => char.toUpperCase());
+        }
+
+        const rect = overlay.rect || {};
+        const rectWidth = Number.isFinite(rect.width) ? rect.width : canvas?.width || 0;
+        const rectHeight = Number.isFinite(rect.height) ? rect.height : canvas?.height || 0;
+        const rectX = Number.isFinite(rect.x) ? rect.x : 0;
+        const rectY = Number.isFinite(rect.y) ? rect.y : 0;
+
+        const overlayOffsetX = Number.isFinite(overlay.offsetX) ? overlay.offsetX : 0;
+        const overlayOffsetY = Number.isFinite(overlay.offsetY) ? overlay.offsetY : 0;
+
+        const fontFamily = overlay.fontFamily || "sans-serif";
+        const fontWeight = overlay.fontWeight || "400";
+        const fontStyle = overlay.fontStyle || "normal";
+        const maxFontSize = Number(overlay.maxFontSize) > 0 ? Number(overlay.maxFontSize) : 32;
+        const minFontSize = Number(overlay.minFontSize) > 0 ? Number(overlay.minFontSize) : Math.min(16, maxFontSize);
+        const textAlign = overlay.textAlign || "center";
+        const textBaseline = overlay.textBaseline || "middle";
+        const fillStyle = overlay.fillStyle || "#111";
+        const shadowColor = overlay.shadowColor;
+        const shadowBlur = Number(overlay.shadowBlur) || 0;
+        const shadowOffsetX = Number(overlay.shadowOffsetX) || 0;
+        const shadowOffsetY = Number(overlay.shadowOffsetY) || 0;
+        const letterSpacing = Number.isFinite(overlay.letterSpacing) ? Number(overlay.letterSpacing) : 0;
+
+        const scaleXRaw = Number.isFinite(overlay.scaleX) ? overlay.scaleX : 1;
+        const scaleYRaw = Number.isFinite(overlay.scaleY) ? overlay.scaleY : 1;
+        const scaleX = scaleXRaw === 0 ? 1 : scaleXRaw;
+        const scaleY = scaleYRaw === 0 ? 1 : scaleYRaw;
+        const scaleXAbs = Math.abs(scaleX);
+        const scaleYAbs = Math.abs(scaleY);
+
+        const rotationRadians = toRadians(Number(overlay.rotationDegrees) || 0);
+        const skewXShear = resolveShear(overlay.skewX, overlay.skewXDegrees);
+        const skewYShear = resolveShear(overlay.skewY, overlay.skewYDegrees);
+
+        ctx.save();
+        ctx.fillStyle = fillStyle;
+        ctx.textAlign = textAlign;
+        ctx.textBaseline = textBaseline;
+        ctx.direction = overlay.direction || "ltr";
+
+        if (shadowColor) {
+            ctx.shadowColor = shadowColor;
+            ctx.shadowBlur = shadowBlur;
+            ctx.shadowOffsetX = shadowOffsetX;
+            ctx.shadowOffsetY = shadowOffsetY;
+        } else {
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+        }
+
+        let fontSize = maxFontSize;
+        let metrics;
+        for (; fontSize > minFontSize; fontSize -= 1) {
+            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}"`;
+            metrics = ctx.measureText(text);
+            const widthWithSpacing = metrics.width + Math.max(0, text.length - 1) * letterSpacing;
+            const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
+            const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
+            const textHeight = ascent + descent;
+            const fitsWidth = rectWidth <= 0 || widthWithSpacing * scaleXAbs <= rectWidth;
+            const fitsHeight = rectHeight <= 0 || textHeight * scaleYAbs <= rectHeight;
+            if (fitsWidth && fitsHeight) {
+                break;
+            }
+        }
+
+        if (fontSize <= minFontSize) {
+            fontSize = minFontSize;
+            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}"`;
+            metrics = ctx.measureText(text);
+        }
+
+        const recomputeMetrics = () => {
+            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}"`;
+            const currentMetrics = ctx.measureText(text);
+            const spacingCount = Math.max(0, text.length - 1);
+            const widthWithSpacing = currentMetrics.width + spacingCount * letterSpacing;
+            const ascent = currentMetrics.actualBoundingBoxAscent || fontSize * 0.8;
+            const descent = currentMetrics.actualBoundingBoxDescent || fontSize * 0.2;
+            const textHeight = ascent + descent;
+            return { currentMetrics, widthWithSpacing, textHeight };
+        };
+
+        let { currentMetrics, widthWithSpacing, textHeight } = recomputeMetrics();
+
+        if (rectWidth > 0) {
+            const effectiveWidth = widthWithSpacing * scaleXAbs;
+            if (effectiveWidth > rectWidth) {
+                const shrinkRatio = rectWidth / effectiveWidth;
+                fontSize = Math.max(0.1, fontSize * shrinkRatio);
+                ({ currentMetrics, widthWithSpacing, textHeight } = recomputeMetrics());
+            }
+        }
+
+        if (rectHeight > 0) {
+            const effectiveHeight = textHeight * scaleYAbs;
+            if (effectiveHeight > rectHeight) {
+                const shrinkRatio = rectHeight / effectiveHeight;
+                fontSize = Math.max(0.1, fontSize * shrinkRatio);
+                ({ currentMetrics, widthWithSpacing, textHeight } = recomputeMetrics());
+            }
+        }
+
+        if (rectWidth > 0) {
+            const effectiveWidth = widthWithSpacing * scaleXAbs;
+            if (effectiveWidth > rectWidth) {
+                const shrinkRatio = rectWidth / effectiveWidth;
+                fontSize = Math.max(0.1, fontSize * shrinkRatio);
+                ({ currentMetrics, widthWithSpacing, textHeight } = recomputeMetrics());
+            }
+        }
+
+        metrics = currentMetrics;
+        const widthForSpacing = Math.max(widthWithSpacing, metrics.width, 0);
+        const totalWidth = widthForSpacing;
+        const effectiveWidth = widthForSpacing * scaleXAbs;
+        const effectiveHeight = textHeight * scaleYAbs;
+
+        let drawX = rectX + rectWidth / 2;
+        if (textAlign === "left") {
+            drawX = rectX;
+        } else if (textAlign === "right") {
+            drawX = rectX + rectWidth;
+        }
+        drawX += overlayOffsetX;
+
+        let drawY = rectY + rectHeight / 2;
+        if (textBaseline === "top") {
+            drawY = rectY;
+        } else if (textBaseline === "bottom") {
+            drawY = rectY + rectHeight;
+        }
+        drawY += overlayOffsetY;
+
+        let pivotX;
+        if (Number.isFinite(overlay.pivotX)) {
+            pivotX = overlay.pivotX;
+        } else {
+            const pivotMode = overlay.pivot || "center";
+            if (pivotMode === "left" || pivotMode === "top-left") {
+                pivotX = rectX;
+            } else if (pivotMode === "right" || pivotMode === "top-right" || pivotMode === "bottom-right") {
+                pivotX = rectX + rectWidth;
+            } else if (pivotMode === "bottom-left") {
+                pivotX = rectX;
+            } else {
+                pivotX = rectX + rectWidth / 2;
+            }
+        }
+        pivotX += Number(overlay.pivotOffsetX) || 0;
+
+        let pivotY;
+        if (Number.isFinite(overlay.pivotY)) {
+            pivotY = overlay.pivotY;
+        } else {
+            const pivotMode = overlay.pivot || "center";
+            if (pivotMode === "top" || pivotMode === "top-left" || pivotMode === "top-right") {
+                pivotY = rectY;
+            } else if (pivotMode === "bottom" || pivotMode === "bottom-left" || pivotMode === "bottom-right") {
+                pivotY = rectY + rectHeight;
+            } else {
+                pivotY = rectY + rectHeight / 2;
+            }
+        }
+        pivotY += Number(overlay.pivotOffsetY) || 0;
+
+        ctx.translate(pivotX, pivotY);
+        if (rotationRadians) {
+            ctx.rotate(rotationRadians);
+        }
+        if (skewXShear || skewYShear) {
+            ctx.transform(1, skewYShear, skewXShear, 1, 0, 0);
+        }
+        if (scaleX !== 1 || scaleY !== 1) {
+            ctx.scale(scaleX, scaleY);
+        }
+        ctx.translate(-pivotX, -pivotY);
+
+        if (letterSpacing) {
+            drawTextWithLetterSpacing(ctx, text, drawX, drawY, letterSpacing, totalWidth);
+        } else {
+            ctx.fillText(text, drawX, drawY);
+        }
+
+        ctx.restore();
+        debugLog("[PU:render] Drew text overlay", {
+            index,
+            text,
+            rect,
+            fontSize,
+            rotationDegrees: overlay.rotationDegrees || 0,
+            scaleX,
+            scaleY,
+            skewXShear,
+            skewYShear,
+            effectiveWidth,
+            effectiveHeight,
+            textHeight,
+        });
+    });
+}
+
+function drawTextWithLetterSpacing(ctx, text, x, y, spacing, totalWidth) {
+    const originalAlign = ctx.textAlign;
+    const width = Number.isFinite(totalWidth)
+        ? totalWidth
+        : ctx.measureText(text).width + Math.max(0, text.length - 1) * spacing;
+
+    let cursor = x;
+    if (originalAlign === "center") {
+        cursor = x - width / 2;
+    } else if (originalAlign === "right") {
+        cursor = x - width;
+    }
+
+    ctx.textAlign = "left";
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        ctx.fillText(char, cursor, y);
+        cursor += ctx.measureText(char).width + spacing;
+    }
+    ctx.textAlign = originalAlign;
 }
 
 // Applies taper and curve transforms to ribbon blocks and returns the mapping helper.
