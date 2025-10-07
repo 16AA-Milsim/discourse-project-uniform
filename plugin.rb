@@ -185,6 +185,16 @@ module ::DiscourseProjectUniform
         code = format_code(candidate)
         owner = store.get(reverse_key(code))
         return candidate if owner.blank? || owner.to_s == user_key
+
+        owner_user = User.find_by(id: owner)
+        unless owner_user && recruit_group_member?(owner_user)
+          store.delete(forward_key(owner))
+          store.delete(reverse_key(code))
+          Rails.logger.info(
+            "[discourse-project-uniform] reassigning recruit number #{code} from inactive user_id=#{owner}"
+          )
+          return candidate
+        end
       end
 
       raise Discourse::InvalidParameters.new("No recruit numbers available for assignment")
