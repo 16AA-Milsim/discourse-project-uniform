@@ -87,10 +87,10 @@ const ANALOG_FONT_SPEC = Object.freeze({ family: "Analog", url: puPaths.font("AN
 
 // White chest patch name placement (tweak margins/rotation/scale here)
 const RECRUIT_NAME_LAYOUT = Object.freeze({
-    patchRect: Object.freeze({ x: 441, y: 142, width: 118, height: 62 }),
-    marginX: 6,
+    patchRect: Object.freeze({ x: 443, y: 143, width: 118, height: 62 }),
+    marginX: 5,
     marginY: 4,
-    rotationDegrees: -6,
+    rotationDegrees: -5.5,
     scaleX: 1,
     scaleY: 2,
     maxFontSize: 26,
@@ -102,6 +102,9 @@ const RECRUIT_NAME_LAYOUT = Object.freeze({
     pivotOffsetY: 0,
     skewXDegrees: -4,
     skewYDegrees: 0,
+    perspectiveStep: -0.1,
+    perspectiveOrigin: "left",
+    perspectiveMinScale: 0.65,
 });
 
 // Sleeve patch number placement (center anchor, rotation, scale, skew are tweakable)
@@ -335,6 +338,9 @@ function renderRecruitUniform(container, user) {
             pivotOffsetY: RECRUIT_NAME_LAYOUT.pivotOffsetY,
             skewXDegrees: RECRUIT_NAME_LAYOUT.skewXDegrees,
             skewYDegrees: RECRUIT_NAME_LAYOUT.skewYDegrees,
+            perspectiveStep: RECRUIT_NAME_LAYOUT.perspectiveStep,
+            perspectiveOrigin: RECRUIT_NAME_LAYOUT.perspectiveOrigin,
+            perspectiveMinScale: RECRUIT_NAME_LAYOUT.perspectiveMinScale,
         },
         {
             text: recruitNumber,

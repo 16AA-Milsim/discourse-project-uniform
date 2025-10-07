@@ -744,6 +744,12 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
         const skewXShear = resolveShear(overlay.skewX, overlay.skewXDegrees);
         const skewYShear = resolveShear(overlay.skewY, overlay.skewYDegrees);
 
+        const perspectiveStep = Number.isFinite(overlay.perspectiveStep) ? Number(overlay.perspectiveStep) : 0;
+        const perspectiveOrigin = overlay.perspectiveOrigin === "right" ? "right" : "left";
+        const perspectiveMinScale = Number.isFinite(overlay.perspectiveMinScale) ? Number(overlay.perspectiveMinScale) : 0;
+        const perspectiveActive = !!perspectiveStep;
+        let perspectiveMeasure = null;
+
         ctx.save();
         ctx.fillStyle = fillStyle;
         ctx.textAlign = textAlign;
@@ -763,72 +769,99 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
         }
 
         let fontSize = maxFontSize;
-        let metrics;
-        for (; fontSize > minFontSize; fontSize -= 1) {
+
+        const computeMetrics = () => {
             ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}"`;
-            metrics = ctx.measureText(text);
-            const widthWithSpacing = metrics.width + Math.max(0, text.length - 1) * letterSpacing;
-            const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
-            const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
-            const textHeight = ascent + descent;
-            const fitsWidth = rectWidth <= 0 || widthWithSpacing * scaleXAbs <= rectWidth;
-            const fitsHeight = rectHeight <= 0 || textHeight * scaleYAbs <= rectHeight;
-            if (fitsWidth && fitsHeight) {
-                break;
+            const baseMetrics = ctx.measureText(text);
+
+            if (perspectiveActive) {
+                perspectiveMeasure = computePerspectiveData(
+                    ctx,
+                    text,
+                    fontSize,
+                    letterSpacing,
+                    perspectiveStep,
+                    perspectiveOrigin,
+                    perspectiveMinScale
+                );
+                return {
+                    baseMetrics,
+                    widthWithSpacing: perspectiveMeasure.totalWidth,
+                    textHeight: perspectiveMeasure.height,
+                };
             }
-        }
 
-        if (fontSize <= minFontSize) {
-            fontSize = minFontSize;
-            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}"`;
-            metrics = ctx.measureText(text);
-        }
-
-        const recomputeMetrics = () => {
-            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}"`;
-            const currentMetrics = ctx.measureText(text);
+            perspectiveMeasure = null;
             const spacingCount = Math.max(0, text.length - 1);
-            const widthWithSpacing = currentMetrics.width + spacingCount * letterSpacing;
-            const ascent = currentMetrics.actualBoundingBoxAscent || fontSize * 0.8;
-            const descent = currentMetrics.actualBoundingBoxDescent || fontSize * 0.2;
+            const widthWithSpacing = baseMetrics.width + spacingCount * letterSpacing;
+            const ascent = baseMetrics.actualBoundingBoxAscent || fontSize * 0.8;
+            const descent = baseMetrics.actualBoundingBoxDescent || fontSize * 0.2;
             const textHeight = ascent + descent;
-            return { currentMetrics, widthWithSpacing, textHeight };
+            return { baseMetrics, widthWithSpacing, textHeight };
         };
 
-        let { currentMetrics, widthWithSpacing, textHeight } = recomputeMetrics();
+        let measurement = computeMetrics();
 
-        if (rectWidth > 0) {
-            const effectiveWidth = widthWithSpacing * scaleXAbs;
-            if (effectiveWidth > rectWidth) {
-                const shrinkRatio = rectWidth / effectiveWidth;
-                fontSize = Math.max(0.1, fontSize * shrinkRatio);
-                ({ currentMetrics, widthWithSpacing, textHeight } = recomputeMetrics());
+        const fitsCurrent = () => {
+            const fitsWidth = rectWidth <= 0 || measurement.widthWithSpacing * scaleXAbs <= rectWidth;
+            const fitsHeight = rectHeight <= 0 || measurement.textHeight * scaleYAbs <= rectHeight;
+            return fitsWidth && fitsHeight;
+        };
+
+        while (fontSize > minFontSize && !fitsCurrent()) {
+            fontSize -= 1;
+            if (fontSize < minFontSize) {
+                fontSize = minFontSize;
+                break;
             }
+            measurement = computeMetrics();
         }
 
-        if (rectHeight > 0) {
-            const effectiveHeight = textHeight * scaleYAbs;
-            if (effectiveHeight > rectHeight) {
+        measurement = computeMetrics();
+
+        if (!fitsCurrent() && fontSize > minFontSize) {
+            fontSize = Math.max(minFontSize, fontSize - 1);
+            measurement = computeMetrics();
+        }
+
+        if (!fitsCurrent() && fontSize <= minFontSize) {
+            fontSize = minFontSize;
+            measurement = computeMetrics();
+        }
+
+        const shrinkToWidth = () => {
+            if (rectWidth <= 0) {
+                return;
+            }
+            const effectiveWidth = measurement.widthWithSpacing * scaleXAbs;
+            if (effectiveWidth > rectWidth && effectiveWidth > 0) {
+                const shrinkRatio = rectWidth / effectiveWidth;
+                fontSize = Math.max(0.1, fontSize * shrinkRatio);
+                measurement = computeMetrics();
+            }
+        };
+
+        const shrinkToHeight = () => {
+            if (rectHeight <= 0) {
+                return;
+            }
+            const effectiveHeight = measurement.textHeight * scaleYAbs;
+            if (effectiveHeight > rectHeight && effectiveHeight > 0) {
                 const shrinkRatio = rectHeight / effectiveHeight;
                 fontSize = Math.max(0.1, fontSize * shrinkRatio);
-                ({ currentMetrics, widthWithSpacing, textHeight } = recomputeMetrics());
+                measurement = computeMetrics();
             }
-        }
+        };
 
-        if (rectWidth > 0) {
-            const effectiveWidth = widthWithSpacing * scaleXAbs;
-            if (effectiveWidth > rectWidth) {
-                const shrinkRatio = rectWidth / effectiveWidth;
-                fontSize = Math.max(0.1, fontSize * shrinkRatio);
-                ({ currentMetrics, widthWithSpacing, textHeight } = recomputeMetrics());
-            }
-        }
+        shrinkToWidth();
+        shrinkToHeight();
+        shrinkToWidth();
 
-        metrics = currentMetrics;
-        const widthForSpacing = Math.max(widthWithSpacing, metrics.width, 0);
+        const metrics = measurement.baseMetrics;
+        const widthForSpacing = Math.max(measurement.widthWithSpacing, metrics.width, 0);
         const totalWidth = widthForSpacing;
         const effectiveWidth = widthForSpacing * scaleXAbs;
-        const effectiveHeight = textHeight * scaleYAbs;
+        const effectiveHeight = measurement.textHeight * scaleYAbs;
 
         let drawX = rectX + rectWidth / 2;
         if (textAlign === "left") {
@@ -890,7 +923,9 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
         }
         ctx.translate(-pivotX, -pivotY);
 
-        if (letterSpacing) {
+        if (perspectiveActive && perspectiveMeasure) {
+            drawTextWithPerspective(ctx, text, drawX, drawY, totalWidth, perspectiveMeasure);
+        } else if (letterSpacing) {
             drawTextWithLetterSpacing(ctx, text, drawX, drawY, letterSpacing, totalWidth);
         } else {
             ctx.fillText(text, drawX, drawY);
@@ -909,7 +944,9 @@ function drawTextOverlays(ctx, canvas, overlays = []) {
             skewYShear,
             effectiveWidth,
             effectiveHeight,
-            textHeight,
+            textHeight: measurement.textHeight,
+            perspectiveActive,
+            perspectiveStep,
         });
     });
 }
@@ -934,6 +971,84 @@ function drawTextWithLetterSpacing(ctx, text, x, y, spacing, totalWidth) {
         cursor += ctx.measureText(char).width + spacing;
     }
     ctx.textAlign = originalAlign;
+}
+
+function drawTextWithPerspective(ctx, text, x, y, totalWidth, perspectiveMeasure) {
+    if (!perspectiveMeasure || !Array.isArray(perspectiveMeasure.charData)) {
+        ctx.fillText(text, x, y);
+        return;
+    }
+
+    const originalAlign = ctx.textAlign;
+    const width = Number.isFinite(totalWidth)
+        ? totalWidth
+        : perspectiveMeasure.totalWidth || ctx.measureText(text).width;
+
+    let cursor = x;
+    if (originalAlign === "center") {
+        cursor = x - width / 2;
+    } else if (originalAlign === "right") {
+        cursor = x - width;
+    }
+
+    ctx.textAlign = "left";
+
+    perspectiveMeasure.charData.forEach((entry) => {
+        const char = entry.char;
+        const scale = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const advance = Number.isFinite(entry.advance) ? entry.advance : 0;
+
+        ctx.save();
+        ctx.translate(cursor, y);
+        ctx.scale(scale, scale);
+        ctx.fillText(char, 0, 0);
+        ctx.restore();
+
+        cursor += advance;
+    });
+
+    ctx.textAlign = originalAlign;
+}
+
+function computePerspectiveData(ctx, text, fontSize, letterSpacing, step, origin, minScale) {
+    const entries = [];
+    const chars = [...text];
+    if (chars.length === 0) {
+        return { charData: entries, totalWidth: 0, height: 0 };
+    }
+
+    const safeMin = Number.isFinite(minScale) ? minScale : 0;
+    const denominator = Math.max(chars.length - 1, 1);
+    let totalWidth = 0;
+    let maxAscent = 0;
+    let maxDescent = 0;
+
+    chars.forEach((char, index) => {
+        const progress = chars.length > 1 ? index / denominator : 0;
+        const directionProgress = origin === "right" ? 1 - progress : progress;
+        let scale = 1 + step * directionProgress;
+        if (!Number.isFinite(scale)) {
+            scale = 1;
+        }
+        scale = Math.max(safeMin, scale);
+
+        const metrics = ctx.measureText(char);
+        const ascent = (metrics.actualBoundingBoxAscent || fontSize * 0.8) * scale;
+        const descent = (metrics.actualBoundingBoxDescent || fontSize * 0.2) * scale;
+        const width = (metrics.width || fontSize * 0.6) * scale;
+        const advance = width + (index < chars.length - 1 ? letterSpacing : 0);
+
+        entries.push({ char, scale, width, advance });
+        totalWidth += advance;
+        maxAscent = Math.max(maxAscent, ascent);
+        maxDescent = Math.max(maxDescent, descent);
+    });
+
+    return {
+        charData: entries,
+        totalWidth,
+        height: maxAscent + maxDescent,
+    };
 }
 
 // Applies taper and curve transforms to ribbon blocks and returns the mapping helper.
