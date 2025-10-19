@@ -233,7 +233,7 @@ end
 
 enabled_site_setting :discourse_project_uniform_enabled
 
-add_admin_route "discourse_project_uniform.title", "discourse-project-uniform"
+add_admin_route "discourse_project_uniform.title", "discourse-project-uniform", use_new_show_route: true
 register_asset "stylesheets/canvas-tooltip.scss"
 
 after_initialize do
