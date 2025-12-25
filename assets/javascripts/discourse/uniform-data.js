@@ -355,6 +355,15 @@ export const ranks = deepFreeze([
     rankAreas.pltoffSleeve,
     "RAF"
   ),
+  rank(
+    "Officer_Cadet",
+    "officer",
+    "offcdt__v2.png",
+    "offcdt__v2.png",
+    "<center><b>Officer Cadet (Off Cdt)</b></center><br>Officer in training undergoing initial officer development.",
+    rankAreas.officerCollar,
+    "RAF"
+  ),
 
   // RAF Aircrew NCOs
   rank(
