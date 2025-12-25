@@ -361,7 +361,7 @@ export const ranks = deepFreeze([
     "officer",
     "offcdt__v2.png",
     "offcdt__v2.png",
-    "<center><b>Officer Cadet (Off Cdt)</b></center><br>Officer-in-training within Joint Helicopter Command (JHC).<br>Undergoes initial officer training and supervised aircrew duties.",
+    "<center><b>Officer Cadet</b></center><br>Officer-in-training within Joint Helicopter Command (JHC).<br>Undergoes initial officer training and supervised aircrew duties.",
     rankAreas.officerCadetCollar,
     "RAF"
   ),
