@@ -34,6 +34,7 @@ const rankAreas = deepFreeze({
   fltltSleeve: [rect(16, 596, 120, 54), rect(556, 602, 118, 54)],
   fgoffSleeve: [rect(16, 600, 120, 40), rect(556, 604, 118, 42)],
   pltoffSleeve: [rect(16, 600, 120, 40), rect(556, 604, 118, 42)],
+  officerCadetCollar: [rect(182, 12, 62, 60), rect(448, 12, 60, 60)],
 });
 
 // Builds a rank metadata object with associated asset and tooltip information.
@@ -353,6 +354,15 @@ export const ranks = deepFreeze([
     "pltoff__v2.jpg",
     "<center><b>Pilot Officer</b></center><br>Executes tasked piloting sorties and aircrew duties.",
     rankAreas.pltoffSleeve,
+    "RAF"
+  ),
+  rank(
+    "Officer_Cadet",
+    "officer",
+    "offcdt__v2.png",
+    "offcdt__v2.png",
+    "<center><b>Officer Cadet (Off Cdt)</b></center><br>Officer-in-training within Joint Helicopter Command (JHC).<br>Undergoes initial officer training and supervised aircrew duties.",
+    rankAreas.officerCadetCollar,
     "RAF"
   ),
 
