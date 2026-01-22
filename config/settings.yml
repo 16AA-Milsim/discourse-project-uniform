@@ -13,3 +13,8 @@ plugins:
     type: bool
     default: false
     client: true
+
+  discourse_project_uniform_public_enabled:
+    type: bool
+    default: false
+    client: true

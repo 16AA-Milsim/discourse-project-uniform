@@ -1,0 +1,8 @@
+.row.setting.pu-setting-locked {
+  opacity: 0.65;
+}
+
+.row.setting.pu-setting-locked input[type="checkbox"] {
+  cursor: not-allowed;
+  pointer-events: none;
+}

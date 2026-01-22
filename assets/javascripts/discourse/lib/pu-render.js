@@ -2,7 +2,7 @@
  * Canvas composition helpers for Project Uniform. Loads background and overlay imagery,
  * draws them onto a shared canvas, and wires up tooltip regions for interactive layers.
  */
-import { loadImageCached, normalizePath, debugLog } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { loadImageCached, normalizePath, debugLog, applyAssetCacheParams } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 import { setupTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
 import { awards } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
@@ -176,6 +176,7 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
                 textOverlays
             );
 
+            canvas.dataset.puRendered = "true";
             prependCanvas(container, canvas);
         })
         .catch((e) => debugLog("[PU:render] Error loading images:", e));
@@ -238,7 +239,9 @@ function registerGroupTooltipsForCanvas(groups, groupTooltipMap) {
     groups.forEach((group) => {
         const data = resolveGroupTooltip(group.name);
         data?.tooltipAreas?.forEach((area) => {
-            registerTooltip(area.x, area.y, area.width, area.height, `<img src="${data.tooltipImage}"> ${data.tooltipText}`);
+            const imageUrl = applyAssetCacheParams(data.tooltipImage);
+            const content = `${imageUrl ? `<img src="${imageUrl}"> ` : ""}${data.tooltipText || ""}`;
+            registerTooltip(area.x, area.y, area.width, area.height, content);
             groupTipCount++;
         });
     });
@@ -256,8 +259,9 @@ function registerRankTooltipsForCanvas(canvas, fgImages, highestRank) {
     const rankImg = fgImages.length ? fgImages[0] : null;
     const x = rankImg?.naturalWidth ? (canvas.width - rankImg.naturalWidth) / 2 : 0;
     const y = rankImg?.naturalHeight ? (canvas.height - rankImg.naturalHeight) / 2 : 0;
+    const imageUrl = applyAssetCacheParams(highestRank.tooltipImage);
     const tip =
-        (highestRank.tooltipImage ? `<img src="${highestRank.tooltipImage}"> ` : "") +
+        (imageUrl ? `<img src="${imageUrl}"> ` : "") +
         (highestRank.tooltipText || "");
 
     highestRank.tooltipAreas.forEach((area) => {
@@ -273,7 +277,9 @@ function registerQualificationTooltipsForCanvas(qualifications = []) {
     let qualTipCount = 0;
     qualifications.forEach((qual) => {
         qual.tooltipAreas?.forEach((area) => {
-            registerTooltip(area.x, area.y, area.width, area.height, `<img src="${qual.tooltipImage}"> ${qual.tooltipText}`);
+            const imageUrl = applyAssetCacheParams(qual.tooltipImage);
+            const content = `${imageUrl ? `<img src="${imageUrl}"> ` : ""}${qual.tooltipText || ""}`;
+            registerTooltip(area.x, area.y, area.width, area.height, content);
             qualTipCount++;
         });
     });
@@ -559,7 +565,7 @@ function loadFontFace(spec) {
     const style = spec.style || "normal";
     const weight = spec.weight || "400";
     const stretch = spec.stretch || "normal";
-    const url = spec.url;
+    const url = applyAssetCacheParams(spec.url);
     const cacheKey = [family, style, weight, stretch, url || ""].join("|");
 
     try {
@@ -1223,7 +1229,8 @@ function drawAwards(ctx, awardImages, canvas, AWARD_INDEX, hasSeniorPilot) {
 
         const srcPath = normalizePath(img.src);
         const meta = awards.find(a => normalizePath(a.imageKey) === srcPath || a.name === img.alt) || {};
-        const content = `<img src="${meta.tooltipImage || meta.imageKey}"> ${meta.tooltipText || meta.name}`;
+        const tooltipImage = applyAssetCacheParams(meta.tooltipImage || meta.imageKey);
+        const content = `${tooltipImage ? `<img src="${tooltipImage}"> ` : ""}${meta.tooltipText || meta.name || ""}`;
         tips.push({ x, y: drawY, width: img.naturalWidth, height: ribbonHeight + extraHeight, content });
     });
 
@@ -1301,7 +1308,10 @@ function drawCsaRibbonRow(ctx, images = [], canvas, entries = [], options = {}) 
         ctx.drawImage(img, drawX, drawY, width, height);
 
         const entry = limitedEntries[index];
-        const tooltipContent = entry ? `<img src="${entry.tooltipImage}"> ${entry.tooltipText}` : "";
+        const tooltipImage = entry ? applyAssetCacheParams(entry.tooltipImage) : "";
+        const tooltipContent = entry
+            ? `${tooltipImage ? `<img src="${tooltipImage}"> ` : ""}${entry.tooltipText || ""}`
+            : "";
         const isLast = index === limitedImages.length - 1;
         let effectiveWidth = width;
         let cutWidth = 0;

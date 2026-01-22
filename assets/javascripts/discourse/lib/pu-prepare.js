@@ -32,7 +32,7 @@ import {
 
 import { mergeImagesOnCanvas, PU_FILTERS } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
 import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
-import { debugLog, puPaths } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { debugLog, puPaths, loadImageCached, applyAssetCacheParams } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // Normalizes potentially nullish values into lowercase strings for set lookups.
 const toLC = (value) => String(value || "").toLowerCase();
@@ -175,6 +175,29 @@ function rectFromCenter(center, width, height) {
         width: w,
         height: h,
     };
+}
+
+function preloadTooltipImages(urls, label = "tooltips") {
+    const unique = new Set();
+    (urls || []).forEach((url) => {
+        if (!url) {
+            return;
+        }
+        const resolved = applyAssetCacheParams(url);
+        if (resolved) {
+            unique.add(resolved);
+        }
+    });
+
+    if (!unique.size) {
+        return;
+    }
+
+    unique.forEach((url) => {
+        loadImageCached(url).catch((e) => debugLog("[PU:prepare] Tooltip preload failed", { label, url, e }));
+    });
+
+    debugLog("[PU:prepare] Tooltip preload queued", { label, count: unique.size });
 }
 
 // Produces a helper that records foreground overlay metadata in insertion order.
@@ -434,6 +457,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
     const foregroundItems = [];         // ALWAYS push objects: { url: string|array, x?, y? }
     const awardUrls = [];               // award ribbons (strings)
+    const awardTooltipImages = [];      // award tooltip images
     const qualsToRender = [];           // qualification objects we’ll still pass to renderer (for tooltips)
 
     const pushFg = createForegroundAdder(foregroundItems);
@@ -562,6 +586,9 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         if (aw?.imageKey) {
             awardUrls.push(aw.imageKey);
             debugLog("[PU:prepare] Add award ribbon:", name, aw.imageKey);
+        }
+        if (aw?.tooltipImage || aw?.imageKey) {
+            awardTooltipImages.push(aw.tooltipImage || aw.imageKey);
         }
     });
 
@@ -712,6 +739,45 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         debugLog("[PU:prepare] Align CTM image with leadership:", entry.adjustedQual.name, { x: finalPosX, y: finalPosY });
     });
 
+    // Preload tooltip imagery for the active uniform so hover images render instantly.
+    const tooltipUrls = new Set();
+    if (highestRank?.tooltipImage) {
+        tooltipUrls.add(highestRank.tooltipImage);
+    }
+    groups.forEach((group) => {
+        const key = String(group?.name || "").toLowerCase();
+        const groupTip = typeof groupTooltipLookup?.get === "function"
+            ? groupTooltipLookup.get(key) || groupTooltipLookup.get(group?.name) || null
+            : groupTooltipLookup?.[key] || groupTooltipLookup?.[group?.name] || null;
+        if (groupTip?.tooltipImage) {
+            tooltipUrls.add(groupTip.tooltipImage);
+        }
+        const lanyardTip = lanyardTooltipMapLC[key];
+        if (!isRAFUniform && lanyardTip?.tooltipImage) {
+            tooltipUrls.add(lanyardTip.tooltipImage);
+        }
+    });
+    if (!isRAFUniform && !is16CSMR && !is7RHA) {
+        const paraTooltip = highestRank?.category === "officer"
+            ? paraTooltipOfficer
+            : paraTooltipEnlisted;
+        if (paraTooltip?.tooltipImage) {
+            tooltipUrls.add(paraTooltip.tooltipImage);
+        }
+    }
+    adjustedQuals.forEach((qual) => {
+        if (qual?.tooltipImage) {
+            tooltipUrls.add(qual.tooltipImage);
+        }
+    });
+    csaRibbonsToRender.forEach((ribbon) => {
+        if (ribbon?.tooltipImage) {
+            tooltipUrls.add(ribbon.tooltipImage);
+        }
+    });
+    awardTooltipImages.forEach((url) => tooltipUrls.add(url));
+    preloadTooltipImages([...tooltipUrls], "uniform-tooltips");
+
     // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
     if (bg) {
         // Swap CSA ribbon art if the current service has a dedicated variant.
@@ -751,7 +817,8 @@ function registerCollarTooltip(tooltip) {
     if (!tooltip?.tooltipAreas?.length) {
         return;
     }
-    const content = `<img src="${tooltip.tooltipImage}"> ${tooltip.tooltipText}`;
+    const imageUrl = applyAssetCacheParams(tooltip.tooltipImage);
+    const content = `${imageUrl ? `<img src="${imageUrl}"> ` : ""}${tooltip.tooltipText || ""}`;
     tooltip.tooltipAreas.forEach(area => {
         if (!area) return;
         debugLog("[PU:prepare] Register collar tooltip", area);
@@ -765,7 +832,8 @@ function registerLanyardTooltips(groups) {
         const key = String(group?.name || "").toLowerCase();
         const data = lanyardTooltipMapLC[key];
         if (!data) return;
-        const content = `<img src="${data.tooltipImage}"> ${data.tooltipText}`;
+        const imageUrl = applyAssetCacheParams(data.tooltipImage);
+        const content = `${imageUrl ? `<img src="${imageUrl}"> ` : ""}${data.tooltipText || ""}`;
         debugLog("[PU:prepare] Register lanyard tooltip:", group.name, lanyardTooltipRegion);
         registerTooltip(
             lanyardTooltipRegion.x,

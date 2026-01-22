@@ -148,7 +148,7 @@ export const ranks = deepFreeze([
     "Major",
     "officer",
     "maj__v2.png",
-    "maj__v2.jpg",
+    "maj__v2.png",
     "<center><b>Major</b></center><br>Senior company-grade officer. Typically commands a company.",
     rankAreas.officerCollar
   ),
@@ -156,7 +156,7 @@ export const ranks = deepFreeze([
     "Captain",
     "officer",
     "capt__v2.png",
-    "capt__v2.jpg",
+    "capt__v2.png",
     "<center><b>Captain</b></center><br>Experienced officer.<br>Typically Company Second-in-Command or commander of a specialist troop/platoon.",
     rankAreas.officerCollar
   ),
@@ -164,7 +164,7 @@ export const ranks = deepFreeze([
     "Lieutenant",
     "officer",
     "lt__v2.png",
-    "lt__v2.jpg",
+    "lt__v2.png",
     "<center><b>Lieutenant</b></center><br>Platoon Commander.<br>Responsible for leading platoon operations, mission planning, coordination and control.",
     rankAreas.officerCollar
   ),
@@ -172,7 +172,7 @@ export const ranks = deepFreeze([
     "Second_Lieutenant",
     "officer",
     "2lt__v2.png",
-    "2lt__v2.jpg",
+    "2lt__v2.png",
     "<center><b>Second Lieutenant</b></center><br>Junior platoon commander.<br>Leads under mentorship,<br>focusing on fundamentals of command in the field.",
     rankAreas.officerCollar
   ),
@@ -180,7 +180,7 @@ export const ranks = deepFreeze([
     "Acting_Second_Lieutenant",
     "officer",
     "2lt__v2.png",
-    "2lt__v2.jpg",
+    "2lt__v2.png",
     "<center><b>Acting Second Lieutenant</b></center><br>Probationary rank.<br>Leads a platoon pending confirmation of rank by passing the Platoon Commander's Battle Course (PCBC).",
     rankAreas.officerCollar
   ),
@@ -190,7 +190,7 @@ export const ranks = deepFreeze([
     "Warrant_Officer_Class_2",
     "enlisted",
     "wo2__v2.png",
-    "wo2__v2.jpg",
+    "wo2__v2.png",
     "<center><b>Warrant Officer Class 2</b></center><br>Senior soldier, normally at<br>company level. Discipline, standards, drill and soldiering expertise.",
     rankAreas.wo2Sleeve
   ),
@@ -198,7 +198,7 @@ export const ranks = deepFreeze([
     "Colour_Sergeant",
     "enlisted",
     "csgt__v2.png",
-    "csgt__v2.jpg",
+    "csgt__v2.png",
     "<center><b>Colour Sergeant</b></center><br>Senior NCO.<br>Typically Platoon Sergeant or Company Quartermaster Sergeant. Training, discipline, logistics and oversight.",
     rankAreas.csgtSleeve
   ),
@@ -206,7 +206,7 @@ export const ranks = deepFreeze([
     "Staff_Sergeant",
     "enlisted",
     "ssgt__v2.png",
-    "ssgt__v2.jpg",
+    "ssgt__v2.png",
     "<center><b>Staff Sergeant</b></center><br>Senior NCO.<br>Second-in-command of a troop or equivalent, or in key administrative and logistic appointments. Supervision, training and discipline.",
     rankAreas.ssgtSleeve
   ),
@@ -214,7 +214,7 @@ export const ranks = deepFreeze([
     "Sergeant",
     "enlisted",
     "sgt__v2.png",
-    "sgt__v2.jpg",
+    "sgt__v2.png",
     "<center><b>Sergeant</b></center><br>Serves as Platoon Sergeant or<br>leads specialist teams. Training, discipline and tactical control.",
     rankAreas.sgtSleeve
   ),
@@ -222,7 +222,7 @@ export const ranks = deepFreeze([
     "Acting_Sergeant",
     "enlisted",
     "sgt__v2.png",
-    "sgt__v2.jpg",
+    "sgt__v2.png",
     "<center><b>Acting Sergeant</b></center><br>Probationary rank undertaking Platoon Sergeant duties pending confirmation of rank by passing the Platoon Sergeants Battle Course.",
     rankAreas.sgtSleeve
   ),
@@ -232,7 +232,7 @@ export const ranks = deepFreeze([
     "Corporal",
     "enlisted",
     "cpl__v2.png",
-    "cpl__v2.jpg",
+    "cpl__v2.png",
     "<center><b>Corporal</b></center><br>Commander of a section (7-12 soldiers), or a smaller specialised team. Responsible for leading, training, and tactical control.",
     rankAreas.cplSleeve
   ),
@@ -240,7 +240,7 @@ export const ranks = deepFreeze([
     "Bombardier",
     "enlisted",
     "cpl__v2.png",
-    "cpl__v2.jpg",
+    "bdr__v2.png",
     "<center><b>Bombardier</b></center><br>Commands a gun detachment or leads a Fire Support Team. Responsible for crew direction, firing drills and effective weapon employment, or coordinating supporting fires and air assets.",
     rankAreas.cplSleeve
   ),
@@ -248,7 +248,7 @@ export const ranks = deepFreeze([
     "Acting_Corporal",
     "enlisted",
     "cpl__v2.png",
-    "cpl__v2.jpg",
+    "cpl__v2.png",
     "<center><b>Acting Corporal</b></center><br>Junior NCO undertaking Corporal duties on a probationary basis pending confirmation of rank by passing the Section Commanders Battle Course (SCBC).",
     rankAreas.cplSleeve
   ),
@@ -256,7 +256,7 @@ export const ranks = deepFreeze([
     "Acting_Bombardier",
     "enlisted",
     "cpl__v2.png",
-    "cpl__v2.jpg",
+    "bdr__v2.png",
     "<center><b>Acting Bombardier</b></center><br>Probationary Royal Artillery JNCO. Undertakes gun detachment command or Fire Support Team leadership duties<br>pending confirmation of rank by passing the Section Commander's Battle Course (SCBC).",
     rankAreas.cplSleeve
   ),
@@ -264,7 +264,7 @@ export const ranks = deepFreeze([
     "Lance_Corporal",
     "enlisted",
     "lcpl__v2.png",
-    "lcpl__v2.jpg",
+    "lcpl__v2.png",
     "<center><b>Lance Corporal</b></center><br>Fire team leader and junior commander. Assists the section commander with section control, routine tasks and<br>mentoring of privates.",
     rankAreas.lcplSleeve
   ),
@@ -272,7 +272,7 @@ export const ranks = deepFreeze([
     "Lance_Bombardier",
     "enlisted",
     "lcpl__v2.png",
-    "lcpl__v2.jpg",
+    "lbdr__v2.png",
     "<center><b>Lance Bombardier</b></center><br>Royal Artillery Junior JNCO. Second in command of a gun detachment, leads small teams, and develops leadership skills under supervision.",
     rankAreas.lcplSleeve
   ),
@@ -280,7 +280,7 @@ export const ranks = deepFreeze([
     "Acting_Lance_Corporal",
     "enlisted",
     "lcpl__v2.png",
-    "lcpl__v2.jpg",
+    "lcpl__v2.png",
     "<center><b>Acting Lance Corporal</b></center><br>Probationary junior JNCO undertaking fire team leadership duties pending confirmation of<br>rank by passing the<br>Fire Team Commanders Course (FTCC).",
     rankAreas.lcplSleeve
   ),
@@ -288,7 +288,7 @@ export const ranks = deepFreeze([
     "Acting_Lance_Bombardier",
     "enlisted",
     "lcpl__v2.png",
-    "lcpl__v2.jpg",
+    "lbdr__v2.png",
     "<center><b>Acting Lance Bombardier</b></center><br>Probationary Royal Artillery junior JNCO. Undertakes gun detachment 2IC or Fire Support Team duties pending confirmation of rank by passing the Fire Team Commander's Course (FTCC).",
     rankAreas.lcplSleeve
   ),
@@ -298,7 +298,7 @@ export const ranks = deepFreeze([
     "Private",
     "enlisted",
     null,
-    "pte__v2.jpg",
+    "pte__v2.png",
     "<center><b>Private</b></center><br>Trained soldier and core of<br>the platoon. Executes section-level tasks and drills.",
     rankAreas.ptegnrSleeve
   ),
@@ -306,7 +306,7 @@ export const ranks = deepFreeze([
     "Gunner",
     "enlisted",
     null,
-    "gnr__v2.jpg",
+    "gnr__v2.png",
     "<center><b>Gunner</b></center><br>Royal Artillery private soldier. Operates guns, fire support systems and associated equipment, or serves as a member of a Fire Support Team.",
     rankAreas.ptegnrSleeve
   ),
@@ -314,7 +314,7 @@ export const ranks = deepFreeze([
     "Recruit",
     "enlisted",
     null,
-    "pte__v2.jpg",
+    "pte__v2.png",
     "<center><b>Recruit</b></center><br>New entrant undergoing basic training and induction. Not yet a fully trained soldier, progressing towards Private rank on completion of Phase 1 training.",
     rankAreas.ptegnrSleeve
   ),
@@ -324,7 +324,7 @@ export const ranks = deepFreeze([
     "Squadron_Leader",
     "officer",
     "sqnldr__v2.png",
-    "sqnldr__v2.jpg",
+    "sqnldr__v2.png",
     "<center><b>Squadron Leader</b></center><br>Officer Commanding within Joint Helicopter Command (JHC), attached to 16 Air Assault Brigade. Senior pilot responsible for operational direction, flying standards and overall leadership.",
     rankAreas.sqnldrSleeve,
     "RAF"
@@ -333,7 +333,7 @@ export const ranks = deepFreeze([
     "Flight_Lieutenant",
     "officer",
     "fltlt__v2.png",
-    "fltlt__v2.jpg",
+    "fltlt__v2.png",
     "<center><b>Flight Lieutenant</b></center><br>Normally second-in-command within Joint Helicopter Command (JHC), attached to 16 Air Assault Brigade. Senior pilot responsible for planning and tasking, and acting IC when required.",
     rankAreas.fltltSleeve,
     "RAF"
@@ -342,7 +342,7 @@ export const ranks = deepFreeze([
     "Flying_Officer",
     "officer",
     "fgoff__v3.png",
-    "fgoff__v3.jpg",
+    "fgoff__v3.png",
     "<center><b>Flying Officer</b></center><br>Experienced Pilot qualified for mission and flight lead duties. Executes sorties and mentors pilots.",
     rankAreas.fgoffSleeve,
     "RAF"
@@ -351,7 +351,7 @@ export const ranks = deepFreeze([
     "Pilot_Officer",
     "officer",
     "pltoff__v2.png",
-    "pltoff__v2.jpg",
+    "pltoff__v2.png",
     "<center><b>Pilot Officer</b></center><br>Executes tasked piloting sorties and aircrew duties.",
     rankAreas.pltoffSleeve,
     "RAF"

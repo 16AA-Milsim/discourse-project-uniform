@@ -3,13 +3,66 @@
 // Import Discourse plugin API helper
 import { withPluginApi } from "discourse/lib/plugin-api";
 // Import debug toggle/logger
-import { debugLog, setAdminDebugFlag, isDebugEnabled, loadImageCached } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { debugLog, setAdminDebugFlag, isDebugEnabled, loadImageCached, setAssetCacheData } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { bootstrapPublicUniform } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-public";
+import getURL from "discourse-common/lib/get-url";
 // Import preparation/rendering pipeline
 import { prepareAndRenderImages } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-prepare";
 // Import award and tooltip data
 import { awards, groupTooltipMapLC, csaRibbons } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
 let STATIC_ASSETS_PRELOADED = false;
+let REQUEST_COUNTER = 0;
+const USER_DATA_CACHE = new Map();
+const USER_DATA_TTL_MS = 60 * 1000;
+
+function readCachedUserData(cacheKey) {
+    const entry = USER_DATA_CACHE.get(cacheKey);
+    if (!entry) return null;
+    const now = Date.now();
+    if (entry.data && entry.expiresAt > now) {
+        return entry.data;
+    }
+    if (entry.expiresAt <= now) {
+        USER_DATA_CACHE.delete(cacheKey);
+    }
+    return null;
+}
+
+function fetchUserData(cacheKey, usernameParam, fetchJson) {
+    const now = Date.now();
+    const existing = USER_DATA_CACHE.get(cacheKey);
+    if (existing?.data && existing.expiresAt > now) {
+        return Promise.resolve(existing.data);
+    }
+    if (existing?.promise && existing.expiresAt > now) {
+        return existing.promise;
+    }
+
+    const promise = Promise.all([
+        fetchJson(`/u/${usernameParam}.json`),
+        fetchJson(`/user-badges/${usernameParam}.json`)
+    ])
+        .then(([userSummaryData, badgeData]) => {
+            const data = { userSummaryData, badgeData };
+            USER_DATA_CACHE.set(cacheKey, {
+                data,
+                expiresAt: Date.now() + USER_DATA_TTL_MS
+            });
+            return data;
+        })
+        .catch((error) => {
+            USER_DATA_CACHE.delete(cacheKey);
+            throw error;
+        });
+
+    USER_DATA_CACHE.set(cacheKey, {
+        promise,
+        expiresAt: now + USER_DATA_TTL_MS
+    });
+
+    return promise;
+}
 
 function toggleBadgesSection(hidden) {
     const badges = document.querySelector?.(".top-section.badges-section") || document.querySelector?.(".top-section .badges-section");
@@ -83,12 +136,111 @@ function tearDownExistingUniform(containerElement = document) {
     updateBadgesForContainer(containerElement);
 }
 
+function matchPublicUniformUrl(url) {
+    if (!url) {
+        return null;
+    }
+    try {
+        const path = new URL(url, window.location.origin).pathname;
+        const match = path.match(/\/uniform\/([^/]+)\/?$/i);
+        if (match) {
+            return decodeURIComponent(match[1]);
+        }
+    } catch { /* noop */ }
+    return null;
+}
+
+function waitForElement(selector, timeoutMs = 2000) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(selector);
+        if (existing) {
+            return resolve(existing);
+        }
+
+        const observer = new MutationObserver(() => {
+            const el = document.querySelector(selector);
+            if (el) {
+                observer.disconnect();
+                resolve(el);
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        setTimeout(() => {
+            observer.disconnect();
+            reject(new Error("Element not found"));
+        }, timeoutMs);
+    });
+}
+
+function renderPublicUniform(username, site, siteSettings) {
+    if (!username) {
+        return;
+    }
+
+    const normalizedUsername = String(username).trim().toLowerCase();
+
+    const enabled = !!siteSettings?.discourse_project_uniform_enabled;
+    const publicEnabled = !!siteSettings?.discourse_project_uniform_public_enabled;
+    if (!enabled || !publicEnabled) {
+        waitForElement("#project-uniform-root", 5000)
+            .then((root) => {
+                root.textContent = "Public uniforms are disabled.";
+            })
+            .catch(() => {});
+        return;
+    }
+
+    waitForElement("#project-uniform-root", 8000)
+        .then((root) => {
+            const cacheKey = site?.project_uniform_cache_key || "";
+            const assetTokens = site?.project_uniform_asset_tokens || {};
+            const encoded = encodeURIComponent(normalizedUsername);
+
+            root.dataset.username = normalizedUsername;
+            root.dataset.cacheKey = cacheKey;
+            root.dataset.assetTokens = JSON.stringify(assetTokens);
+            root.dataset.basePath = getURL("") || "";
+
+            const tokenUrl = getURL(`/uniform/${encoded}/token.json`);
+            const snapshotEndpoint = getURL(`/uniform/${encoded}/snapshot`);
+
+            fetch(tokenUrl, { credentials: "same-origin" })
+                .then((response) => (response.ok ? response.json() : null))
+                .then((payload) => {
+                    root.dataset.snapshotEndpoint = snapshotEndpoint;
+                    root.dataset.snapshotCacheKey = payload?.cache_key || cacheKey;
+                    root.dataset.snapshotToken = payload?.token || "";
+                })
+                .catch(() => {
+                    root.dataset.snapshotEndpoint = snapshotEndpoint;
+                    root.dataset.snapshotCacheKey = cacheKey;
+                    root.dataset.snapshotToken = "";
+                })
+                .finally(() => {
+                    bootstrapPublicUniform(root);
+                });
+        })
+        .catch(() => {
+            const root = document.getElementById("project-uniform-root");
+            if (root) {
+                root.textContent = "Uniform container not available.";
+            }
+        });
+}
+
 export default {
     name: "discourse-project-uniform",
     initialize(container) {
         // Use the Discourse plugin API (min version 0.8.26)
         withPluginApi("0.8.26", (api) => {
             const siteSettings = container.lookup("site-settings:main");
+            const site = container.lookup("site:main");
+            setAssetCacheData({
+                cacheKey: site?.project_uniform_cache_key,
+                assetTokens: site?.project_uniform_asset_tokens
+            });
             // Wire the admin setting into the utils runtime flag
             setAdminDebugFlag(!!siteSettings.discourse_project_uniform_debug_enabled);
 
@@ -97,6 +249,13 @@ export default {
             // Run logic on every page change
             api.onPageChange((url) => {
                 debugLog("[PU:init] onPageChange URL:", url);
+
+                const publicUsername = matchPublicUniformUrl(url);
+                if (publicUsername) {
+                    debugLog("[PU:init] Public uniform route detected", publicUsername);
+                    renderPublicUniform(publicUsername, site, siteSettings);
+                    return;
+                }
 
                 // Only run on user summary pages
                 if (!(url && url.includes("/u/") && url.includes("/summary"))) {
@@ -163,6 +322,10 @@ export default {
                     containerElement._puLastRenderSignature = null;
                 }
 
+                const requestId = ++REQUEST_COUNTER;
+                containerElement._puRequestId = requestId;
+                containerElement._puLastRequestedUsername = username;
+
                 // Helper function to fetch JSON with debug logging
                 const fetchJson = (u) => {
                     debugLog("[PU:init][fetch:BEGIN]", u);
@@ -177,12 +340,21 @@ export default {
                         .then(j => { debugLog("[PU:init][fetch:OK]", u); return j; });
                 };
 
-                // Fetch user summary and badge data
-                Promise.all([
-                    fetchJson(`/u/${usernameParam}.json`),
-                    fetchJson(`/user-badges/${usernameParam}.json`)
-                ])
-                    .then(([userSummaryData, badgeData]) => {
+                const cacheKey = String(usernameParam || "");
+                const cached = readCachedUserData(cacheKey);
+
+                const userDataPromise = cached
+                    ? Promise.resolve(cached)
+                    : fetchUserData(cacheKey, usernameParam, fetchJson);
+
+                // Fetch user summary and badge data (cached)
+                userDataPromise
+                    .then(({ userSummaryData, badgeData }) => {
+                        if (containerElement._puRequestId !== requestId || !containerElement.isConnected) {
+                            debugLog("[PU:init] Stale response ignored", { requestId, username });
+                            return;
+                        }
+
                         const ok = !!(userSummaryData?.user && badgeData?.user_badges);
                         debugLog("[PU:init] Fetched payloads ok:", ok);
                         if (!ok) return;
@@ -245,6 +417,12 @@ export default {
                     })
                     .catch(e => debugLog("[PU:init] Error fetching user data:", e));
             });
+
+            const initialPublicUsername = matchPublicUniformUrl(window.location.href);
+            if (initialPublicUsername) {
+                debugLog("[PU:init] Initial public uniform route detected", initialPublicUsername);
+                renderPublicUniform(initialPublicUsername, site, siteSettings);
+            }
         });
     }
 };
