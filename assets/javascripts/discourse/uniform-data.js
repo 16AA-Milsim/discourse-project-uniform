@@ -22,6 +22,7 @@ const rect = (x, y, width, height) => ({ x, y, width, height });
 const rankAreas = deepFreeze({
   // BA rank regions
   officerCollar: [rect(80, 18, 100, 52), rect(520, 18, 80, 47)],
+  wo1Sleeve: [rect(12, 480, 46, 76), rect(632, 485, 45, 75)],
   wo2Sleeve: [rect(15, 495, 45, 60), rect(635, 495, 45, 58)],
   csgtSleeve: [rect(38, 195, 52, 110), rect(607, 193, 60, 105)],
   ssgtSleeve: [rect(38, 195, 52, 110), rect(607, 193, 58, 102)],
@@ -200,7 +201,7 @@ export const ranks = deepFreeze([
     "wo1__v1.png",
     "wo1__v1.png",
     "<center><b>Warrant Officer Class 1 (WO1)</b></center><br>Senior warrant officer.<br>Holds the highest WO appointment and provides leadership, discipline, and professional expertise at unit level.",
-    rankAreas.wo2Sleeve
+    rankAreas.wo1Sleeve
   ),
   rank(
     "Warrant_Officer_Class_2",
