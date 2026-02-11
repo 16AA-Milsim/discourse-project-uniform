@@ -19,7 +19,7 @@ docker compose version</code></pre>
         If either command fails, install Docker first.
       </p>
 
-      <h4>1) Create renderer directory on the host</h4>
+      <h4>1) Create renderer directory on the host, for example</h4>
       <pre><code>mkdir -p /opt/docker/uniform-renderer
 cd /opt/docker/uniform-renderer</code></pre>
 
@@ -219,11 +219,20 @@ docker compose up -d --build</code></pre>
         </li>
         <li>
           Set <code>discourse_project_uniform_renderer_url</code> to
-          <code>http://127.0.0.1:3011/render</code>.
+          the renderer endpoint reachable from inside the Discourse container.
+          Common examples:
+          <code>http://172.17.0.1:3011/render</code> (renderer on Docker host)
+          or <code>http://127.0.0.1:3011/render</code> (same network namespace).
+          Verify from the Discourse container with:
+          <pre><code>docker ps --format '{{.Names}}'
+docker exec &lt;DISCOURSE_CONTAINER_NAME&gt; curl -s http://172.17.0.1:3011/health</code></pre>
         </li>
         <li>
           Set <code>discourse_project_uniform_renderer_visit_base_url</code> to
-          <code>http://127.0.0.1:3000</code> if Discourse is reachable there from the host.
+          a URL the renderer can open for your forum pages.
+          In production, this is normally your live forum URL, for example
+          <code>https://forum.example.com</code>.
+          Use an internal URL only if the renderer cannot reach the public URL.
         </li>
         <li>
           Set <code>discourse_project_uniform_renderer_key</code> to the same value as
@@ -232,7 +241,7 @@ docker compose up -d --build</code></pre>
       </ol>
 
       <h4>10) Test a PNG endpoint</h4>
-      <pre><code>curl -I http://127.0.0.1:3000/uniform/USERNAME.png</code></pre>
+      <pre><code>curl -I https://forum.example.com/uniform/USERNAME.png</code></pre>
       <p>
         Replace <code>USERNAME</code> with a valid forum username.
       </p>
