@@ -17,6 +17,12 @@ const USER_DATA_CACHE = new Map();
 const USER_DATA_TTL_MS = 60 * 1000;
 let BADGE_OBSERVER_CONTAINER = null;
 
+function setPublicEmbedMode(enabled) {
+    const active = !!enabled;
+    document.body?.classList.toggle("pu-uniform-embed-mode", active);
+    document.documentElement?.classList.toggle("pu-uniform-embed-mode", active);
+}
+
 function readCachedUserData(cacheKey) {
     const entry = USER_DATA_CACHE.get(cacheKey);
     if (!entry) return null;
@@ -133,6 +139,18 @@ function tearDownExistingUniform(containerElement = document) {
         debugLog("[PU:init] Removed existing placeholder", { scoped: containerElement !== document });
     }
 
+    const additional = containerElement.querySelector?.(".project-uniform-additional-quals");
+    if (additional) {
+        additional.remove();
+        debugLog("[PU:init] Removed additional qualifications", { scoped: containerElement !== document });
+    }
+
+    const title = containerElement.querySelector?.(".project-uniform-title");
+    if (title) {
+        title.remove();
+        debugLog("[PU:init] Removed uniform title", { scoped: containerElement !== document });
+    }
+
     if (containerElement === document && BADGE_OBSERVER_CONTAINER?._puBadgeObserver) {
         BADGE_OBSERVER_CONTAINER._puBadgeObserver.disconnect();
         delete BADGE_OBSERVER_CONTAINER._puBadgeObserver;
@@ -203,13 +221,14 @@ function renderPublicUniform(username, site, siteSettings) {
             const cacheKey = site?.project_uniform_cache_key || "";
             const assetTokens = site?.project_uniform_asset_tokens || {};
             const encoded = encodeURIComponent(normalizedUsername);
+            const tokenRequestId = String((Number(root.dataset.puPublicTokenRequestId || "0") || 0) + 1);
+            root.dataset.puPublicTokenRequestId = tokenRequestId;
 
             root.dataset.username = normalizedUsername;
             root.dataset.cacheKey = cacheKey;
             root.dataset.assetTokens = JSON.stringify(assetTokens);
-            root.dataset.basePath = getURL("") || "";
 
-            const tokenUrl = getURL(`/uniform/${encoded}/token.json`);
+            const tokenUrl = getURL(`/uniform/${encoded}/token`);
             const snapshotEndpoint = getURL(`/uniform/${encoded}/snapshot`);
 
             fetch(tokenUrl, { credentials: "same-origin" })
@@ -225,7 +244,9 @@ function renderPublicUniform(username, site, siteSettings) {
                     root.dataset.snapshotToken = "";
                 })
                 .finally(() => {
-                    bootstrapPublicUniform(root);
+                    if (root.dataset.puPublicTokenRequestId === tokenRequestId) {
+                        bootstrapPublicUniform(root);
+                    }
                 });
         })
         .catch(() => {
@@ -257,6 +278,7 @@ export default {
                 debugLog("[PU:init] onPageChange URL:", url);
 
                 const publicUsername = matchPublicUniformUrl(url);
+                setPublicEmbedMode(!!publicUsername);
                 if (publicUsername) {
                     debugLog("[PU:init] Public uniform route detected", publicUsername);
                     renderPublicUniform(publicUsername, site, siteSettings);
@@ -425,6 +447,7 @@ export default {
             });
 
             const initialPublicUsername = matchPublicUniformUrl(window.location.href);
+            setPublicEmbedMode(!!initialPublicUsername);
             if (initialPublicUsername) {
                 debugLog("[PU:init] Initial public uniform route detected", initialPublicUsername);
                 renderPublicUniform(initialPublicUsername, site, siteSettings);

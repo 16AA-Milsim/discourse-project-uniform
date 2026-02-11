@@ -20,10 +20,36 @@ module DiscourseProjectUniform
       user = find_user
       raise Discourse::NotFound if user.blank?
 
-      cache_key = ::DiscourseProjectUniform::CacheKey.current
+      cache_key = ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user)
       snapshot = ::DiscourseProjectUniform::UniformSnapshot.fetch(user.id, cache_key)
       if snapshot.blank?
         visit_url = uniform_visit_url(user)
+        # For better embed UX, try a synchronous render on first miss so the first
+        # request can return the final PNG instead of requiring a second refresh.
+        if ::DiscourseProjectUniform::UniformSnapshot.renderer_configured?
+          rendered =
+            ::DiscourseProjectUniform::UniformSnapshot.render_snapshot_via_sidecar(
+              visit_url
+            )
+          if rendered.present? &&
+               ::DiscourseProjectUniform::UniformSnapshot.store_snapshot(
+                 user.id,
+                 cache_key,
+                 rendered
+               )
+            snapshot = rendered
+          end
+        end
+      end
+
+      if snapshot.blank?
+        visit_url = uniform_visit_url(user)
+        ::DiscourseProjectUniform::UniformSnapshot.enqueue_render!(
+          user_id: user.id,
+          username: user.username,
+          cache_key: cache_key,
+          visit_url: visit_url
+        )
         placeholder = ::DiscourseProjectUniform::UniformSnapshot.placeholder_png(visit_url)
         if placeholder.present?
           placeholder = placeholder.b
@@ -55,7 +81,7 @@ module DiscourseProjectUniform
       user = find_user
       raise Discourse::NotFound if user.blank?
 
-      cache_key = ::DiscourseProjectUniform::CacheKey.current
+      cache_key = ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user)
       token = ::DiscourseProjectUniform::UniformSnapshot.signature_for(user.id, cache_key)
       render json: { token: token, cache_key: cache_key }
     end
@@ -65,7 +91,7 @@ module DiscourseProjectUniform
       raise Discourse::NotFound if user.blank?
 
       cache_key = params.dig(:snapshot, :cache_key).presence || params[:cache_key].to_s
-      cache_key = ::DiscourseProjectUniform::CacheKey.current if cache_key.blank?
+      cache_key = ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user) if cache_key.blank?
 
       token = params.dig(:snapshot, :token).presence || params[:token].to_s
       token = request.headers["X-Uniform-Token"].to_s if token.blank?
@@ -115,7 +141,6 @@ module DiscourseProjectUniform
 
     def ensure_plugin_enabled
       raise Discourse::NotFound unless SiteSetting.discourse_project_uniform_enabled
-      # Public endpoints are still experimental and locked off for now.
       raise Discourse::NotFound unless ::DiscourseProjectUniform.public_uniforms_enabled?
     end
 
@@ -137,53 +162,7 @@ module DiscourseProjectUniform
     end
 
     def uniform_visit_url(user)
-      base = resolve_public_base_url
-      base = base.to_s.chomp("/")
-      "#{base}/uniform/#{user.username}"
-    end
-
-    def resolve_public_base_url
-      forwarded_host = request.headers["X-Forwarded-Host"].presence
-      if forwarded_host
-        scheme = request.headers["X-Forwarded-Proto"].presence || request.protocol
-        return "#{scheme}://#{forwarded_host}"
-      end
-
-      origin = request.headers["Origin"].presence
-      if origin
-        begin
-          uri = URI.parse(origin)
-          if uri.scheme.present? && uri.host.present?
-            return build_base_url(uri)
-          end
-        rescue URI::InvalidURIError
-          # ignore
-        end
-      end
-
-      referer = request.headers["Referer"].presence
-      if referer
-        begin
-          uri = URI.parse(referer)
-          if uri.scheme.present? && uri.host.present?
-            return build_base_url(uri)
-          end
-        rescue URI::InvalidURIError
-          # ignore
-        end
-      end
-
-      Discourse.base_url.to_s
-    end
-
-    def build_base_url(uri)
-      port =
-        if uri.port && ![80, 443].include?(uri.port)
-          ":#{uri.port}"
-        else
-          ""
-        end
-      "#{uri.scheme}://#{uri.host}#{port}"
+      ::DiscourseProjectUniform.uniform_visit_url_for(user, request: request)
     end
   end
 end

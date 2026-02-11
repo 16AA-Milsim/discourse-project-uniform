@@ -39,7 +39,9 @@ Debug Mode can be toggled via the site setting `discourse_project_uniform_debug_
 
 ### Public Sharing
 
-Public endpoints are in development. The site setting `discourse_project_uniform_public_enabled` is currently locked off while the snapshot workflow is finalized:
+Public PNG sharing is disabled by default and controlled by
+`discourse_project_uniform_public_enabled`. This mode requires the renderer
+service to be configured:
 
 * **HTML view:** `/uniform/:username` renders a standalone uniform page.
 * **PNG snapshot:** `/uniform/:username.png` returns the most recently captured uniform image. If no snapshot exists yet, a placeholder PNG is returned with the URL to visit to generate it.

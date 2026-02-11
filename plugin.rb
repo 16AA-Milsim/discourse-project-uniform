@@ -7,16 +7,62 @@
 require "digest"
 require "base64"
 require "openssl"
+require "json"
+require "net/http"
 require_dependency "jobs/base"
 
 module ::DiscourseProjectUniform
-  # Public uniform endpoints are experimental and currently locked off while we
-  # finalize the long-term snapshot strategy.
-  PUBLIC_UNIFORMS_LOCKED = true
-
   def self.public_uniforms_enabled?
-    return false if PUBLIC_UNIFORMS_LOCKED
     SiteSetting.discourse_project_uniform_public_enabled
+  end
+
+  def self.uniform_visit_url_for(user, request: nil)
+    return nil if user.blank?
+
+    base = renderer_visit_base_url(request: request).to_s
+    base = Discourse.base_url.to_s if base.blank?
+    "#{base.chomp("/")}/uniform/#{user.username}"
+  end
+
+  def self.renderer_visit_base_url(request: nil)
+    configured = SiteSetting.discourse_project_uniform_renderer_visit_base_url.to_s.strip
+    return configured if configured.present?
+
+    if request
+      forwarded_host = request.headers["X-Forwarded-Host"].presence
+      if forwarded_host
+        scheme = request.headers["X-Forwarded-Proto"].presence || request.protocol
+        return "#{scheme}://#{forwarded_host}"
+      end
+
+      origin_base = base_url_from_header_value(request.headers["Origin"])
+      return origin_base if origin_base.present?
+
+      referer_base = base_url_from_header_value(request.headers["Referer"])
+      return referer_base if referer_base.present?
+
+      request_base = request.base_url.to_s
+      return request_base if request_base.present?
+    end
+
+    Discourse.base_url.to_s
+  end
+
+  def self.base_url_from_header_value(value)
+    raw = value.to_s.strip
+    return nil if raw.blank?
+
+    uri = URI.parse(raw)
+    return nil if uri.scheme.blank? || uri.host.blank?
+
+    build_base_url(uri)
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  def self.build_base_url(uri)
+    port = uri.port && ![80, 443].include?(uri.port) ? ":#{uri.port}" : ""
+    "#{uri.scheme}://#{uri.host}#{port}"
   end
 
   module CacheKey
@@ -176,10 +222,10 @@ module ::DiscourseProjectUniform
             next if User.exists?(id: user_key)
 
             code = store.get(row.key)
-            store.delete(row.key)
+            store.remove(row.key)
 
             formatted = format_code(code)
-            store.delete(reverse_key(formatted)) if formatted
+            store.remove(reverse_key(formatted)) if formatted
             Rails.logger.info(
               "[discourse-project-uniform] cleaned recruit number #{formatted} for missing user_id=#{user_key}"
             )
@@ -241,8 +287,8 @@ module ::DiscourseProjectUniform
 
         owner_user = User.find_by(id: owner)
         unless owner_user && recruit_group_member?(owner_user)
-          store.delete(forward_key(owner))
-          store.delete(reverse_key(code))
+          store.remove(forward_key(owner))
+          store.remove(reverse_key(code))
           Rails.logger.info(
             "[discourse-project-uniform] reassigning recruit number #{code} from inactive user_id=#{owner}"
           )
@@ -267,6 +313,10 @@ module ::DiscourseProjectUniform
     STORE_NAMESPACE = "discourse-project-uniform-snapshots".freeze
     META_NAMESPACE = "discourse-project-uniform-snapshot-meta".freeze
     KEY_PREFIX = "snapshot:uid:".freeze
+    RENDER_PENDING_PREFIX = "render-pending:uid:".freeze
+    REFRESH_PENDING_PREFIX = "refresh-pending:uid:".freeze
+    RENDER_MUTEX_PREFIX = "discourse-project-uniform:snapshot-render:uid:".freeze
+    REFRESH_MUTEX_PREFIX = "discourse-project-uniform:snapshot-refresh:uid:".freeze
     DATA_URL_PREFIX = "data:image/png;base64,".freeze
     MAX_PNG_BYTES = 1_500_000
     SIGNING_SALT = "project-uniform-snapshot".freeze
@@ -286,16 +336,28 @@ module ::DiscourseProjectUniform
       nil
     end
 
+    def cache_key_for_user(user)
+      return ::DiscourseProjectUniform::CacheKey.current if user.blank?
+
+      base_cache_key = ::DiscourseProjectUniform::CacheKey.current
+      return base_cache_key if base_cache_key.blank?
+
+      "#{base_cache_key}:#{state_digest_for_user(user.id)}"
+    end
+
     def store_snapshot(user_id, cache_key, png_bytes)
       return false if user_id.blank? || cache_key.blank?
       return false if png_bytes.blank?
       return false if png_bytes.bytesize > MAX_PNG_BYTES
 
-      current_cache_key = ::DiscourseProjectUniform::CacheKey.current
-      prune_stale_snapshots!(current_cache_key)
+      current_base_cache_key = ::DiscourseProjectUniform::CacheKey.current
+      prune_stale_snapshots!(current_base_cache_key)
 
       encoded = Base64.strict_encode64(png_bytes)
-      store.set(key(user_id, cache_key), encoded)
+      snapshot_key = key(user_id, cache_key)
+      upsert_snapshot_row!(snapshot_key, encoded)
+      prune_user_snapshots!(user_id, current_base_cache_key, cache_key)
+      clear_render_pending!(user_id, cache_key)
       true
     end
 
@@ -307,6 +369,119 @@ module ::DiscourseProjectUniform
     def signature_for(user_id, cache_key)
       secret = "#{Rails.application.secret_key_base}--#{SIGNING_SALT}"
       OpenSSL::HMAC.hexdigest("SHA256", secret, "#{user_id}:#{cache_key}")
+    end
+
+    def renderer_configured?
+      ::DiscourseProjectUniform.public_uniforms_enabled? &&
+        renderer_url.present?
+    end
+
+    def enqueue_render!(user_id:, username:, cache_key:, visit_url:)
+      return false unless renderer_configured?
+      return false if user_id.blank? || cache_key.blank? || visit_url.blank?
+
+      pending_key = render_pending_key(user_id, cache_key)
+      now = Time.now.to_i
+
+      DistributedMutex.synchronize("#{RENDER_MUTEX_PREFIX}#{user_id}") do
+        last = meta_store.get(pending_key).to_i
+        return false if last.positive? && (now - last) < renderer_cooldown_seconds
+
+        meta_store.set(pending_key, now)
+        Jobs.enqueue(
+          :render_project_uniform_snapshot,
+          user_id: user_id,
+          username: username,
+          cache_key: cache_key,
+          visit_url: visit_url
+        )
+      end
+
+      true
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] failed to enqueue snapshot render: #{e.message}")
+      false
+    end
+
+    def clear_render_pending!(user_id, cache_key)
+      return if user_id.blank? || cache_key.blank?
+      meta_store.remove(render_pending_key(user_id, cache_key))
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] failed to clear render pending flag: #{e.message}")
+    end
+
+    # Queue a proactive refresh after badge/group changes so PNG embeds are
+    # already up-to-date when requested.
+    def enqueue_refresh!(user_id:)
+      return false unless renderer_configured?
+      return false if user_id.blank?
+
+      now = Time.now.to_i
+      pending_key = refresh_pending_key(user_id)
+
+      DistributedMutex.synchronize("#{REFRESH_MUTEX_PREFIX}#{user_id}") do
+        last = meta_store.get(pending_key).to_i
+        return false if last.positive? && (now - last) < refresh_debounce_seconds
+
+        meta_store.set(pending_key, now)
+        Jobs.enqueue_in(5.seconds, :refresh_project_uniform_snapshot, user_id: user_id)
+      end
+
+      true
+    rescue => e
+      Rails.logger.warn(
+        "[discourse-project-uniform] failed to enqueue proactive snapshot refresh: #{e.message}"
+      )
+      false
+    end
+
+    def clear_refresh_pending!(user_id)
+      return if user_id.blank?
+      meta_store.remove(refresh_pending_key(user_id))
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] failed to clear refresh pending flag: #{e.message}")
+    end
+
+    def render_snapshot_via_sidecar(visit_url)
+      return nil unless renderer_configured?
+      return nil if visit_url.blank?
+
+      uri = URI.parse(renderer_url)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = uri.scheme == "https"
+      timeout = renderer_timeout_seconds
+      http.open_timeout = timeout
+      http.read_timeout = timeout
+
+      request = Net::HTTP::Post.new(uri.request_uri.presence || "/")
+      request["Content-Type"] = "application/json"
+
+      key = renderer_key
+      request["X-Renderer-Key"] = key if key.present?
+      request.body = { url: visit_url }.to_json
+
+      response = http.request(request)
+      unless response.is_a?(Net::HTTPSuccess)
+        Rails.logger.warn(
+          "[discourse-project-uniform] renderer request failed: code=#{response.code} body=#{response.body.to_s.slice(0, 200)}"
+        )
+        return nil
+      end
+
+      content_type = response["content-type"].to_s
+      unless content_type.include?("image/png")
+        Rails.logger.warn("[discourse-project-uniform] renderer returned non-png content-type=#{content_type.inspect}")
+        return nil
+      end
+
+      bytes = response.body.to_s.b
+      return nil if bytes.blank?
+      return nil if bytes.bytesize > MAX_PNG_BYTES
+
+      bytes
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] renderer request error: #{e.message}")
+      nil
     end
 
     def placeholder_png(visit_url)
@@ -322,11 +497,20 @@ module ::DiscourseProjectUniform
           .to_s
           .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
 
-      lines = [
-        "UNIFORM PNG NOT GENERATED YET.",
-        "VISIT THIS PAGE ONCE TO GENERATE IT:",
-        safe_url
-      ]
+      lines =
+        if renderer_configured?
+          [
+            "UNIFORM PNG IS BEING RENDERED.",
+            "RELOAD THIS IMAGE IN A FEW SECONDS.",
+            safe_url
+          ]
+        else
+          [
+            "UNIFORM PNG NOT GENERATED YET.",
+            "VISIT THIS PAGE ONCE TO GENERATE IT:",
+            safe_url
+          ]
+        end
 
       font = placeholder_font
       char_width = 5
@@ -370,12 +554,59 @@ module ::DiscourseProjectUniform
       "#{KEY_PREFIX}#{user_id}:#{cache_key}"
     end
 
+    def render_pending_key(user_id, cache_key)
+      "#{RENDER_PENDING_PREFIX}#{user_id}:#{cache_key}"
+    end
+
+    def refresh_pending_key(user_id)
+      "#{REFRESH_PENDING_PREFIX}#{user_id}"
+    end
+
     def store
       @store ||= PluginStore.new(STORE_NAMESPACE)
     end
 
     def meta_store
       @meta_store ||= PluginStore.new(META_NAMESPACE)
+    end
+
+    def renderer_url
+      SiteSetting.discourse_project_uniform_renderer_url.to_s.strip
+    end
+
+    def renderer_key
+      SiteSetting.discourse_project_uniform_renderer_key.to_s
+    end
+
+    def renderer_timeout_seconds
+      seconds = SiteSetting.discourse_project_uniform_renderer_timeout_seconds.to_i
+      [[seconds, 5].max, 120].min
+    end
+
+    def renderer_cooldown_seconds
+      seconds = SiteSetting.discourse_project_uniform_renderer_cooldown_seconds.to_i
+      [[seconds, 10].max, 600].min
+    end
+
+    def refresh_debounce_seconds
+      8
+    end
+
+    def state_digest_for_user(user_id)
+      return "missing-user" if user_id.blank?
+
+      group_ids = GroupUser.where(user_id: user_id).order(:group_id).pluck(:group_id)
+      badge_ids = UserBadge.where(user_id: user_id).distinct.order(:badge_id).pluck(:badge_id)
+      Digest::SHA1.hexdigest("#{group_ids.join(",")}|#{badge_ids.join(",")}")
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] state digest fallback for user_id=#{user_id}: #{e.message}")
+      Digest::SHA1.hexdigest("fallback-#{user_id}")
+    end
+
+    def cache_key_matches_active_base?(cache_key, active_cache_key)
+      return false if cache_key.blank? || active_cache_key.blank?
+
+      cache_key == active_cache_key || cache_key.start_with?("#{active_cache_key}:")
     end
 
     def extract_cache_key(raw_key)
@@ -400,9 +631,9 @@ module ::DiscourseProjectUniform
           .where("key LIKE ?", "#{KEY_PREFIX}%")
           .find_each do |row|
             cache_key = extract_cache_key(row.key)
-            next if cache_key.blank? || cache_key == active_cache_key
+            next if cache_key.blank? || cache_key_matches_active_base?(cache_key, active_cache_key)
 
-            store.delete(row.key)
+            store.remove(row.key)
             removed += 1
           end
 
@@ -415,6 +646,32 @@ module ::DiscourseProjectUniform
       end
     rescue => e
       Rails.logger.warn("[discourse-project-uniform] snapshot prune error: #{e.message}")
+    end
+
+    def prune_user_snapshots!(user_id, active_cache_key, keep_cache_key)
+      return if user_id.blank? || active_cache_key.blank? || keep_cache_key.blank?
+
+      removed = 0
+      PluginStoreRow
+        .where(plugin_name: STORE_NAMESPACE)
+        .where("key LIKE ?", "#{KEY_PREFIX}#{user_id}:%")
+        .find_each do |row|
+          cache_key = extract_cache_key(row.key)
+          next if cache_key.blank?
+          next unless cache_key_matches_active_base?(cache_key, active_cache_key)
+          next if cache_key == keep_cache_key
+
+          store.remove(row.key)
+          removed += 1
+        end
+
+      if removed.positive?
+        Rails.logger.info(
+          "[discourse-project-uniform] pruned #{removed} old snapshots for user_id=#{user_id}"
+        )
+      end
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] user snapshot prune error: #{e.message}")
     end
 
     def wrap_text(text, max_chars)
@@ -497,6 +754,20 @@ module ::DiscourseProjectUniform
         " " => %w[00000 00000 00000 00000 00000 00000 00000]
       }
     end
+
+    # PluginStore#set is find-then-insert and can race when multiple renderers
+    # write the same key simultaneously. Use an atomic DB upsert instead.
+    def upsert_snapshot_row!(snapshot_key, encoded)
+      PluginStoreRow.upsert(
+        {
+          plugin_name: STORE_NAMESPACE,
+          key: snapshot_key,
+          type_name: "String",
+          value: encoded
+        },
+        unique_by: :index_plugin_store_rows_on_plugin_name_and_key
+      )
+    end
   end
 end
 
@@ -527,6 +798,72 @@ after_initialize do
   end
 
   module ::Jobs
+    class RefreshProjectUniformSnapshot < ::Jobs::Base
+      def execute(args)
+        user_id = args[:user_id].to_i
+        return if user_id <= 0
+
+        user = User.find_by(id: user_id)
+        return if user.blank?
+        return unless SiteSetting.discourse_project_uniform_enabled
+        return unless ::DiscourseProjectUniform.public_uniforms_enabled?
+
+        cache_key = ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user)
+        return if cache_key.blank?
+
+        visit_url = ::DiscourseProjectUniform.uniform_visit_url_for(user)
+
+        png_bytes = ::DiscourseProjectUniform::UniformSnapshot.render_snapshot_via_sidecar(visit_url)
+        return if png_bytes.blank?
+
+        unless ::DiscourseProjectUniform::UniformSnapshot.store_snapshot(user.id, cache_key, png_bytes)
+          Rails.logger.warn(
+            "[discourse-project-uniform] failed to store proactive snapshot user_id=#{user.id} cache_key=#{cache_key}"
+          )
+        end
+      rescue => e
+        Rails.logger.warn("[discourse-project-uniform] proactive snapshot refresh job failed: #{e.message}")
+      ensure
+        ::DiscourseProjectUniform::UniformSnapshot.clear_refresh_pending!(user_id)
+      end
+    end
+
+    class RenderProjectUniformSnapshot < ::Jobs::Base
+      def execute(args)
+        user_id = args[:user_id].to_i
+        return if user_id <= 0
+
+        user = User.find_by(id: user_id)
+        return if user.blank?
+
+        cache_key =
+          if args[:cache_key].present?
+            args[:cache_key].to_s
+          else
+            ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user)
+          end
+        return if cache_key.blank?
+
+        visit_url = args[:visit_url].to_s
+        if visit_url.blank?
+          visit_url = ::DiscourseProjectUniform.uniform_visit_url_for(user)
+        end
+
+        png_bytes = ::DiscourseProjectUniform::UniformSnapshot.render_snapshot_via_sidecar(visit_url)
+        return if png_bytes.blank?
+
+        unless ::DiscourseProjectUniform::UniformSnapshot.store_snapshot(user.id, cache_key, png_bytes)
+          Rails.logger.warn(
+            "[discourse-project-uniform] failed to store renderer snapshot user_id=#{user.id} cache_key=#{cache_key}"
+          )
+        end
+      rescue => e
+        Rails.logger.warn("[discourse-project-uniform] render snapshot job failed: #{e.message}")
+      ensure
+        ::DiscourseProjectUniform::UniformSnapshot.clear_render_pending!(user_id, cache_key)
+      end
+    end
+
     class CleanupProjectUniformRecruitNumbers < ::Jobs::Scheduled
       every 1.day
 
@@ -549,16 +886,25 @@ after_initialize do
     end
   end
 
-  if ::DiscourseProjectUniform::PUBLIC_UNIFORMS_LOCKED &&
-       SiteSetting.discourse_project_uniform_public_enabled
-    SiteSetting.discourse_project_uniform_public_enabled = false
+  schedule_snapshot_refresh = lambda do |user_id|
+    next if user_id.blank?
+    ::DiscourseProjectUniform::UniformSnapshot.enqueue_refresh!(user_id: user_id.to_i)
   end
 
-  on(:site_setting_changed) do |name, _old_value, _new_value|
-    next unless name.to_s == "discourse_project_uniform_public_enabled"
-    next unless ::DiscourseProjectUniform::PUBLIC_UNIFORMS_LOCKED
+  DiscourseEvent.on(:user_badge_granted) do |_badge_id, user_id|
+    schedule_snapshot_refresh.call(user_id)
+  end
 
-    SiteSetting.discourse_project_uniform_public_enabled = false
+  DiscourseEvent.on(:user_badge_revoked) do |args|
+    schedule_snapshot_refresh.call(args[:user_badge]&.user_id)
+  end
+
+  DiscourseEvent.on(:user_added_to_group) do |user, _group, **_options|
+    schedule_snapshot_refresh.call(user&.id)
+  end
+
+  DiscourseEvent.on(:user_removed_from_group) do |user, _group|
+    schedule_snapshot_refresh.call(user&.id)
   end
 
   # Safer to keep custom routes inside after_initialize

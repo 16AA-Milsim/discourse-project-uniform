@@ -117,9 +117,9 @@ const qual = (
 ) => ({
   name,
   aliases,
-  imageKey: puPaths.qual(imageFile),
+  imageKey: imageFile ? puPaths.qual(imageFile) : null,
   restrictedRanks,
-  tooltipImage: puPaths.tooltipQual(tipImg),
+  tooltipImage: tipImg ? puPaths.tooltipQual(tipImg) : null,
   tooltipText: tipText,
   tooltipAreas: areas,
   serviceVariants,       // e.g. { RAF: puPaths.qual("paratrooper_raf__v2.png") }
@@ -590,12 +590,18 @@ export const lanyardToImageMapLC = deepFreeze(
 // ---------- qualifications ----------
 export const leadershipQualificationsOrder = deepFreeze([
   "FTCC",
-  "SCBC",
   "CC",
+  "SCBC",
   "PSBC",
   "PCBC",
 ]);
-export const marksmanshipQualificationsOrder = deepFreeze(["1st Class Marksman", "Sharpshooter", "Sniper"]);
+export const marksmanshipQualificationsOrder = deepFreeze([
+  "3rd Class Marksman",
+  "2nd Class Marksman",
+  "1st Class Marksman",
+  "Sharpshooter",
+  "Sniper",
+]);
 export const pilotQualificationsOrder = deepFreeze(["Junior Pilot", "Senior Pilot"]);
 export const ctmQualificationsOrder = deepFreeze(["CTM", "CTM Bronze", "CTM Silver", "CTM Gold"]);
 export const ctmRenderDefaults = Object.freeze({
@@ -786,6 +792,159 @@ export const qualifications = deepFreeze([
     "sharpshooter__v2.png",
     "<center><b>Sharpshooter</b></center><br>Awarded on the successful completion of the L129A1 Sharpshooter Course. Trains the soldier in a higher level of marksmanship with the L129A1 Section Marksman rifle.",
     [{ x: 10, y: 560, width: 46, height: 56 }]
+  ),
+  // --- Additional qualifications (not rendered on uniform yet)
+  qual(
+    "3rd Class Marksman",
+    null,
+    [],
+    "3rdclassmarksman__v2.jpg",
+    "<center><b>3rd Class Marksman</b></center><br>Awarded for scoring 60/120 or more on the Marksmanship Test. This is the required standard for any member of the 16AA.",
+    []
+  ),
+  qual(
+    "2nd Class Marksman",
+    null,
+    [],
+    "2ndclassmarksman__v2.jpg",
+    "<center><b>2nd Class Marksman</b></center><br>Awarded for scoring 90/120 or more on the Marksmanship Test.",
+    []
+  ),
+  qual(
+    "Basic AT",
+    null,
+    [],
+    "basicat__v2.jpg",
+    "<center><b>Basic AT</b></center><br>Awarded on the successful completion of the Basic Anti-Tank Course.",
+    []
+  ),
+  qual(
+    "Advanced AT",
+    null,
+    [],
+    "advancedat__v2.jpg",
+    "<center><b>Advanced AT</b></center><br>Awarded for having passed the Advanced Anti-Tank Course.<br>Trains the soldier in the operation of the Javelin and Starstreak weapon systems.",
+    []
+  ),
+  qual(
+    "Basic Signals",
+    null,
+    [],
+    "basicsignals__v2.jpg",
+    "<center><b>Basic Signals</b></center><br>Awarded on the successful completion of the Basic Signals course. Gives the soldier an insight into communications and procedure.",
+    []
+  ),
+  qual(
+    "Advanced Signaller",
+    null,
+    [],
+    "advancedsignals__v2.jpg",
+    "<center><b>Advanced Signaller</b></center><br>Awarded on the successful completion of the Advanced Signals Course. Gives the soldier a high understanding of all communications systems and procedures at battlegroup level.",
+    []
+  ),
+  qual(
+    "Apache Pilot Qualification",
+    null,
+    [],
+    "apachepilotqual__v2.png",
+    "<center><b>Apache Pilot Qualification</b></center><br>Awarded to pilots who are qualified to operate the AH-64 Apache attack helicopter.",
+    []
+  ),
+  qual(
+    "CIC Phase 1",
+    null,
+    [],
+    "cicp1__v2.png",
+    "<center><b>CIC Phase 1</b></center><br>Awarded on the successful completion of the initial Phase 1 training.",
+    []
+  ),
+  qual(
+    "CIC Phase 2",
+    null,
+    [],
+    "cicp2__v2.png",
+    "<center><b>CIC Phase 2</b></center><br>Awarded on the successful completion of advanced Phase 2 training. The course develops basic soldiering skills into more complex infantry tactics.",
+    []
+  ),
+  qual(
+    "Forward Observer",
+    null,
+    [],
+    "forwardobserver__v2.jpg",
+    "<center><b>Forward Observer</b></center><br>Awarded on the successful completion of the Forward Observer Course. Trains the soldier in requesting and adjusting mortar and artillery fire.",
+    []
+  ),
+  qual(
+    "Freefaller",
+    null,
+    [],
+    "freefaller__v2.jpg",
+    "<center><b>Freefaller</b></center><br>Awarded on the successful completion of the Military Freefall Course. Trains the trooper in free fall descents by both day and night in the HAHO and HALO technique.",
+    []
+  ),
+  qual(
+    "Heavy Weapons Operator",
+    null,
+    [],
+    "heavyweaponsoperator__v2.png",
+    "<center><b>Heavy Weapons Operator</b></center><br>Awarded on the successful completion of the Heavy Weapons Operator Course. Trains the soldier in the use of heavy platoon support weapons like the HMG and GMG.",
+    []
+  ),
+  qual(
+    "JTAC",
+    null,
+    [],
+    "jtac__v2.jpg",
+    "<center><b>JTAC</b></center><br>Awarded on the successful completion of the Joint Terminal Attack Control Course. Trains the soldier in the request and coordination of fixed and rotary wing attack aircraft.",
+    []
+  ),
+  qual(
+    "Machine Gunner",
+    null,
+    [],
+    "machinegunner__v2.png",
+    "<center><b>Machine Gunner</b></center><br>Awarded on the successful completion of the GPMG Operators Course. Trains the soldier in the operation of the General Purpose Machine Gun at section level.",
+    []
+  ),
+  qual(
+    "Mortar Line Commander",
+    null,
+    [],
+    "mortarlinecommander__v2.jpg",
+    "<center><b>Mortar Line Commander</b></center><br>Awarded on the successful completion of the MLC Course. Trains the individual in the command and control of the mortar line whilst firing.",
+    []
+  ),
+  qual(
+    "Mortar Operator",
+    null,
+    [],
+    "mortaroperator__v2.jpg",
+    "<center><b>Mortar Operator</b></center><br>Awarded on the successful completion of the Mortar Operator Course. Trains the individual in the operation of 60mm and 81mm Mortars.",
+    []
+  ),
+  qual(
+    "Navigation",
+    null,
+    [],
+    "navigation__v2.jpg",
+    "<center><b>Navigation</b></center><br>Awarded on the successful completion of the Navigation Course. Trains the individual in map reading and navigational tools.",
+    []
+  ),
+  qual(
+    "Parachute Jump Instructor",
+    null,
+    [],
+    "parachutejumpinstructor__v2.jpg",
+    "<center><b>Parachute Jump Instructor</b></center><br>Awarded on the successful completion of the Parachute Jump Instructor's Course.",
+    []
+  ),
+  qual(
+    "Pathfinder",
+    null,
+    [],
+    "pathfinder__v2.png",
+    "<center><b>Pathfinder</b></center><br>Awarded on the successful completion of the Pathfinder Cadre. Trains the trooper in advanced force reconnaissance and DZ marking.",
+    []
   ),
 ]);
 

@@ -18,3 +18,33 @@ plugins:
     type: bool
     default: false
     client: true
+
+  discourse_project_uniform_renderer_url:
+    type: string
+    default: "http://127.0.0.1:3011/render"
+    client: false
+
+  discourse_project_uniform_renderer_visit_base_url:
+    type: string
+    default: ""
+    client: false
+
+  discourse_project_uniform_renderer_key:
+    type: string
+    default: ""
+    secret: true
+    client: false
+
+  discourse_project_uniform_renderer_timeout_seconds:
+    type: integer
+    default: 20
+    min: 5
+    max: 120
+    client: false
+
+  discourse_project_uniform_renderer_cooldown_seconds:
+    type: integer
+    default: 30
+    min: 10
+    max: 600
+    client: false

@@ -1,8 +1,55 @@
-.row.setting.pu-setting-locked {
-  opacity: 0.65;
+.pu-public-guide {
+  margin: 0.5rem 0 1rem;
+  border: 1px solid var(--primary-low);
+  border-radius: 6px;
+  background: var(--secondary);
 }
 
-.row.setting.pu-setting-locked input[type="checkbox"] {
-  cursor: not-allowed;
-  pointer-events: none;
+.pu-public-guide-details {
+  display: block;
+}
+
+.pu-public-guide-details summary {
+  cursor: pointer;
+  padding: 0.65rem 0.9rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.pu-public-guide-details[open] summary {
+  border-bottom: 1px solid var(--primary-low);
+}
+
+.pu-public-guide-content {
+  padding: 0.75rem 0.9rem 0.9rem;
+}
+
+.pu-public-guide h4 {
+  margin: 0.9rem 0 0.4rem;
+  font-size: var(--font-0);
+}
+
+.pu-public-guide p {
+  margin: 0 0 0.5rem;
+}
+
+.pu-public-guide ol {
+  margin: 0 0 0.6rem 1.1rem;
+}
+
+.pu-public-guide li {
+  margin: 0 0 0.3rem;
+}
+
+.pu-public-guide code {
+  font-size: var(--font-down-1);
+}
+
+.pu-public-guide pre {
+  margin: 0;
+  padding: 0.6rem;
+  border: 1px solid var(--primary-low);
+  border-radius: 4px;
+  background: var(--secondary-very-high);
+  overflow-x: auto;
 }

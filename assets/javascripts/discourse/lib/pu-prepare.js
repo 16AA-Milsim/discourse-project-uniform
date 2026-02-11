@@ -73,6 +73,47 @@ const ctmOrderLC = ctmQualificationsOrder.map(toLC);
 const leadershipOrderSetLC = new Set(leadershipOrderLC);
 const marksmanshipOrderSetLC = new Set(marksmanshipOrderLC);
 const pilotOrderSetLC = new Set(pilotOrderLC);
+const additionalQualificationsOrder = Object.freeze([
+    "CIC Phase 1",
+    "CIC Phase 2",
+    "Basic AT",
+    "Machine Gunner",
+    "Navigation",
+    "3rd Class Marksman",
+    "2nd Class Marksman",
+    "1st Class Marksman",
+    "Sharpshooter",
+    "Sniper",
+    "Basic Signals",
+    "Advanced Signaller",
+    "CTM",
+    "CTM Bronze",
+    "CTM Silver",
+    "CTM Gold",
+    "CMT",
+    "Mortar Operator",
+    "Mortar Line Commander",
+    "Advanced AT",
+    "Heavy Weapons Operator",
+    "Forward Observer",
+    "JTAC",
+    "Paratrooper",
+    "Freefaller",
+    "Parachute Jump Instructor",
+    "Pathfinder",
+    "Junior Pilot",
+    "Senior Pilot",
+    "Apache Pilot Qualification",
+    "FTCC",
+    "CC",
+    "SCBC",
+    "PSBC",
+    "PCBC",
+    "ITC Instructor",
+]);
+const additionalQualificationsOrderMapLC = new Map(
+    additionalQualificationsOrder.map((name, index) => [toLC(name), index])
+);
 const CTM_NAME_SET = new Set(ctmOrderLC);
 const CTM_BASE_PLACEMENT = Object.freeze({
     x: Number(ctmRenderDefaults?.basePlacement?.x ?? 0),
@@ -249,6 +290,82 @@ function buildBadgeContext(userBadges, idToBadge) {
     return { badgeNames, badgeNameSetLC, leadershipBadgeNameSetLC };
 }
 
+function collectQualificationBadges(userBadges, idToBadge) {
+    const results = [];
+    const seen = new Set();
+
+    userBadges.forEach((ub) => {
+        const badge = idToBadge.get(ub.badge_id);
+        if (!badge?.name) {
+            return;
+        }
+        const q = qualificationsByNameLC[toLC(badge.name)];
+        if (!q || seen.has(q.name)) {
+            return;
+        }
+        seen.add(q.name);
+        results.push({ qual: q, label: badge.name });
+    });
+
+    return results;
+}
+
+function resolveHighestMarksmanshipNameLC(entries) {
+    const marksmanshipNames = entries
+        .map((entry) => toLC(entry?.qual?.name))
+        .filter((name) => name && marksmanshipOrderSetLC.has(name));
+
+    if (!marksmanshipNames.length) {
+        return null;
+    }
+
+    const have = new Set(marksmanshipNames);
+    return highestIn(marksmanshipOrderLC, have) || null;
+}
+
+function resolveHighestCommandNameLC(entries) {
+    const commandNames = entries
+        .map((entry) => canonicalLeadershipName(toLC(entry?.qual?.name)))
+        .filter((name) => name && leadershipOrderSetLC.has(name));
+
+    if (!commandNames.length) {
+        return null;
+    }
+
+    const have = new Set(commandNames);
+    return highestIn(leadershipOrderLC, have) || null;
+}
+
+function filterAdditionalQualificationOverrides(entries) {
+    if (!entries?.length) {
+        return [];
+    }
+
+    const byName = new Map(entries.map((entry) => [entry?.qual?.name, entry]));
+
+    if (byName.has("Advanced AT")) {
+        byName.delete("Basic AT");
+    }
+
+    if (byName.has("Advanced Signaller")) {
+        byName.delete("Basic Signals");
+    }
+
+    const filtered = Array.from(byName.values());
+    const highestCommandLC = resolveHighestCommandNameLC(filtered);
+    if (!highestCommandLC) {
+        return filtered;
+    }
+
+    return filtered.filter((entry) => {
+        const nameLC = canonicalLeadershipName(toLC(entry?.qual?.name));
+        if (!leadershipOrderSetLC.has(nameLC)) {
+            return true;
+        }
+        return nameLC === highestCommandLC;
+    });
+}
+
 // Chooses the highest-priority rank based on the user's group memberships.
 function resolveHighestRank(groupNameSetLC) {
     return ranks.find(r => groupNameSetLC.has(toLC(r.name))) || null;
@@ -335,10 +452,13 @@ function generateFallbackRecruitNumber(user) {
     return String(normalized + 100).padStart(3, "0");
 }
 
-function renderRecruitUniform(container, user) {
+function renderRecruitUniform(container, user, additionalQuals = [], options = {}) {
+    const { showSupplementalPanels = true, enableTooltips = true } = options;
     const backgroundUrl = backgroundImages.recruit;
     if (!backgroundUrl) {
         debugLog("[PU:prepare] Recruit background unavailable");
+        renderUniformTitle(container, null);
+        renderAdditionalQualifications(container, null, []);
         return;
     }
 
@@ -414,8 +534,23 @@ function renderRecruitUniform(container, user) {
         [],
         null,
         [],
-        { textOverlays, fonts: [ANALOG_FONT_SPEC] }
+        {
+            textOverlays,
+            fonts: [ANALOG_FONT_SPEC],
+            enableTooltips,
+            onRendered: showSupplementalPanels
+                ? (canvas) => {
+                    renderUniformTitle(container, canvas);
+                    renderAdditionalQualifications(container, canvas, additionalQuals);
+                }
+                : null,
+        }
     );
+
+    if (!showSupplementalPanels) {
+        renderUniformTitle(container, null);
+        renderAdditionalQualifications(container, null, []);
+    }
 }
 
 // Derives CSA ribbon membership and leadership overrides from group assignments.
@@ -451,6 +586,217 @@ function swapCsaVariantsForService(ribbons, service) {
         }
         return ribbon;
     });
+}
+
+function renderAdditionalQualifications(container, canvas, qualifications = []) {
+    if (!container?.querySelector) {
+        return;
+    }
+
+    const existing = container.querySelector(".project-uniform-additional-quals");
+    if (existing) {
+        existing._puResizeObserver?.disconnect?.();
+        existing.remove();
+    }
+
+    const items = (qualifications || []).filter((entry) => entry?.qual);
+    if (!items.length) {
+        return;
+    }
+
+    const sorted = items.slice().sort((a, b) => {
+        const aOrder = additionalQualificationsOrderMapLC.get(toLC(a?.qual?.name));
+        const bOrder = additionalQualificationsOrderMapLC.get(toLC(b?.qual?.name));
+        const aIndex = Number.isFinite(aOrder) ? aOrder : Number.MAX_SAFE_INTEGER;
+        const bIndex = Number.isFinite(bOrder) ? bOrder : Number.MAX_SAFE_INTEGER;
+        if (aIndex !== bIndex) {
+            return aIndex - bIndex;
+        }
+        return String(a?.label || a?.qual?.name || "").localeCompare(
+            String(b?.label || b?.qual?.name || ""),
+            undefined,
+            { sensitivity: "base" }
+        );
+    });
+
+    const section = document.createElement("div");
+    section.className = "project-uniform-additional-quals";
+
+    const title = document.createElement("div");
+    title.className = "project-uniform-additional-quals__title";
+    title.textContent = "Additional Qualifications";
+    section.appendChild(title);
+
+    const list = document.createElement("div");
+    list.className = "project-uniform-additional-quals__list";
+
+    const tooltip = document.createElement("div");
+    tooltip.className = "project-uniform-additional-quals__tooltip";
+    tooltip.setAttribute("role", "tooltip");
+    tooltip.setAttribute("aria-hidden", "true");
+    section.appendChild(tooltip);
+
+    const buildItem = (entry) => {
+        const qual = entry.qual;
+        const item = document.createElement("div");
+        item.className = "project-uniform-additional-quals__item";
+        item.dataset.qualLabel = entry?.label || qual?.name || "";
+
+        const img = document.createElement("img");
+        const url = applyAssetCacheParams(qual?.tooltipImage || qual?.imageKey);
+        if (url) {
+            img.src = url;
+        }
+        img.alt = entry?.label || qual?.name || "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        item.appendChild(img);
+
+        const label = document.createElement("div");
+        label.className = "project-uniform-additional-quals__label";
+        label.textContent = entry?.label || qual?.name || "";
+        item.appendChild(label);
+
+        item.addEventListener("mouseenter", () => {
+            const content = qual?.tooltipText || `<b>${item.dataset.qualLabel}</b>`;
+            tooltip.innerHTML = content;
+            tooltip.classList.add("visible");
+            tooltip.setAttribute("aria-hidden", "false");
+            item.classList.add("is-tooltip-active");
+
+            tooltip.style.visibility = "hidden";
+            tooltip.style.left = "0px";
+            tooltip.style.top = "0px";
+
+            const sectionRect = section.getBoundingClientRect();
+            const itemRect = item.getBoundingClientRect();
+            const labelRect = label.getBoundingClientRect();
+            const tipW = tooltip.offsetWidth;
+            const tipH = tooltip.offsetHeight;
+            const gap = 8;
+
+            let left = itemRect.left - sectionRect.left + itemRect.width / 2 - tipW / 2;
+            let top = labelRect.top - sectionRect.top - 2;
+            if (!Number.isFinite(top)) {
+                top = itemRect.bottom - sectionRect.top + gap;
+            }
+
+            if (left + tipW > sectionRect.width) {
+                left = Math.max(0, sectionRect.width - tipW);
+            }
+            if (left < 0) {
+                left = 0;
+            }
+
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+            tooltip.style.visibility = "";
+        });
+
+        item.addEventListener("mouseleave", () => {
+            tooltip.classList.remove("visible");
+            tooltip.setAttribute("aria-hidden", "true");
+            item.classList.remove("is-tooltip-active");
+        });
+
+        return item;
+    };
+    const itemNodes = sorted.map(buildItem);
+    let lastLayoutKey = "";
+    let layoutScheduled = false;
+
+    const layoutRows = () => {
+        const total = itemNodes.length;
+        if (!total) {
+            list.replaceChildren();
+            lastLayoutKey = "";
+            return;
+        }
+
+        const itemWidth = 110;
+        const columnGap = 12;
+        const availableWidth = section.clientWidth || 0;
+        if (!availableWidth) {
+            return;
+        }
+
+        const maxColumns = Math.max(1, Math.floor((availableWidth + columnGap) / (itemWidth + columnGap)));
+        const rows = Math.max(1, Math.ceil(total / maxColumns));
+        const baseCount = Math.floor(total / rows);
+        const remainder = total % rows;
+        const layoutKey = `${rows}:${baseCount}:${remainder}`;
+
+        if (layoutKey === lastLayoutKey) {
+            return;
+        }
+        lastLayoutKey = layoutKey;
+
+        list.replaceChildren();
+        let index = 0;
+        for (let row = 0; row < rows; row++) {
+            const count = baseCount + (row < remainder ? 1 : 0);
+            const rowEl = document.createElement("div");
+            rowEl.className = "project-uniform-additional-quals__row";
+            for (let i = 0; i < count; i++) {
+                const node = itemNodes[index++];
+                if (!node) break;
+                rowEl.appendChild(node);
+            }
+            list.appendChild(rowEl);
+        }
+    };
+
+    const scheduleLayout = () => {
+        if (layoutScheduled) {
+            return;
+        }
+        layoutScheduled = true;
+        requestAnimationFrame(() => {
+            layoutScheduled = false;
+            layoutRows();
+        });
+    };
+
+    section.appendChild(list);
+
+    if (canvas?.parentNode === container && typeof canvas.after === "function") {
+        canvas.after(section);
+    } else {
+        container.appendChild(section);
+    }
+
+    scheduleLayout();
+
+    if (window.ResizeObserver) {
+        const observer = new ResizeObserver(() => scheduleLayout());
+        observer.observe(section);
+        section._puResizeObserver = observer;
+    }
+}
+
+function renderUniformTitle(container, canvas) {
+    if (!container?.querySelector) {
+        return;
+    }
+
+    const existing = container.querySelector(".project-uniform-title");
+    if (existing) {
+        existing.remove();
+    }
+
+    if (!canvas) {
+        return;
+    }
+
+    const title = document.createElement("div");
+    title.className = "project-uniform-title";
+    title.textContent = "Uniform";
+
+    if (typeof canvas.before === "function") {
+        canvas.before(title);
+    } else {
+        container.prepend(title);
+    }
 }
 
 function collectTooltipUrls({
@@ -504,10 +850,12 @@ function collectTooltipUrls({
 }
 
 // Assembles all imagery for the supplied user state and triggers canvas rendering.
-export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC, user = null) {
+export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC, user = null, options = {}) {
     debugLog("[PU:prepare] start");
     clearTooltips();
     removeUniformCanvas(container, "PU:prepare");
+    const showSupplementalPanels = options?.showSupplementalPanels !== false;
+    const enableTooltips = options?.enableTooltips !== false;
 
     const foregroundItems = [];         // ALWAYS push objects: { url: string|array, x?, y? }
     const awardUrls = [];               // award ribbons (strings)
@@ -518,6 +866,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
     const { groupNameSetLC, is16CSMR, is7RHA } = buildGroupContext(groups);
     const { badgeNames, badgeNameSetLC, leadershipBadgeNameSetLC } = buildBadgeContext(userBadges, idToBadge);
+    const allQualifications = collectQualificationBadges(userBadges, idToBadge);
     const { ribbonsToRender: csaRibbonsToRender, count: csaRibbonCount, leadershipOverrideForCount } = buildCsaContext(groups);
 
     debugLog("[PU:prepare] Inputs:", { groups: groups.map(g => g.name), is16CSMR, badgeNames, csaRibbons: csaRibbonsToRender.map(r => r.name) });
@@ -525,7 +874,10 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const highestRank = resolveHighestRank(groupNameSetLC);
     debugLog("[PU:prepare] Highest rank:", highestRank?.name || null);
     if (isRecruitRank(highestRank)) {
-        renderRecruitUniform(container, user || {});
+        renderRecruitUniform(container, user || {}, allQualifications, {
+            showSupplementalPanels,
+            enableTooltips,
+        });
         return;
     }
 
@@ -693,6 +1045,19 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     // Push qualification images into foregroundItems, using absolute coords for pilots only
     const service = highestRank?.service; // "BA" | "RAF"
     const ctmForegroundData = [];
+    const renderedQualNames = new Set(qualsToRender.map((qual) => qual?.name).filter(Boolean));
+    const highestMarksmanshipAdditionalLC = resolveHighestMarksmanshipNameLC(allQualifications);
+    const additionalQuals = filterAdditionalQualificationOverrides(
+        allQualifications
+        .filter((entry) => !renderedQualNames.has(entry.qual.name))
+        .filter((entry) => {
+            const nameLC = toLC(entry?.qual?.name);
+            if (!nameLC || !marksmanshipOrderSetLC.has(nameLC)) {
+                return true;
+            }
+            return highestMarksmanshipAdditionalLC ? nameLC === highestMarksmanshipAdditionalLC : true;
+        })
+    );
 
     qualsToRender.forEach((q) => {
         const adjustedQual = adjustedQualMap.get(q) || q;
@@ -821,11 +1186,25 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
             adjustedQuals,
             groups,
             groupTooltipLookup,
-            csaRibbonsForService
+            csaRibbonsForService,
+            {
+                enableTooltips,
+                onRendered: showSupplementalPanels
+                    ? (canvas) => {
+                        renderUniformTitle(container, canvas);
+                        renderAdditionalQualifications(container, canvas, additionalQuals);
+                    }
+                    : null
+            }
         );
 
+        if (!showSupplementalPanels) {
+            renderUniformTitle(container, null);
+            renderAdditionalQualifications(container, null, []);
+        }
+
         // Only register lanyard tooltips for BA uniforms
-        if (!isRAFUniform) {
+        if (enableTooltips && !isRAFUniform) {
             if (!is16CSMR && !is7RHA) {
                 const paraTooltip = highestRank?.category === "officer"
                     ? paraTooltipOfficer
@@ -833,11 +1212,13 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
                 registerCollarTooltip(paraTooltip);
             }
             registerLanyardTooltips(groups);
-        } else {
+        } else if (enableTooltips) {
             debugLog("[PU:prepare] RAF uniform – skipping lanyard tooltips");
         }
     } else {
         debugLog("[PU:prepare] Nothing to render – missing bg");
+        renderUniformTitle(container, null);
+        renderAdditionalQualifications(container, null, []);
     }
 }
 
