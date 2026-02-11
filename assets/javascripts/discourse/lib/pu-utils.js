@@ -26,6 +26,22 @@ export function debugLog(...args) {
     console.debug(`[ProjectUniform ${ts}]`, ...args);
 }
 
+// Removes the uniform canvas and its tooltip wiring from a container.
+export function removeUniformCanvas(container, logTag = null) {
+    if (!container?.querySelector) {
+        return null;
+    }
+    const existing = container.querySelector(".discourse-project-uniform-canvas");
+    if (existing) {
+        existing._teardownTooltips?.();
+        existing.remove();
+        if (logTag) {
+            debugLog(`[${logTag}] Removed existing canvas`, { scoped: container !== document });
+        }
+    }
+    return existing;
+}
+
 import getURL from "discourse-common/lib/get-url";
 
 const PLUGIN_BASE = "/plugins/discourse-project-uniform";
@@ -34,6 +50,17 @@ const IMAGE_BASE = `${PLUGIN_BASE}/images`;
 const FONT_BASE = `${PLUGIN_BASE}/fonts`;
 const IMAGE_BASE_URL = `${PLUGIN_BASE_URL}/images`;
 const FONT_BASE_URL = `${PLUGIN_BASE_URL}/fonts`;
+let IMAGE_BASE_PATH = IMAGE_BASE;
+let FONT_BASE_PATH = FONT_BASE;
+
+try {
+    IMAGE_BASE_PATH = new URL(IMAGE_BASE_URL, window.location.origin).pathname;
+    FONT_BASE_PATH = new URL(FONT_BASE_URL, window.location.origin).pathname;
+} catch {
+    // Fallback to non-prefixed paths if URL parsing fails.
+    IMAGE_BASE_PATH = IMAGE_BASE;
+    FONT_BASE_PATH = FONT_BASE;
+}
 
 // Simple in-memory cache for loaded images, keyed by URL
 const imageCache = new Map();
@@ -59,14 +86,14 @@ export function applyAssetCacheParams(url) {
         let category = null;
         let file = null;
 
-        if (path.startsWith(`${IMAGE_BASE_URL}/`)) {
-            const relative = path.slice(IMAGE_BASE_URL.length + 1);
+        if (path.startsWith(`${IMAGE_BASE_PATH}/`)) {
+            const relative = path.slice(IMAGE_BASE_PATH.length + 1);
             const parts = relative.split("/");
             category = parts.shift() || null;
             file = parts.join("/");
-        } else if (path.startsWith(`${FONT_BASE_URL}/`)) {
+        } else if (path.startsWith(`${FONT_BASE_PATH}/`)) {
             category = "fonts";
-            file = path.slice(FONT_BASE_URL.length + 1);
+            file = path.slice(FONT_BASE_PATH.length + 1);
         } else {
             return url;
         }
@@ -81,7 +108,8 @@ export function applyAssetCacheParams(url) {
         }
 
         const search = parsed.searchParams.toString();
-        return `${parsed.pathname}${search ? `?${search}` : ""}${parsed.hash || ""}`;
+        const originPrefix = parsed.origin !== window.location.origin ? parsed.origin : "";
+        return `${originPrefix}${parsed.pathname}${search ? `?${search}` : ""}${parsed.hash || ""}`;
     } catch {
         return url;
     }
@@ -119,6 +147,14 @@ export function loadImageCached(urlOrCandidates) {
                 return resolve(imageCache.get(url));
             }
             const img = new Image();
+            try {
+                const parsed = new URL(url, window.location.origin);
+                if (parsed.origin !== window.location.origin) {
+                    img.crossOrigin = "anonymous";
+                }
+            } catch {
+                // ignore URL parse errors; treat as same-origin
+            }
             img.onload = () => {
                 imageCache.set(url, img);
                 debugLog("[loadImageCached] Loaded:", url, { w: img.naturalWidth, h: img.naturalHeight });

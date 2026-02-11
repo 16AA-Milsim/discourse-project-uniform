@@ -55,6 +55,7 @@ function waitForRenderedCanvas(container, timeoutMs) {
 }
 
 function renderUniform(root) {
+  root.dataset.snapshotPosted = "";
   const username = root.dataset.username;
   if (!username) {
     root.textContent = "No username provided.";

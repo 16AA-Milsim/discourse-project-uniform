@@ -47,6 +47,10 @@ module ::DiscourseProjectUniform
       File.join(plugin_root, "public", "images")
     end
 
+    def fonts_path
+      File.join(plugin_root, "public", "fonts")
+    end
+
     def snapshot
       mutex.synchronize do
         @snapshot ||= compute_snapshot
@@ -54,25 +58,11 @@ module ::DiscourseProjectUniform
     end
 
     def compute_snapshot
-      base = images_path
       digest = Digest::SHA1.new
       assets = Hash.new { |hash, key| hash[key] = {} }
 
-      if Dir.exist?(base)
-        Dir[File.join(base, "**", "*")].sort.each do |path|
-          next unless File.file?(path)
-
-          relative = path.delete_prefix("#{base}/")
-          category, file_name = relative.split("/", 2)
-          next unless category && file_name
-
-          file_digest = Digest::SHA1.file(path).hexdigest
-          assets[category][file_name] = file_digest
-
-          digest.update(relative)
-          digest.update(file_digest)
-        end
-      end
+      add_assets(images_path, assets, digest)
+      add_assets(fonts_path, assets, digest, category: "fonts")
 
       aggregated_key = build_key(digest, assets)
       { key: aggregated_key, assets: finalize_assets(assets) }
@@ -119,6 +109,31 @@ module ::DiscourseProjectUniform
 
     def reset!
       mutex.synchronize { @snapshot = nil }
+    end
+
+    private
+
+    def add_assets(base, assets, digest, category: nil)
+      return unless Dir.exist?(base)
+
+      Dir[File.join(base, "**", "*")].sort.each do |path|
+        next unless File.file?(path)
+
+        relative = path.delete_prefix("#{base}/")
+        if category
+          category_name = category
+          file_name = relative
+        else
+          category_name, file_name = relative.split("/", 2)
+          next unless category_name && file_name
+        end
+
+        file_digest = Digest::SHA1.file(path).hexdigest
+        assets[category_name][file_name] = file_digest
+
+        digest.update("#{category_name}/#{file_name}")
+        digest.update(file_digest)
+      end
     end
   end
 
@@ -250,6 +265,7 @@ module ::DiscourseProjectUniform
     extend self
 
     STORE_NAMESPACE = "discourse-project-uniform-snapshots".freeze
+    META_NAMESPACE = "discourse-project-uniform-snapshot-meta".freeze
     KEY_PREFIX = "snapshot:uid:".freeze
     DATA_URL_PREFIX = "data:image/png;base64,".freeze
     MAX_PNG_BYTES = 1_500_000
@@ -257,6 +273,8 @@ module ::DiscourseProjectUniform
     PLACEHOLDER_BG = [20, 22, 28].freeze
     PLACEHOLDER_FG = [255, 255, 255].freeze
     PLACEHOLDER_ACCENT = [152, 195, 121].freeze
+    PRUNE_MUTEX = "discourse-project-uniform:snapshot-prune".freeze
+    META_CACHE_KEY = "active-cache-key".freeze
 
     def fetch(user_id, cache_key)
       return nil if user_id.blank? || cache_key.blank?
@@ -272,6 +290,9 @@ module ::DiscourseProjectUniform
       return false if user_id.blank? || cache_key.blank?
       return false if png_bytes.blank?
       return false if png_bytes.bytesize > MAX_PNG_BYTES
+
+      current_cache_key = ::DiscourseProjectUniform::CacheKey.current
+      prune_stale_snapshots!(current_cache_key)
 
       encoded = Base64.strict_encode64(png_bytes)
       store.set(key(user_id, cache_key), encoded)
@@ -351,6 +372,49 @@ module ::DiscourseProjectUniform
 
     def store
       @store ||= PluginStore.new(STORE_NAMESPACE)
+    end
+
+    def meta_store
+      @meta_store ||= PluginStore.new(META_NAMESPACE)
+    end
+
+    def extract_cache_key(raw_key)
+      return nil if raw_key.blank?
+      return nil unless raw_key.start_with?(KEY_PREFIX)
+
+      suffix = raw_key.delete_prefix(KEY_PREFIX)
+      _user_id, cache_key = suffix.split(":", 2)
+      cache_key
+    end
+
+    def prune_stale_snapshots!(active_cache_key)
+      return if active_cache_key.blank?
+
+      DistributedMutex.synchronize(PRUNE_MUTEX) do
+        previous = meta_store.get(META_CACHE_KEY)
+        return if previous == active_cache_key
+
+        removed = 0
+        PluginStoreRow
+          .where(plugin_name: STORE_NAMESPACE)
+          .where("key LIKE ?", "#{KEY_PREFIX}%")
+          .find_each do |row|
+            cache_key = extract_cache_key(row.key)
+            next if cache_key.blank? || cache_key == active_cache_key
+
+            store.delete(row.key)
+            removed += 1
+          end
+
+        meta_store.set(META_CACHE_KEY, active_cache_key)
+        if removed.positive?
+          Rails.logger.info(
+            "[discourse-project-uniform] pruned #{removed} stale uniform snapshots (cache_key=#{active_cache_key})"
+          )
+        end
+      end
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] snapshot prune error: #{e.message}")
     end
 
     def wrap_text(text, max_chars)
@@ -470,6 +534,17 @@ after_initialize do
         ::DiscourseProjectUniform::RecruitNumber.cleanup_stale_entries!
       rescue => e
         Rails.logger.warn("[discourse-project-uniform] cleanup job failed: #{e.message}")
+      end
+    end
+
+    class CleanupProjectUniformSnapshots < ::Jobs::Scheduled
+      every 1.day
+
+      def execute(_args)
+        cache_key = ::DiscourseProjectUniform::CacheKey.current
+        ::DiscourseProjectUniform::UniformSnapshot.send(:prune_stale_snapshots!, cache_key)
+      rescue => e
+        Rails.logger.warn("[discourse-project-uniform] snapshot cleanup job failed: #{e.message}")
       end
     end
   end

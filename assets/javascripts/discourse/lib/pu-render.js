@@ -2,7 +2,7 @@
  * Canvas composition helpers for Project Uniform. Loads background and overlay imagery,
  * draws them onto a shared canvas, and wires up tooltip regions for interactive layers.
  */
-import { loadImageCached, normalizePath, debugLog, applyAssetCacheParams } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { loadImageCached, normalizePath, debugLog, applyAssetCacheParams, removeUniformCanvas } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 import { setupTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
 import { awards } from "discourse/plugins/discourse-project-uniform/discourse/uniform-data";
 
@@ -65,15 +65,6 @@ function getAwardPlacement(count) {
     return AWARD_PLACEMENTS[count] || AWARD_PLACEMENTS.default;
 }
 
-// Cleans up any previously rendered uniform canvas from the container.
-function detachExistingCanvas(container) {
-    const existing = container?.querySelector?.(".discourse-project-uniform-canvas");
-    if (existing) {
-        existing._teardownTooltips?.();
-        existing.remove();
-        debugLog("[PU:render] Removed previous canvas instance");
-    }
-}
 
 // Creates a canvas element pre-configured for uniform rendering.
 function createCanvasSurface() {
@@ -141,7 +132,7 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
         textOverlayCount: textOverlays.length
     });
 
-    detachExistingCanvas(container);
+    removeUniformCanvas(container, "PU:render");
 
     const canvas = createCanvasSurface();
     const ctx = canvas.getContext("2d");
@@ -290,6 +281,7 @@ function registerQualificationTooltipsForCanvas(qualifications = []) {
 // Renders medal ribbons with perspective and registers associated tooltip geometry.
 function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender) {
     try {
+        const validAwards = awardImages.filter(Boolean);
         const awardsCanvas = document.createElement("canvas");
         awardsCanvas.width = canvas.width;
         awardsCanvas.height = canvas.height;
@@ -297,7 +289,7 @@ function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRend
         const hasSeniorPilot = qualificationsToRender.some((q) => q?.name === "Senior Pilot");
         const tooltipRects = drawAwards(
             aCtx,
-            awardImages.filter(Boolean),
+            validAwards,
             awardsCanvas,
             AWARD_INDEX,
             hasSeniorPilot
@@ -309,7 +301,7 @@ function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRend
         scaled.height = awardsCanvas.height * scale;
         scaled.getContext("2d").drawImage(awardsCanvas, 0, 0, scaled.width, scaled.height);
 
-        const count = awardImages.length;
+        const count = validAwards.length;
         debugLog("[PU:render] Awards placed (count):", count);
         const { x: awardsX, y: awardsY } = getAwardPlacement(count);
 

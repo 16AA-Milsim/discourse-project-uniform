@@ -15,6 +15,7 @@ let STATIC_ASSETS_PRELOADED = false;
 let REQUEST_COUNTER = 0;
 const USER_DATA_CACHE = new Map();
 const USER_DATA_TTL_MS = 60 * 1000;
+let BADGE_OBSERVER_CONTAINER = null;
 
 function readCachedUserData(cacheKey) {
     const entry = USER_DATA_CACHE.get(cacheKey);
@@ -88,10 +89,9 @@ function ensureBadgeObserver(containerElement) {
     const observer = new MutationObserver(() => updateBadgesForContainer(containerElement));
     observer.observe(containerElement, { childList: true, subtree: true });
     containerElement._puBadgeObserver = observer;
+    BADGE_OBSERVER_CONTAINER = containerElement;
     updateBadgesForContainer(containerElement);
 }
-
-function ensureUniformPlaceholder() {}
 
 function preloadStaticAssets() {
     if (STATIC_ASSETS_PRELOADED) {
@@ -131,6 +131,12 @@ function tearDownExistingUniform(containerElement = document) {
     if (placeholder) {
         placeholder.remove();
         debugLog("[PU:init] Removed existing placeholder", { scoped: containerElement !== document });
+    }
+
+    if (containerElement === document && BADGE_OBSERVER_CONTAINER?._puBadgeObserver) {
+        BADGE_OBSERVER_CONTAINER._puBadgeObserver.disconnect();
+        delete BADGE_OBSERVER_CONTAINER._puBadgeObserver;
+        BADGE_OBSERVER_CONTAINER = null;
     }
 
     updateBadgesForContainer(containerElement);

@@ -169,6 +169,14 @@ export const ranks = deepFreeze([
     rankAreas.officerCollar
   ),
   rank(
+    "Acting_Lieutenant",
+    "officer",
+    "lt__v2.png",
+    "lt__v2.png",
+    "<center><b>Acting Lieutenant</b></center><br>Probationary rank.<br>Responsible for leading platoon operations, mission planning, coordination and control pending confirmation of rank by passing the Platoon Commander's Battle Course (PCBC).",
+    rankAreas.officerCollar
+  ),
+  rank(
     "Second_Lieutenant",
     "officer",
     "2lt__v2.png",
@@ -186,6 +194,14 @@ export const ranks = deepFreeze([
   ),
 
   // BA Warrant Officers & SNCOs
+  rank(
+    "Warrant_Officer_Class_1",
+    "officer",
+    "wo1__v1.png",
+    "wo1__v1.png",
+    "<center><b>Warrant Officer Class 1 (WO1)</b></center><br>Senior warrant officer.<br>Holds the highest WO appointment and provides leadership, discipline, and professional expertise at unit level.",
+    rankAreas.wo2Sleeve
+  ),
   rank(
     "Warrant_Officer_Class_2",
     "enlisted",

@@ -32,7 +32,7 @@ import {
 
 import { mergeImagesOnCanvas, PU_FILTERS } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-render";
 import { clearTooltips, registerTooltip } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-tooltips";
-import { debugLog, puPaths, loadImageCached, applyAssetCacheParams } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
+import { debugLog, puPaths, loadImageCached, applyAssetCacheParams, removeUniformCanvas } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 
 // Normalizes potentially nullish values into lowercase strings for set lookups.
 const toLC = (value) => String(value || "").toLowerCase();
@@ -70,6 +70,9 @@ const leadershipOrderLC = leadershipQualificationsOrder
 const marksmanshipOrderLC = marksmanshipQualificationsOrder.map(toLC);
 const pilotOrderLC = pilotQualificationsOrder.map(toLC);
 const ctmOrderLC = ctmQualificationsOrder.map(toLC);
+const leadershipOrderSetLC = new Set(leadershipOrderLC);
+const marksmanshipOrderSetLC = new Set(marksmanshipOrderLC);
+const pilotOrderSetLC = new Set(pilotOrderLC);
 const CTM_NAME_SET = new Set(ctmOrderLC);
 const CTM_BASE_PLACEMENT = Object.freeze({
     x: Number(ctmRenderDefaults?.basePlacement?.x ?? 0),
@@ -82,6 +85,7 @@ const CTM_PLAIN_NAME_LC = toLC(ctmRenderDefaults?.plainVariantName || "CTM");
 const CTM_PLAIN_EXTRA_Y = Number(ctmRenderDefaults?.plainVariantExtraYOffset ?? 0);
 const officerRankNameSetLC = new Set(officerRanks.map(toLC));
 const enlistedRankNameSetLC = new Set(enlistedRanks.map(toLC));
+const RESTRICTED_RANK_CACHE = new WeakMap();
 
 const ANALOG_FONT_SPEC = Object.freeze({ family: "Analog", url: puPaths.font("ANALOG.TTF") });
 
@@ -134,18 +138,6 @@ function highestIn(order, have) {
     for (let i = order.length - 1; i >= 0; i--) if (have.has(order[i])) return order[i];
 }
 
-// Removes any existing Project Uniform canvas (and its tooltip wiring) from the container.
-function removeExistingCanvas(container) {
-    if (!container?.querySelector) {
-        return;
-    }
-    const existing = container.querySelector(".discourse-project-uniform-canvas");
-    if (existing) {
-        existing._teardownTooltips?.();
-        existing.remove();
-        debugLog("[PU:prepare] Removed existing canvas (early cleanup)");
-    }
-}
 
 function shrinkRect(rect, marginLeft = 0, marginRight = marginLeft, marginTop = 0, marginBottom = marginTop) {
     const x = Number(rect?.x) || 0;
@@ -162,6 +154,18 @@ function shrinkRect(rect, marginLeft = 0, marginRight = marginLeft, marginTop = 
         width: Math.max(0, width - shrinkLeft - shrinkRight),
         height: Math.max(0, height - shrinkTop - shrinkBottom),
     };
+}
+
+function restrictedRankSetFor(qualification) {
+    if (!qualification) {
+        return null;
+    }
+    if (RESTRICTED_RANK_CACHE.has(qualification)) {
+        return RESTRICTED_RANK_CACHE.get(qualification);
+    }
+    const set = new Set((qualification.restrictedRanks || []).map(toLC));
+    RESTRICTED_RANK_CACHE.set(qualification, set);
+    return set;
 }
 
 function rectFromCenter(center, width, height) {
@@ -449,11 +453,61 @@ function swapCsaVariantsForService(ribbons, service) {
     });
 }
 
+function collectTooltipUrls({
+    highestRank,
+    groups,
+    groupTooltipLookup,
+    isRAFUniform,
+    is16CSMR,
+    is7RHA,
+    adjustedQuals,
+    csaRibbonsToRender,
+    awardTooltipImages,
+}) {
+    const tooltipUrls = new Set();
+    if (highestRank?.tooltipImage) {
+        tooltipUrls.add(highestRank.tooltipImage);
+    }
+    groups.forEach((group) => {
+        const key = String(group?.name || "").toLowerCase();
+        const groupTip = typeof groupTooltipLookup?.get === "function"
+            ? groupTooltipLookup.get(key) || groupTooltipLookup.get(group?.name) || null
+            : groupTooltipLookup?.[key] || groupTooltipLookup?.[group?.name] || null;
+        if (groupTip?.tooltipImage) {
+            tooltipUrls.add(groupTip.tooltipImage);
+        }
+        const lanyardTip = lanyardTooltipMapLC[key];
+        if (!isRAFUniform && lanyardTip?.tooltipImage) {
+            tooltipUrls.add(lanyardTip.tooltipImage);
+        }
+    });
+    if (!isRAFUniform && !is16CSMR && !is7RHA) {
+        const paraTooltip = highestRank?.category === "officer"
+            ? paraTooltipOfficer
+            : paraTooltipEnlisted;
+        if (paraTooltip?.tooltipImage) {
+            tooltipUrls.add(paraTooltip.tooltipImage);
+        }
+    }
+    adjustedQuals.forEach((qual) => {
+        if (qual?.tooltipImage) {
+            tooltipUrls.add(qual.tooltipImage);
+        }
+    });
+    csaRibbonsToRender.forEach((ribbon) => {
+        if (ribbon?.tooltipImage) {
+            tooltipUrls.add(ribbon.tooltipImage);
+        }
+    });
+    awardTooltipImages.forEach((url) => tooltipUrls.add(url));
+    return tooltipUrls;
+}
+
 // Assembles all imagery for the supplied user state and triggers canvas rendering.
 export function prepareAndRenderImages(groups, userBadges, idToBadge, container, awards, groupTooltipLookup = groupTooltipMapLC, user = null) {
     debugLog("[PU:prepare] start");
     clearTooltips();
-    removeExistingCanvas(container);
+    removeUniformCanvas(container, "PU:prepare");
 
     const foregroundItems = [];         // ALWAYS push objects: { url: string|array, x?, y? }
     const awardUrls = [];               // award ribbons (strings)
@@ -536,15 +590,15 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const canonicalNameLC = canonicalLeadershipName(nameLC);
 
         // Skip certain marksmanship badges for 16CSMR
-        if (is16CSMR && marksmanshipOrderLC.includes(nameLC)) {
+        if (is16CSMR && marksmanshipOrderSetLC.has(nameLC)) {
             debugLog("[PU:prepare] Skip (16CSMR rule):", name);
             return;
         }
 
         const q = qualificationsByNameLC[nameLC];
-        const isLeader = leadershipOrderLC.includes(canonicalNameLC);
-        const isMarks = marksmanshipOrderLC.includes(nameLC);
-        const isPilot = pilotOrderLC.includes(nameLC);
+        const isLeader = leadershipOrderSetLC.has(canonicalNameLC);
+        const isMarks = marksmanshipOrderSetLC.has(nameLC);
+        const isPilot = pilotOrderSetLC.has(nameLC);
         const isCtm = CTM_NAME_SET.has(nameLC);
         
         // Hide leadership qualification badges on all RAF ranks,
@@ -569,15 +623,15 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         }
 
         // Add qualification if allowed (check rank restrictions)
-        const restrictedLC = new Set((q?.restrictedRanks || []).map(toLC));
-        if (q?.imageKey && !restrictedLC.has(highestRankLC)) {
+        const restrictedLC = restrictedRankSetFor(q);
+        if (q?.imageKey && !restrictedLC?.has(highestRankLC)) {
             if (nameLC === cmtKeyLC && !is16CSMR) {
                 debugLog("[PU:prepare] Skip CMT (not 16CSMR)");
             } else {
                 qualsToRender.push(q);
                 debugLog("[PU:prepare] Queue qualification:", name);
             }
-        } else if (restrictedLC.has(highestRankLC)) {
+        } else if (restrictedLC?.has(highestRankLC)) {
             debugLog("[PU:prepare] Skip qualification (restricted by rank):", name, "for", highestRank?.name);
         }
 
@@ -598,7 +652,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     const clampedAwards = Math.min(awardUrls.length, perRowCapacity * maxRibbonRows);
     const ribbonRows = clampedAwards === 0 ? 0 : Math.ceil(clampedAwards / perRowCapacity);
     const hasLeadershipQual = qualsToRender.some((qual) =>
-        leadershipOrderLC.includes(canonicalLeadershipName(toLC(qual.name)))
+        leadershipOrderSetLC.has(canonicalLeadershipName(toLC(qual.name)))
     );
     const baseLeaderPlacement = csaLeadershipOverrideByRibbonCount?.default?.imagePlacement || { x: 0, y: 0 };
     const activeLeaderPlacement = leadershipOverrideForCount?.imagePlacement || baseLeaderPlacement;
@@ -648,7 +702,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         const pilotPos = placementByRows?.[ribbonRows] || placementByRows?.default || placementByRows?.all;
         const nameLC = toLC(q.name);
         const canonicalLC = canonicalLeadershipName(nameLC);
-        const isLeader = leadershipOrderLC.includes(canonicalLC);
+        const isLeader = leadershipOrderSetLC.has(canonicalLC);
         const leadershipOverrideActive = leadershipOverrideForCount &&
             CSA_LEADERSHIP_NAMES.has(canonicalLC);
         const isCtm = CTM_NAME_SET.has(nameLC);
@@ -740,42 +794,17 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
     });
 
     // Preload tooltip imagery for the active uniform so hover images render instantly.
-    const tooltipUrls = new Set();
-    if (highestRank?.tooltipImage) {
-        tooltipUrls.add(highestRank.tooltipImage);
-    }
-    groups.forEach((group) => {
-        const key = String(group?.name || "").toLowerCase();
-        const groupTip = typeof groupTooltipLookup?.get === "function"
-            ? groupTooltipLookup.get(key) || groupTooltipLookup.get(group?.name) || null
-            : groupTooltipLookup?.[key] || groupTooltipLookup?.[group?.name] || null;
-        if (groupTip?.tooltipImage) {
-            tooltipUrls.add(groupTip.tooltipImage);
-        }
-        const lanyardTip = lanyardTooltipMapLC[key];
-        if (!isRAFUniform && lanyardTip?.tooltipImage) {
-            tooltipUrls.add(lanyardTip.tooltipImage);
-        }
+    const tooltipUrls = collectTooltipUrls({
+        highestRank,
+        groups,
+        groupTooltipLookup,
+        isRAFUniform,
+        is16CSMR,
+        is7RHA,
+        adjustedQuals,
+        csaRibbonsToRender,
+        awardTooltipImages,
     });
-    if (!isRAFUniform && !is16CSMR && !is7RHA) {
-        const paraTooltip = highestRank?.category === "officer"
-            ? paraTooltipOfficer
-            : paraTooltipEnlisted;
-        if (paraTooltip?.tooltipImage) {
-            tooltipUrls.add(paraTooltip.tooltipImage);
-        }
-    }
-    adjustedQuals.forEach((qual) => {
-        if (qual?.tooltipImage) {
-            tooltipUrls.add(qual.tooltipImage);
-        }
-    });
-    csaRibbonsToRender.forEach((ribbon) => {
-        if (ribbon?.tooltipImage) {
-            tooltipUrls.add(ribbon.tooltipImage);
-        }
-    });
-    awardTooltipImages.forEach((url) => tooltipUrls.add(url));
     preloadTooltipImages([...tooltipUrls], "uniform-tooltips");
 
     // Render if a background exists; foregrounds are optional (e.g., Private/Gunner)
