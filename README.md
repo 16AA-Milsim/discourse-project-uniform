@@ -37,6 +37,15 @@ Debug Mode can be toggled via the site setting `discourse_project_uniform_debug_
 * **Fast page loads via image caching**
   Foreground and ribbon images are loaded with an in-memory cache, while the server-side cache key automatically changes whenever the plugin version or any image bytes change, ensuring updated art is fetched immediately.
 
+### Public Sharing
+
+Public endpoints are in development. The site setting `discourse_project_uniform_public_enabled` is currently locked off while the snapshot workflow is finalized:
+
+* **HTML view:** `/uniform/:username` renders a standalone uniform page.
+* **PNG snapshot:** `/uniform/:username.png` returns the most recently captured uniform image. If no snapshot exists yet, a placeholder PNG is returned with the URL to visit to generate it.
+
+The HTML view automatically posts a snapshot after rendering, so the PNG endpoint will return the correct image after the page has been visited at least once for that user.
+
 ### 2) Discourse Admin Options
 
 * **Admin-only toggle** via site setting that blocks non-admins from seeing the plugin feature when enabled.

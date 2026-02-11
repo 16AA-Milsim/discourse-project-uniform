@@ -55,6 +55,9 @@ export function setupTooltips(canvas) {
     let canvasRect = null, parentRect = null, active = null;
     let scaleX = 1, scaleY = 1; // intrinsic -> display scale factors
     let resizeObserver = null;
+    let pendingToken = 0;
+    let waitingForImages = false;
+    let lastHit = null;
 
     // Recalculate bounding rectangles + scales
     const recompute = () => {
@@ -86,39 +89,56 @@ export function setupTooltips(canvas) {
 
     requestAnimationFrame(recompute);
 
-    // Mouse move handler to detect tooltip region hits
-    const onMove = (e) => {
-        if (!canvasRect || !parentRect) return;
+    const hideTooltip = () => {
+        if (active) { debugLog("[tooltips] leave region"); }
+        active = null;
+        waitingForImages = false;
+        pendingToken++;
+        lastHit = null;
+        tip.classList.remove("visible");
+        tip.setAttribute("aria-hidden", "true");
+        tip.style.visibility = "";
+        tip.style.opacity = "";
+        tip.style.transition = "";
+    };
 
-        // Mouse position relative to canvas in DISPLAY space
-        const dx = e.clientX - canvasRect.left;
-        const dy = e.clientY - canvasRect.top;
+    const prepareTooltipForSwap = () => {
+        tip.classList.remove("visible");
+        tip.setAttribute("aria-hidden", "true");
+        // Disable transitions so content swaps don't flash on screen.
+        tip.style.transition = "none";
+        tip.style.opacity = "0";
+        tip.style.visibility = "hidden";
+    };
 
-        // Convert to INTRINSIC space for hit testing
-        const lx = dx * scaleX;
-        const ly = dy * scaleY;
-
-        // Find the tooltip region under the cursor (intrinsic coords)
-        const hit = tooltipRegions.find(r => lx >= r.x && lx <= r.x + r.width && ly >= r.y && ly <= r.y + r.height);
-
-        // If no hit, hide tooltip
-        if (!hit) {
-            if (active) { debugLog("[tooltips] leave region"); }
-            active = null;
-            tip.classList.remove("visible");
-            tip.setAttribute("aria-hidden", "true");
-            return;
+    const waitForTooltipImages = (container) => {
+        const images = Array.from(container.querySelectorAll("img"));
+        if (!images.length) {
+            return Promise.resolve();
         }
 
-        // If entering a new tooltip region, update tooltip content
-        if (active !== hit.content) {
-            active = hit.content;
-            tip.innerHTML = hit.content;
-            tip.classList.toggle("has-img", hit.content.includes("<img"));
-            // reset position before measuring
-            tip.style.left = "0px";
-            tip.style.top = "0px";
-            debugLog("[tooltips] enter region");
+        const pending = images.filter((img) => !(img.complete && img.naturalWidth > 0));
+        if (!pending.length) {
+            return Promise.resolve();
+        }
+
+        return Promise.all(
+            pending.map((img) => {
+                if (typeof img.decode === "function") {
+                    return img.decode().catch(() => {});
+                }
+                return new Promise((resolve) => {
+                    const done = () => resolve();
+                    img.addEventListener("load", done, { once: true });
+                    img.addEventListener("error", done, { once: true });
+                });
+            })
+        ).then(() => undefined);
+    };
+
+    const positionTooltip = (hit) => {
+        if (!hit) {
+            return;
         }
 
         // Position tooltip relative to the hit region and keep it within the canvas bounds
@@ -174,16 +194,82 @@ export function setupTooltips(canvas) {
         tip.style.top  = `${top}px`;
 
         if (restoreVisibility) tip.style.visibility = "";
+    };
+
+    const showTooltip = () => {
+        tip.style.transition = "";
+        tip.style.opacity = "";
+        tip.style.visibility = "";
         tip.classList.add("visible");
         tip.setAttribute("aria-hidden", "false");
+    };
+
+    // Mouse move handler to detect tooltip region hits
+    const onMove = (e) => {
+        if (!canvasRect || !parentRect) return;
+
+        // Mouse position relative to canvas in DISPLAY space
+        const dx = e.clientX - canvasRect.left;
+        const dy = e.clientY - canvasRect.top;
+
+        // Convert to INTRINSIC space for hit testing
+        const lx = dx * scaleX;
+        const ly = dy * scaleY;
+
+        // Find the tooltip region under the cursor (intrinsic coords)
+        const hit = tooltipRegions.find(r => lx >= r.x && lx <= r.x + r.width && ly >= r.y && ly <= r.y + r.height);
+
+        // If no hit, hide tooltip
+        if (!hit) {
+            hideTooltip();
+            return;
+        }
+
+        // If entering a new tooltip region, update tooltip content
+        if (active !== hit.content) {
+            active = hit.content;
+            tip.innerHTML = hit.content;
+            tip.classList.toggle("has-img", hit.content.includes("<img"));
+            // Hide while images decode to avoid layout pop-in.
+            prepareTooltipForSwap();
+            debugLog("[tooltips] enter region");
+
+            lastHit = hit;
+            waitingForImages = true;
+            const token = ++pendingToken;
+            waitForTooltipImages(tip).then(() => {
+                if (token !== pendingToken || active !== hit.content || !lastHit) {
+                    return;
+                }
+                waitingForImages = false;
+                requestAnimationFrame(() => {
+                    if (token !== pendingToken || active !== hit.content || !lastHit) {
+                        return;
+                    }
+                    positionTooltip(lastHit);
+                    requestAnimationFrame(() => {
+                        if (token !== pendingToken || active !== hit.content || !lastHit) {
+                            return;
+                        }
+                        showTooltip();
+                    });
+                });
+            });
+            return;
+        }
+
+        lastHit = hit;
+        if (waitingForImages) {
+            return;
+        }
+        positionTooltip(hit);
+        showTooltip();
     };
 
     // Mouse out handler to hide tooltip
     const onOut = () => {
         if (active) { debugLog("[tooltips] mouseout"); }
-        active = null;
-        tip.classList.remove("visible");
-        tip.setAttribute("aria-hidden", "true");
+        hideTooltip();
     };
 
     // Attach mouse events
