@@ -3,6 +3,10 @@
 The steps below assume a standard Discourse Docker install in `/var/discourse`
 with the main forum container named `app`.
 
+Important: this guide uses `network_mode: host` for the sidecar. That is a
+Linux-host Docker pattern. Docker Desktop (macOS/Windows) handles host
+networking differently and needs a different setup.
+
 1. Create a sidecar directory on the host:
 
 ```bash
@@ -42,6 +46,7 @@ function envNumber(value, fallback) {
 }
 
 const PORT = Number(process.env.PORT || 3011);
+const BIND_HOST = String(process.env.BIND_HOST || "0.0.0.0").trim() || "0.0.0.0";
 const RENDERER_KEY = String(process.env.RENDERER_KEY || "");
 const LOCALHOST_RESOLVE_TO = String(process.env.LOCALHOST_RESOLVE_TO || "").trim();
 const NAV_TIMEOUT_MS = envNumber(process.env.NAV_TIMEOUT_MS, 45_000);
@@ -297,9 +302,9 @@ process.on("SIGTERM", async () => {
   process.exit(0);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, BIND_HOST, () => {
   console.log(
-    `uniform-renderer listening on ${PORT} (localhost->${LOCALHOST_RESOLVE_TO || "default"})`
+    `uniform-renderer listening on ${BIND_HOST}:${PORT} (localhost->${LOCALHOST_RESOLVE_TO || "default"})`
   );
 });
 JS
@@ -333,6 +338,7 @@ YAML
 cat > .env <<'ENV'
 RENDERER_KEY=CHANGE_ME_TO_A_RANDOM_LONG_STRING
 PORT=3011
+BIND_HOST=0.0.0.0
 LOCALHOST_RESOLVE_TO=
 NAV_TIMEOUT_MS=45000
 RENDER_TIMEOUT_MS=45000
@@ -372,7 +378,7 @@ docker exec app curl -s http://172.17.0.1:3011/health
 If `172.17.0.1` does not work on your host, find the gateway from inside `app`:
 
 ```bash
-docker exec app sh -lc "ip route | awk '/default/ {print $3}'"
+docker exec app sh -lc "ip route | awk '/default/ {print \$3}'"
 ```
 
 Then use that IP in `discourse_project_uniform_renderer_url`.
@@ -395,8 +401,92 @@ subsequent request should return `project-uniform-USERNAME.png`.
 
 #### Production Security Notes
 
-* Do not expose the renderer port publicly. Restrict port `3011` via host
-  firewall/security group rules.
+* Do not expose port `3011` publicly. Restrict it with host firewall/security
+  group rules so only trusted local/container sources can reach it.
 * Keep `RENDERER_KEY` secret and rotate it if leaked.
 * Set `discourse_project_uniform_renderer_visit_base_url` to the canonical
   forum URL the sidecar should render.
+* If you use host networking, remember this service is on the host network
+  stack. Treat it like any other host daemon for firewall policy.
+
+Example `ufw` allow rule for default Discourse Docker bridge subnet only:
+
+```bash
+ufw allow from 172.17.0.0/16 to any port 3011 proto tcp
+ufw deny 3011/tcp
+```
+
+## Troubleshooting
+
+Run these checks in order:
+
+1. Renderer up and healthy on host:
+
+```bash
+cd /var/discourse/uniform-renderer
+docker compose ps
+curl -sS http://127.0.0.1:3011/health
+```
+
+2. Renderer reachable from Discourse container:
+
+```bash
+docker exec app sh -lc "ip route | awk '/default/ {print \$3}'"
+docker exec app curl -sv http://172.17.0.1:3011/health
+```
+
+3. Sidecar logs:
+
+```bash
+cd /var/discourse/uniform-renderer
+docker compose logs -f uniform-renderer
+```
+
+4. Discourse logs (render enqueue/request/store path):
+
+```bash
+docker exec app tail -f /var/www/discourse/log/rails/production.log
+```
+
+Common failure patterns:
+
+* `403 forbidden` from sidecar `/render`: `RENDERER_KEY` does not match
+  `discourse_project_uniform_renderer_key`.
+* `.png` stays on placeholder forever: bad `discourse_project_uniform_renderer_url`,
+  sidecar unreachable from `app`, or sidecar render failures in logs.
+* `422 uniform_not_renderable`: user has no renderable uniform state (expected
+  for users without required rank/group data).
+* `503 renderer_busy` or timeouts: increase `MAX_CONCURRENT_RENDERS`,
+  `SLOT_WAIT_TIMEOUT_MS`, and/or plugin timeout
+  (`discourse_project_uniform_renderer_timeout_seconds`).
+
+## Operations
+
+Update sidecar dependencies/runtime:
+
+```bash
+cd /var/discourse/uniform-renderer
+docker compose up -d --build
+docker compose ps
+```
+
+Rotate renderer key safely:
+
+1. Generate a new key: `openssl rand -hex 32`
+2. Put it in `/var/discourse/uniform-renderer/.env` as `RENDERER_KEY`.
+3. Update Discourse site setting `discourse_project_uniform_renderer_key`.
+4. Restart sidecar:
+
+```bash
+cd /var/discourse/uniform-renderer
+docker compose up -d
+```
+
+5. Re-test health and one sample `https://your-forum-domain/uniform/USERNAME.png`.
+
+Routine checks:
+
+* Keep `discourse_project_uniform_snapshot_prewarm_enabled` on (default) for
+  better first-hit performance.
+* Watch sidecar logs for repeated `render_failed`/`renderer_busy`.
+* Rebuild after changing `server.js`, `Dockerfile`, or dependency versions.
