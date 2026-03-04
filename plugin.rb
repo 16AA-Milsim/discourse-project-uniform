@@ -12,8 +12,20 @@ require "net/http"
 require_dependency "jobs/base"
 
 module ::DiscourseProjectUniform
+  PREWARM_NAMESPACE = "discourse-project-uniform-prewarm".freeze
+  PREWARM_CURSOR_KEY = "cursor-user-id".freeze
+
   def self.public_uniforms_enabled?
     SiteSetting.discourse_project_uniform_public_enabled
+  end
+
+  def self.snapshot_prewarm_enabled?
+    SiteSetting.discourse_project_uniform_snapshot_prewarm_enabled
+  end
+
+  def self.snapshot_prewarm_batch_size
+    raw = SiteSetting.discourse_project_uniform_snapshot_prewarm_batch_size.to_i
+    [[raw, 10].max, 500].min
   end
 
   def self.uniform_visit_url_for(user, request: nil)
@@ -25,35 +37,19 @@ module ::DiscourseProjectUniform
   end
 
   def self.renderer_visit_base_url(request: nil)
-    configured = SiteSetting.discourse_project_uniform_renderer_visit_base_url.to_s.strip
+    configured = normalize_base_url(SiteSetting.discourse_project_uniform_renderer_visit_base_url)
     return configured if configured.present?
 
-    if request
-      forwarded_host = request.headers["X-Forwarded-Host"].presence
-      if forwarded_host
-        scheme = request.headers["X-Forwarded-Proto"].presence || request.protocol
-        return "#{scheme}://#{forwarded_host}"
-      end
-
-      origin_base = base_url_from_header_value(request.headers["Origin"])
-      return origin_base if origin_base.present?
-
-      referer_base = base_url_from_header_value(request.headers["Referer"])
-      return referer_base if referer_base.present?
-
-      request_base = request.base_url.to_s
-      return request_base if request_base.present?
-    end
-
-    Discourse.base_url.to_s
+    normalize_base_url(Discourse.base_url) || Discourse.base_url.to_s
   end
 
-  def self.base_url_from_header_value(value)
+  def self.normalize_base_url(value)
     raw = value.to_s.strip
     return nil if raw.blank?
 
     uri = URI.parse(raw)
-    return nil if uri.scheme.blank? || uri.host.blank?
+    return nil unless uri.is_a?(URI::HTTP)
+    return nil if uri.host.blank?
 
     build_base_url(uri)
   rescue URI::InvalidURIError
@@ -373,7 +369,7 @@ module ::DiscourseProjectUniform
 
     def renderer_configured?
       ::DiscourseProjectUniform.public_uniforms_enabled? &&
-        renderer_url.present?
+        renderer_uri.present?
     end
 
     def enqueue_render!(user_id:, username:, cache_key:, visit_url:)
@@ -446,7 +442,12 @@ module ::DiscourseProjectUniform
       return nil unless renderer_configured?
       return nil if visit_url.blank?
 
-      uri = URI.parse(renderer_url)
+      uri = renderer_uri
+      unless uri
+        Rails.logger.warn("[discourse-project-uniform] invalid renderer url: #{renderer_url.inspect}")
+        return nil
+      end
+
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = uri.scheme == "https"
       timeout = renderer_timeout_seconds
@@ -462,6 +463,14 @@ module ::DiscourseProjectUniform
 
       response = http.request(request)
       unless response.is_a?(Net::HTTPSuccess)
+        renderer_error = renderer_error_code(response.body)
+        if response.code.to_i == 422 && renderer_error == "uniform_not_renderable"
+          Rails.logger.info(
+            "[discourse-project-uniform] renderer reported uniform_not_renderable url=#{visit_url}"
+          )
+          return :unrenderable
+        end
+
         Rails.logger.warn(
           "[discourse-project-uniform] renderer request failed: code=#{response.code} body=#{response.body.to_s.slice(0, 200)}"
         )
@@ -484,7 +493,7 @@ module ::DiscourseProjectUniform
       nil
     end
 
-    def placeholder_png(visit_url)
+    def placeholder_png(visit_url, reason: :pending)
       begin
         require "chunky_png"
       rescue LoadError => e
@@ -498,7 +507,13 @@ module ::DiscourseProjectUniform
           .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
 
       lines =
-        if renderer_configured?
+        if reason == :unrenderable
+          [
+            "NO RENDERABLE UNIFORM FOR THIS USER.",
+            "CHECK RANK/GROUP AND BADGE DATA.",
+            safe_url
+          ]
+        elsif renderer_configured?
           [
             "UNIFORM PNG IS BEING RENDERED.",
             "RELOAD THIS IMAGE IN A FEW SECONDS.",
@@ -506,8 +521,8 @@ module ::DiscourseProjectUniform
           ]
         else
           [
-            "UNIFORM PNG NOT GENERATED YET.",
-            "VISIT THIS PAGE ONCE TO GENERATE IT:",
+            "UNIFORM PNG NOT GENERATED.",
+            "RENDERER SERVICE IS NOT CONFIGURED.",
             safe_url
           ]
         end
@@ -554,6 +569,13 @@ module ::DiscourseProjectUniform
       "#{KEY_PREFIX}#{user_id}:#{cache_key}"
     end
 
+    def renderer_error_code(body)
+      payload = JSON.parse(body.to_s)
+      payload["error"].to_s
+    rescue JSON::ParserError, TypeError
+      ""
+    end
+
     def render_pending_key(user_id, cache_key)
       "#{RENDER_PENDING_PREFIX}#{user_id}:#{cache_key}"
     end
@@ -574,6 +596,10 @@ module ::DiscourseProjectUniform
       SiteSetting.discourse_project_uniform_renderer_url.to_s.strip
     end
 
+    def renderer_uri
+      parse_http_uri(renderer_url)
+    end
+
     def renderer_key
       SiteSetting.discourse_project_uniform_renderer_key.to_s
     end
@@ -590,6 +616,19 @@ module ::DiscourseProjectUniform
 
     def refresh_debounce_seconds
       8
+    end
+
+    def parse_http_uri(raw)
+      value = raw.to_s.strip
+      return nil if value.blank?
+
+      uri = URI.parse(value)
+      return nil unless uri.is_a?(URI::HTTP)
+      return nil if uri.host.blank?
+
+      uri
+    rescue URI::InvalidURIError
+      nil
     end
 
     def state_digest_for_user(user_id)
@@ -814,6 +853,12 @@ after_initialize do
         visit_url = ::DiscourseProjectUniform.uniform_visit_url_for(user)
 
         png_bytes = ::DiscourseProjectUniform::UniformSnapshot.render_snapshot_via_sidecar(visit_url)
+        if png_bytes == :unrenderable
+          png_bytes = ::DiscourseProjectUniform::UniformSnapshot.placeholder_png(
+            visit_url,
+            reason: :unrenderable
+          )
+        end
         return if png_bytes.blank?
 
         unless ::DiscourseProjectUniform::UniformSnapshot.store_snapshot(user.id, cache_key, png_bytes)
@@ -850,6 +895,12 @@ after_initialize do
         end
 
         png_bytes = ::DiscourseProjectUniform::UniformSnapshot.render_snapshot_via_sidecar(visit_url)
+        if png_bytes == :unrenderable
+          png_bytes = ::DiscourseProjectUniform::UniformSnapshot.placeholder_png(
+            visit_url,
+            reason: :unrenderable
+          )
+        end
         return if png_bytes.blank?
 
         unless ::DiscourseProjectUniform::UniformSnapshot.store_snapshot(user.id, cache_key, png_bytes)
@@ -884,6 +935,78 @@ after_initialize do
         Rails.logger.warn("[discourse-project-uniform] snapshot cleanup job failed: #{e.message}")
       end
     end
+
+    class PrewarmProjectUniformSnapshots < ::Jobs::Scheduled
+      every 10.minutes
+
+      def execute(_args)
+        return unless SiteSetting.discourse_project_uniform_enabled
+        return unless ::DiscourseProjectUniform.public_uniforms_enabled?
+        return unless ::DiscourseProjectUniform.snapshot_prewarm_enabled?
+        return unless ::DiscourseProjectUniform::UniformSnapshot.renderer_configured?
+
+        store = PluginStore.new(::DiscourseProjectUniform::PREWARM_NAMESPACE)
+        cursor = store.get(::DiscourseProjectUniform::PREWARM_CURSOR_KEY).to_i
+        batch_size = ::DiscourseProjectUniform.snapshot_prewarm_batch_size
+
+        users = next_batch(cursor, batch_size)
+        if users.blank?
+          store.set(::DiscourseProjectUniform::PREWARM_CURSOR_KEY, 0)
+          return
+        end
+
+        enqueued = 0
+        skipped = 0
+        users.each do |user|
+          begin
+            cache_key = ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user)
+            if cache_key.blank?
+              skipped += 1
+              next
+            end
+
+            if ::DiscourseProjectUniform::UniformSnapshot.fetch(user.id, cache_key).present?
+              skipped += 1
+              next
+            end
+
+            visit_url = ::DiscourseProjectUniform.uniform_visit_url_for(user)
+            if ::DiscourseProjectUniform::UniformSnapshot.enqueue_render!(
+                 user_id: user.id,
+                 username: user.username,
+                 cache_key: cache_key,
+                 visit_url: visit_url
+               )
+              enqueued += 1
+            else
+              skipped += 1
+            end
+          rescue => e
+            skipped += 1
+            Rails.logger.warn(
+              "[discourse-project-uniform] prewarm failed for user_id=#{user.id}: #{e.message}"
+            )
+          end
+        end
+
+        store.set(::DiscourseProjectUniform::PREWARM_CURSOR_KEY, users.last.id)
+        Rails.logger.info(
+          "[discourse-project-uniform] prewarm scanned=#{users.length} enqueued=#{enqueued} skipped=#{skipped} cursor=#{users.last.id}"
+        )
+      rescue => e
+        Rails.logger.warn("[discourse-project-uniform] prewarm job failed: #{e.message}")
+      end
+
+      private
+
+      def next_batch(cursor, batch_size)
+        relation = User.where(staged: false)
+        users = relation.where("id > ?", cursor).order(:id).limit(batch_size).to_a
+        return users if users.present?
+
+        relation.order(:id).limit(batch_size).to_a
+      end
+    end
   end
 
   schedule_snapshot_refresh = lambda do |user_id|
@@ -904,6 +1027,10 @@ after_initialize do
   end
 
   DiscourseEvent.on(:user_removed_from_group) do |user, _group|
+    schedule_snapshot_refresh.call(user&.id)
+  end
+
+  DiscourseEvent.on(:user_created) do |user|
     schedule_snapshot_refresh.call(user&.id)
   end
 

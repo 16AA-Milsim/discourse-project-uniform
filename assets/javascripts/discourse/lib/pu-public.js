@@ -12,6 +12,14 @@ function parseJson(value, fallback) {
   }
 }
 
+function setRenderState(root, state, message = "") {
+  if (!root?.dataset) {
+    return;
+  }
+  root.dataset.puRenderState = state;
+  root.dataset.puRenderMessage = message ? String(message).slice(0, 280) : "";
+}
+
 function waitForCanvas(container, timeoutMs) {
   return new Promise((resolve, reject) => {
     const existing = container.querySelector(".discourse-project-uniform-canvas");
@@ -61,9 +69,11 @@ function renderUniform(root) {
   const isCurrentRender = () => root.dataset.puPublicRenderId === renderId;
 
   root.dataset.snapshotPosted = "";
+  setRenderState(root, "loading");
   const username = root.dataset.username;
   if (!username) {
     root.textContent = "No username provided.";
+    setRenderState(root, "failed", "missing_username");
     return;
   }
 
@@ -132,19 +142,32 @@ function renderUniform(root) {
         }
       );
 
-      setTimeout(() => {
-        if (!isCurrentRender()) {
-          return;
-        }
-        const canvas = root.querySelector(".discourse-project-uniform-canvas");
-        if (!canvas && !root.dataset.snapshotPosted) {
-          root.textContent = "Uniform failed to render.";
-        }
-      }, 2500);
+      const renderReadyPromise = waitForRenderedCanvas(root, 15_000)
+        .then((canvas) => {
+          if (!isCurrentRender()) {
+            return null;
+          }
+          setRenderState(root, "rendered");
+          return canvas;
+        })
+        .catch((error) => {
+          if (!isCurrentRender()) {
+            return null;
+          }
+          const hasCanvas = !!root.querySelector(".discourse-project-uniform-canvas");
+          if (!hasCanvas) {
+            root.textContent = "Uniform failed to render.";
+          }
+          setRenderState(root, "failed", error?.message || "render_timeout");
+          return null;
+        });
 
       if (snapshotEndpoint && !root.dataset.snapshotPosted && snapshotToken) {
-        waitForRenderedCanvas(root, 12000)
+        renderReadyPromise
           .then((canvas) => {
+            if (!canvas) {
+              return;
+            }
             if (!isCurrentRender()) {
               return;
             }
@@ -162,9 +185,6 @@ function renderUniform(root) {
                   const url = new URL(snapshotEndpoint, window.location.origin);
                   if (snapshotCacheKey) {
                     url.searchParams.set("cache_key", snapshotCacheKey);
-                  }
-                  if (snapshotToken) {
-                    url.searchParams.set("token", snapshotToken);
                   }
 
                   root.dataset.snapshotPosted = "true";
@@ -184,12 +204,6 @@ function renderUniform(root) {
                 "image/png"
               );
             });
-          })
-          .catch(() => {
-            if (!isCurrentRender()) {
-              return;
-            }
-            root.dataset.snapshotPosted = "";
           });
       }
     })
@@ -197,6 +211,7 @@ function renderUniform(root) {
       if (!isCurrentRender()) {
         return;
       }
+      setRenderState(root, "failed", error?.message || "load_failed");
       const hasCanvas = !!root.querySelector(".discourse-project-uniform-canvas");
       if (!hasCanvas) {
         root.textContent = `Unable to load uniform. ${error?.message || ""}`;

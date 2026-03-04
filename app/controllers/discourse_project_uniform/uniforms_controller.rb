@@ -22,25 +22,6 @@ module DiscourseProjectUniform
 
       cache_key = ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user)
       snapshot = ::DiscourseProjectUniform::UniformSnapshot.fetch(user.id, cache_key)
-      if snapshot.blank?
-        visit_url = uniform_visit_url(user)
-        # For better embed UX, try a synchronous render on first miss so the first
-        # request can return the final PNG instead of requiring a second refresh.
-        if ::DiscourseProjectUniform::UniformSnapshot.renderer_configured?
-          rendered =
-            ::DiscourseProjectUniform::UniformSnapshot.render_snapshot_via_sidecar(
-              visit_url
-            )
-          if rendered.present? &&
-               ::DiscourseProjectUniform::UniformSnapshot.store_snapshot(
-                 user.id,
-                 cache_key,
-                 rendered
-               )
-            snapshot = rendered
-          end
-        end
-      end
 
       if snapshot.blank?
         visit_url = uniform_visit_url(user)
@@ -56,7 +37,7 @@ module DiscourseProjectUniform
           etag = Digest::SHA1.hexdigest("missing-#{visit_url}")
           return unless stale?(etag: etag, public: true)
 
-          expires_in 5.minutes, public: true
+          expires_in 30.seconds, public: true
           return send_data placeholder,
                            type: "image/png",
                            disposition: "inline",
@@ -81,6 +62,10 @@ module DiscourseProjectUniform
       user = find_user
       raise Discourse::NotFound if user.blank?
 
+      unless renderer_request_authorized? || snapshot_user_authorized?(user)
+        return render json: { error: "forbidden" }, status: 403
+      end
+
       cache_key = ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user)
       token = ::DiscourseProjectUniform::UniformSnapshot.signature_for(user.id, cache_key)
       render json: { token: token, cache_key: cache_key }
@@ -93,12 +78,15 @@ module DiscourseProjectUniform
       cache_key = params.dig(:snapshot, :cache_key).presence || params[:cache_key].to_s
       cache_key = ::DiscourseProjectUniform::UniformSnapshot.cache_key_for_user(user) if cache_key.blank?
 
-      token = params.dig(:snapshot, :token).presence || params[:token].to_s
-      token = request.headers["X-Uniform-Token"].to_s if token.blank?
-      token = request.headers["X-Project-Uniform-Token"].to_s if token.blank?
-      expected = ::DiscourseProjectUniform::UniformSnapshot.signature_for(user.id, cache_key)
-      unless token.present? && ActiveSupport::SecurityUtils.secure_compare(token, expected)
-        return render json: { error: "invalid_token" }, status: 403
+      unless renderer_request_authorized?
+        unless snapshot_user_authorized?(user)
+          return render json: { error: "forbidden" }, status: 403
+        end
+
+        expected = ::DiscourseProjectUniform::UniformSnapshot.signature_for(user.id, cache_key)
+        unless secure_compare_strings(snapshot_token_from_request, expected)
+          return render json: { error: "invalid_token" }, status: 403
+        end
       end
 
       png_bytes =
@@ -116,7 +104,7 @@ module DiscourseProjectUniform
           end
 
           begin
-            Base64.decode64(encoded)
+            Base64.strict_decode64(encoded)
           rescue ArgumentError
             return render json: { error: "invalid_base64" }, status: 422
           end
@@ -163,6 +151,38 @@ module DiscourseProjectUniform
 
     def uniform_visit_url(user)
       ::DiscourseProjectUniform.uniform_visit_url_for(user, request: request)
+    end
+
+    def snapshot_user_authorized?(user)
+      actor = current_user
+      return false unless actor
+      return true if actor.staff?
+
+      secure_compare_strings(actor.username_lower.to_s, user.username_lower.to_s)
+    end
+
+    def renderer_request_authorized?
+      configured = SiteSetting.discourse_project_uniform_renderer_key.to_s
+      return false if configured.blank?
+
+      provided = request.headers["X-Renderer-Key"].to_s
+      secure_compare_strings(provided, configured)
+    end
+
+    def snapshot_token_from_request
+      request.headers["X-Project-Uniform-Token"].presence ||
+        request.headers["X-Uniform-Token"].presence ||
+        params.dig(:snapshot, :token).presence ||
+        ""
+    end
+
+    def secure_compare_strings(first, second)
+      one = first.to_s
+      two = second.to_s
+      return false if one.blank? || two.blank?
+      return false unless one.bytesize == two.bytesize
+
+      ActiveSupport::SecurityUtils.secure_compare(one, two)
     end
   end
 end

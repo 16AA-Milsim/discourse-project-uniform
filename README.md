@@ -44,9 +44,19 @@ Public PNG sharing is disabled by default and controlled by
 service to be configured:
 
 * **HTML view:** `/uniform/:username` renders a standalone uniform page.
-* **PNG snapshot:** `/uniform/:username.png` returns the most recently captured uniform image. If no snapshot exists yet, a placeholder PNG is returned with the URL to visit to generate it.
+* **PNG snapshot:** `/uniform/:username.png` returns the most recently captured uniform image. If no snapshot exists yet, a short-lived placeholder PNG is returned while the background renderer job generates the latest snapshot.
+* **No-rank/invalid profile fallback:** if the renderer reports that no uniform canvas can be produced for a user (for example no matching rank/group data), a placeholder snapshot is cached for that cache key to avoid repeated timeout retries.
 
-The HTML view automatically posts a snapshot after rendering, so the PNG endpoint will return the correct image after the page has been visited at least once for that user.
+Snapshots are proactively prewarmed in background batches every 10 minutes
+(`discourse_project_uniform_snapshot_prewarm_enabled` and
+`discourse_project_uniform_snapshot_prewarm_batch_size`) and also refreshed
+when badge/group membership changes.
+
+### Production Sidecar Install (Discourse Docker)
+
+Full sidecar setup instructions for production (including copy-paste templates
+for `package.json`, `server.js`, `Dockerfile`, `docker-compose.yml`, and `.env`)
+are documented in [docs/sidecar-production-install.md](./docs/sidecar-production-install.md).
 
 ### 2) Discourse Admin Options
 

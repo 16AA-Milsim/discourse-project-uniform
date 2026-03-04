@@ -48,3 +48,15 @@ plugins:
     min: 10
     max: 600
     client: false
+
+  discourse_project_uniform_snapshot_prewarm_enabled:
+    type: bool
+    default: true
+    client: false
+
+  discourse_project_uniform_snapshot_prewarm_batch_size:
+    type: integer
+    default: 100
+    min: 10
+    max: 500
+    client: false

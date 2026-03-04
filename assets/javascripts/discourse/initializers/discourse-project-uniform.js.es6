@@ -5,7 +5,6 @@ import { withPluginApi } from "discourse/lib/plugin-api";
 // Import debug toggle/logger
 import { debugLog, setAdminDebugFlag, isDebugEnabled, loadImageCached, setAssetCacheData } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-utils";
 import { bootstrapPublicUniform } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-public";
-import getURL from "discourse-common/lib/get-url";
 // Import preparation/rendering pipeline
 import { prepareAndRenderImages } from "discourse/plugins/discourse-project-uniform/discourse/lib/pu-prepare";
 // Import award and tooltip data
@@ -220,34 +219,15 @@ function renderPublicUniform(username, site, siteSettings) {
         .then((root) => {
             const cacheKey = site?.project_uniform_cache_key || "";
             const assetTokens = site?.project_uniform_asset_tokens || {};
-            const encoded = encodeURIComponent(normalizedUsername);
-            const tokenRequestId = String((Number(root.dataset.puPublicTokenRequestId || "0") || 0) + 1);
-            root.dataset.puPublicTokenRequestId = tokenRequestId;
 
             root.dataset.username = normalizedUsername;
             root.dataset.cacheKey = cacheKey;
             root.dataset.assetTokens = JSON.stringify(assetTokens);
+            root.dataset.snapshotEndpoint = "";
+            root.dataset.snapshotCacheKey = cacheKey;
+            root.dataset.snapshotToken = "";
 
-            const tokenUrl = getURL(`/uniform/${encoded}/token`);
-            const snapshotEndpoint = getURL(`/uniform/${encoded}/snapshot`);
-
-            fetch(tokenUrl, { credentials: "same-origin" })
-                .then((response) => (response.ok ? response.json() : null))
-                .then((payload) => {
-                    root.dataset.snapshotEndpoint = snapshotEndpoint;
-                    root.dataset.snapshotCacheKey = payload?.cache_key || cacheKey;
-                    root.dataset.snapshotToken = payload?.token || "";
-                })
-                .catch(() => {
-                    root.dataset.snapshotEndpoint = snapshotEndpoint;
-                    root.dataset.snapshotCacheKey = cacheKey;
-                    root.dataset.snapshotToken = "";
-                })
-                .finally(() => {
-                    if (root.dataset.puPublicTokenRequestId === tokenRequestId) {
-                        bootstrapPublicUniform(root);
-                    }
-                });
+            bootstrapPublicUniform(root);
         })
         .catch(() => {
             const root = document.getElementById("project-uniform-root");
