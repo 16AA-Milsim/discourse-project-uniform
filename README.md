@@ -57,6 +57,8 @@ when badge/group membership changes.
 Full sidecar setup instructions for production (including copy-paste templates
 for `package.json`, `server.js`, `Dockerfile`, `docker-compose.yml`, and `.env`)
 are documented in [docs/sidecar-production-install.md](./docs/sidecar-production-install.md).
+The runbook includes an agent-ready handoff template and shell-only validation
+steps for autonomous installs.
 
 ### 2) Discourse Admin Options
 

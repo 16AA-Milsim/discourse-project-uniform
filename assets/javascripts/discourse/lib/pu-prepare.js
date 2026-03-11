@@ -541,7 +541,7 @@ function renderRecruitUniform(container, user, additionalQuals = [], options = {
             onRendered: showSupplementalPanels
                 ? (canvas) => {
                     renderUniformTitle(container, canvas);
-                    renderAdditionalQualifications(container, canvas, additionalQuals);
+                    renderAdditionalQualifications(container, canvas, additionalQuals, { isRecruit: true });
                 }
                 : null,
         }
@@ -588,10 +588,12 @@ function swapCsaVariantsForService(ribbons, service) {
     });
 }
 
-function renderAdditionalQualifications(container, canvas, qualifications = []) {
+function renderAdditionalQualifications(container, canvas, qualifications = [], options = {}) {
     if (!container?.querySelector) {
         return;
     }
+
+    const { isRecruit = false } = options;
 
     const existing = container.querySelector(".project-uniform-additional-quals");
     if (existing) {
@@ -624,7 +626,7 @@ function renderAdditionalQualifications(container, canvas, qualifications = []) 
 
     const title = document.createElement("div");
     title.className = "project-uniform-additional-quals__title";
-    title.textContent = "Additional Qualifications";
+    title.textContent = isRecruit ? "Qualifications" : "Additional Qualifications";
     section.appendChild(title);
 
     const list = document.createElement("div");
