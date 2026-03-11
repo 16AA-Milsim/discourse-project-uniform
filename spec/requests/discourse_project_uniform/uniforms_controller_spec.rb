@@ -49,6 +49,27 @@ RSpec.describe DiscourseProjectUniform::UniformsController, type: :request do
     end
   end
 
+  describe "GET /uniform/:username.png" do
+    it "returns transient placeholders with no-store caching headers" do
+      placeholder_png = "\x89PNG\r\n\x1A\nMISSING".b
+      allow(DiscourseProjectUniform::UniformSnapshot).to receive(:fetch).and_return(nil)
+      allow(DiscourseProjectUniform::UniformSnapshot).to receive(:enqueue_render!)
+      allow(DiscourseProjectUniform::UniformSnapshot).to receive(:placeholder_png).and_return(placeholder_png)
+
+      get "/uniform/#{user.username}.png"
+
+      expect(response.status).to eq(200)
+      expect(response.media_type).to eq("image/png")
+      expect(response.headers["Content-Disposition"]).to include("uniform-missing-#{user.username}.png")
+      expect(response.headers["Cache-Control"]).to include("no-store")
+      expect(response.headers["Cache-Control"]).to include("no-cache")
+      expect(response.headers["Cache-Control"]).to include("max-age=0")
+      expect(response.headers["Pragma"]).to eq("no-cache")
+      expect(response.headers["Surrogate-Control"]).to eq("no-store")
+      expect(response.body).to eq(placeholder_png)
+    end
+  end
+
   describe "POST /uniform/:username/snapshot" do
     it "rejects anonymous uploads" do
       post "/uniform/#{user.username}/snapshot", params: { snapshot: { cache_key: cache_key, data: data_url } }

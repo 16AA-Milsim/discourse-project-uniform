@@ -37,7 +37,11 @@ module DiscourseProjectUniform
           etag = Digest::SHA1.hexdigest("missing-#{visit_url}")
           return unless stale?(etag: etag, public: true)
 
-          expires_in 30.seconds, public: true
+          # Missing placeholders are transient; do not allow edge/browser caching.
+          expires_now
+          response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+          response.headers["Pragma"] = "no-cache"
+          response.headers["Surrogate-Control"] = "no-store"
           return send_data placeholder,
                            type: "image/png",
                            disposition: "inline",
