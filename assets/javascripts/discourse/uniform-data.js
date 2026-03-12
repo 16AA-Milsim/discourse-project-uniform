@@ -490,7 +490,7 @@ export const groupTooltipMapLC = deepFreeze(
 export const lanyardGroupsConfig = deepFreeze([
   lanyardCfg(
     "lightblue_and_maroon_lanyard__v2.png",
-    ["Coy_IC", "Coy_2IC", "Coy_Sergeant_Major"],
+    ["Coy_IC", "Coy_2IC", "CSM"],
     "hq_dzf__v2.png",
     "<center><b>Company HQ</b></center><br>A Company HQ is the command element of 16AA, providing leadership, coordination, and oversight of all platoons and attachments within the unit."
   ),
