@@ -537,7 +537,7 @@ export const lanyardGroupsConfig = deepFreeze([
   ),
   lanyardCfg(
     "red_and_blue_lanyard__v2.png",
-    ["7RHA_IC", "7RHA_2IC", "7RHA", "Fire_Support_Team_IC", "Fire_Support_Team_2IC", "Fire_Support_Team"],
+    ["7RHA_IC", "7RHA_2IC", "7RHA", "Fire_Support_Team_IC", "Fire_Support_Team_2IC", "Fire_Support_Team", "FST_IC", "FST_2IC", "FST"],
     "red_and_blue_dzf__v2.png",
     "<center><b>7 Royal Horse Artillery</b></center><br>The dedicated artillery element of 16AA, delivering precision fires and Fire Support Teams to coordinate indirect and joint fires."
   ),
