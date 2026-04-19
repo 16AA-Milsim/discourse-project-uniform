@@ -9,6 +9,7 @@ require "base64"
 require "openssl"
 require "json"
 require "net/http"
+require "sidekiq/api"
 require_dependency "jobs/base"
 
 module ::DiscourseProjectUniform
@@ -20,6 +21,13 @@ module ::DiscourseProjectUniform
   end
 
   def self.snapshot_prewarm_enabled?
+    # ORBAT hover tooltips depend on snapshot freshness; keep prewarm active
+    # when that integration is enabled.
+    if SiteSetting.respond_to?(:orbat_uniform_hover_preview_enabled) &&
+         SiteSetting.orbat_uniform_hover_preview_enabled
+      return true
+    end
+
     SiteSetting.discourse_project_uniform_snapshot_prewarm_enabled
   end
 
@@ -321,6 +329,21 @@ module ::DiscourseProjectUniform
     PLACEHOLDER_ACCENT = [152, 195, 121].freeze
     PRUNE_MUTEX = "discourse-project-uniform:snapshot-prune".freeze
     META_CACHE_KEY = "active-cache-key".freeze
+    RENDER_JOB_QUEUE = "default".freeze
+    RENDER_JOB_CLASS = "Jobs::RenderProjectUniformSnapshot".freeze
+    PREWARM_RENDER_BACKLOG_LIMIT = 200
+
+    def render_job_backlog
+      queue = ::Sidekiq::Queue.new(RENDER_JOB_QUEUE)
+      queue.count { |job| job.klass == RENDER_JOB_CLASS }
+    rescue => e
+      Rails.logger.warn("[discourse-project-uniform] sidekiq backlog check failed: #{e.message}")
+      0
+    end
+
+    def prewarm_render_backlog_limit
+      PREWARM_RENDER_BACKLOG_LIMIT
+    end
 
     def fetch(user_id, cache_key)
       return nil if user_id.blank? || cache_key.blank?
@@ -944,6 +967,15 @@ after_initialize do
         return unless ::DiscourseProjectUniform.public_uniforms_enabled?
         return unless ::DiscourseProjectUniform.snapshot_prewarm_enabled?
         return unless ::DiscourseProjectUniform::UniformSnapshot.renderer_configured?
+
+        backlog = ::DiscourseProjectUniform::UniformSnapshot.render_job_backlog
+        backlog_limit = ::DiscourseProjectUniform::UniformSnapshot.prewarm_render_backlog_limit
+        if backlog >= backlog_limit
+          Rails.logger.info(
+            "[discourse-project-uniform] skipping prewarm due render backlog=#{backlog} limit=#{backlog_limit}"
+          )
+          return
+        end
 
         store = PluginStore.new(::DiscourseProjectUniform::PREWARM_NAMESPACE)
         cursor = store.get(::DiscourseProjectUniform::PREWARM_CURSOR_KEY).to_i
