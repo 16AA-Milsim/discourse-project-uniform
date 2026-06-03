@@ -524,7 +524,6 @@ export const lanyardGroupsConfig = deepFreeze([
       "4-1_Section_IC", "4-1_Section_2IC", "4-1_Section",
       "13AASR_IC", "13AASR_2IC", "13AASR",
       "16CSMR_IC", "16CSMR_2IC", "16CSMR",
-      "216_Para_Signals_IC", "216_Para_Signals_2IC", "216_Para_Signals",
     ],
     "black_dzf__v2.png",
     "<center><b>4 Platoon</b></center><br>The main combat services ground support element of 16AA, providing Fire support, Medical support, Logistics support and Explosive Ordnance Disposal service."
@@ -546,6 +545,12 @@ export const lanyardGroupsConfig = deepFreeze([
     ["MI_IC", "MI_2IC", "MI"],
     "mi_dzf__v2.png",
     "<center><b>Military Intelligence</b></center><br>The intelligence element of 16AA, providing information, analysis, Zeus control and roleplay support for operations and planning."
+  ),
+  lanyardCfg(
+    "blue_lanyard__v2.png",
+    ["216_Para_Signals_IC", "216_Para_Signals_2IC", "216_Para_Signals"],
+    "blue_dzf__v2.png",
+    "<center><b>216 Parachute Signal Squadron</b></center><br>216 (Parachute) Signal Squadron is a squadron of the British Army's Royal Corps of Signals that is responsible for installing, maintaining and operating all types of telecommunications equipment and information systems in support of the 16 Air Assault Brigade."
   ),
 ]);
 
