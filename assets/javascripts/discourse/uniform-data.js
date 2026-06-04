@@ -320,6 +320,14 @@ export const ranks = deepFreeze([
     rankAreas.ptegnrSleeve
   ),
   rank(
+    "Signaller",
+    "enlisted",
+    null,
+    "pte__v2.png",
+    "<center><b>Signaller</b></center><br>Royal Corps of Signals private soldier. Trained in battlefield communications, information systems, and network support in the field.",
+    rankAreas.ptegnrSleeve
+  ),
+  rank(
     "Gunner",
     "enlisted",
     null,
@@ -453,9 +461,20 @@ const rhaTooltip = deepFreeze({
   ],
 });
 
+const rcosTooltip = deepFreeze({
+  tooltipImage: puPaths.group("rcos-tooltip__v2.png"),
+  tooltipText:
+    "<center><b>Royal Corps of Signals</b></center><br>The British Army corps responsible for battlefield communications, information systems, and digital network support across operations worldwide.",
+  tooltipAreas: [
+    { x: 190, y: 25, width: 37, height: 35 },
+    { x: 465, y: 23, width: 38, height: 38 },
+  ],
+});
+
 const groupConfigs = deepFreeze([
   { keys: ["16CSMR", "16CSMR_IC", "16CSMR_2IC"], image: "16csmr__v2.png", tooltip: csmrTooltip },
   { keys: ["7RHA", "7RHA_IC", "7RHA_2IC"], image: "7rha__v2.png", tooltip: rhaTooltip },
+  { keys: ["216_Para_Signals_IC", "216_Para_Signals_2IC", "216_Para_Signals"], image: "rcos__v2.png", tooltip: rcosTooltip },
 ]);
 
 export const groupToImageMap = deepFreeze(
@@ -546,6 +565,12 @@ export const lanyardGroupsConfig = deepFreeze([
     ["MI_IC", "MI_2IC", "MI"],
     "mi_dzf__v2.png",
     "<center><b>Military Intelligence</b></center><br>The intelligence element of 16AA, providing information, analysis, Zeus control and roleplay support for operations and planning."
+  ),
+  lanyardCfg(
+    "white_and_blue_lanyard__v2.png",
+    ["216_Para_Signals_IC", "216_Para_Signals_2IC", "216_Para_Signals"],
+    "white_and_blue_dzf__v2.png",
+    "<center><b>216 Parachute Signal Squadron</b></center><br>216 (Parachute) Signal Squadron is a squadron of the British Army's Royal Corps of Signals that is responsible for installing, maintaining and operating all types of telecommunications equipment and information systems in support of the 16 Air Assault Brigade."
   ),
 ]);
 

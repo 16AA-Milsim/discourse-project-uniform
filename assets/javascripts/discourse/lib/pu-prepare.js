@@ -275,7 +275,13 @@ function buildGroupContext(groups) {
     const groupNameSetLC = new Set(groups.map(g => toLC(g?.name)));
     const is16CSMR = ["16csmr", "16csmr_ic", "16csmr_2ic"].some(n => groupNameSetLC.has(n));
     const is7RHA = ["7rha", "7rha_ic", "7rha_2ic"].some(n => groupNameSetLC.has(n));
-    return { groupNameSetLC, is16CSMR, is7RHA };
+    const isRCOS = [
+        "royal corps of signals",
+        "216_para_signals",
+        "216_para_signals_ic",
+        "216_para_signals_2ic",
+    ].some(n => groupNameSetLC.has(n));
+    return { groupNameSetLC, is16CSMR, is7RHA, isRCOS };
 }
 
 // Maps badge names into lookup sets for qualification and award filtering.
@@ -866,7 +872,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
     const pushFg = createForegroundAdder(foregroundItems);
 
-    const { groupNameSetLC, is16CSMR, is7RHA } = buildGroupContext(groups);
+    const { groupNameSetLC, is16CSMR, is7RHA, isRCOS } = buildGroupContext(groups);
     const { badgeNames, badgeNameSetLC, leadershipBadgeNameSetLC } = buildBadgeContext(userBadges, idToBadge);
     const allQualifications = collectQualificationBadges(userBadges, idToBadge);
     const { ribbonsToRender: csaRibbonsToRender, count: csaRibbonCount, leadershipOverrideForCount } = buildCsaContext(groups);
@@ -912,7 +918,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
         }
     });
 
-    const shouldAddParaCollarImage = !isRAFUniform && !is16CSMR && !is7RHA;
+    const shouldAddParaCollarImage = !isRAFUniform && !is16CSMR && !is7RHA && !isRCOS;
     if (shouldAddParaCollarImage) {
         const paraCollarImage = highestRank?.category === "officer"
             ? paraCollarImageOfficer
@@ -1207,7 +1213,7 @@ export function prepareAndRenderImages(groups, userBadges, idToBadge, container,
 
         // Only register lanyard tooltips for BA uniforms
         if (enableTooltips && !isRAFUniform) {
-            if (!is16CSMR && !is7RHA) {
+            if (!is16CSMR && !is7RHA && !isRCOS) {
                 const paraTooltip = highestRank?.category === "officer"
                     ? paraTooltipOfficer
                     : paraTooltipEnlisted;
