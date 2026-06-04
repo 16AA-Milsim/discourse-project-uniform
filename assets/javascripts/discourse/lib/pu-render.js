@@ -121,7 +121,7 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
 
     const foregroundUrls = (foregroundItems || []).map((item) => (typeof item === "string" ? item : item?.url));
     const csaImageUrls = (csaRibbonEntries || []).map((entry) => entry?.imageKey).filter(Boolean);
-    const { textOverlays = [], fonts = [] } = options || {};
+    const { textOverlays = [], fonts = [], onRendered = null, enableTooltips = true } = options || {};
 
     debugLog("[PU:render] mergeImagesOnCanvas", {
         backgroundImageUrl,
@@ -164,27 +164,33 @@ export function mergeImagesOnCanvas(container, backgroundImageUrl, foregroundIte
                 foregroundItems,
                 csaImages,
                 csaRibbonEntries,
-                textOverlays
+                textOverlays,
+                enableTooltips
             );
 
             canvas.dataset.puRendered = "true";
-            prependCanvas(container, canvas);
+            prependCanvas(container, canvas, enableTooltips);
+            if (typeof onRendered === "function") {
+                onRendered(canvas, container);
+            }
         })
         .catch((e) => debugLog("[PU:render] Error loading images:", e));
 }
 
 // Coordinates drawing the background, overlays, ribbons, and associated tooltips.
-function renderCanvasContents(ctx, canvas, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = [], csaImages = [], csaRibbonEntries = [], textOverlays = []) {
+function renderCanvasContents(ctx, canvas, bgImage, fgImages, awardImages, highestRank, qualificationsToRender, groups, groupTooltipMap, foregroundItems = [], csaImages = [], csaRibbonEntries = [], textOverlays = [], enableTooltips = true) {
     resizeCanvasToBackground(canvas, ctx, bgImage);
     drawBackgroundLayer(ctx, canvas, bgImage);
     drawImages(ctx, fgImages, canvas, foregroundItems);
 
-    registerGroupTooltipsForCanvas(groups, groupTooltipMap);
-    registerRankTooltipsForCanvas(canvas, fgImages, highestRank);
-    registerQualificationTooltipsForCanvas(qualificationsToRender);
+    if (enableTooltips) {
+        registerGroupTooltipsForCanvas(groups, groupTooltipMap);
+        registerRankTooltipsForCanvas(canvas, fgImages, highestRank);
+        registerQualificationTooltipsForCanvas(qualificationsToRender);
+    }
 
-    renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender);
-    renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank);
+    renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender, enableTooltips);
+    renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank, enableTooltips);
     drawTextOverlays(ctx, canvas, textOverlays);
 }
 
@@ -279,7 +285,7 @@ function registerQualificationTooltipsForCanvas(qualifications = []) {
 }
 
 // Renders medal ribbons with perspective and registers associated tooltip geometry.
-function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender) {
+function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRender, enableTooltips = true) {
     try {
         const validAwards = awardImages.filter(Boolean);
         const awardsCanvas = document.createElement("canvas");
@@ -326,47 +332,49 @@ function renderAwardsWithTooltips(ctx, canvas, awardImages, qualificationsToRend
         const cos = Math.cos(RIBBON_ROTATION);
         const sin = Math.sin(RIBBON_ROTATION);
 
-        tooltipRects.forEach((tooltip) => {
-            const corners = [
-                { x: tooltip.x, y: tooltip.y },
-                { x: tooltip.x + tooltip.width, y: tooltip.y },
-                { x: tooltip.x, y: tooltip.y + tooltip.height },
-                { x: tooltip.x + tooltip.width, y: tooltip.y + tooltip.height },
-            ].map((pt) => {
-                const sx = pt.x * scale;
-                const sy = pt.y * scale;
-                const mapped = perspective.mapPoint(sx, sy);
-                const localX = mapped.x - destWidth / 2;
-                const localY = mapped.y - destHeight / 2;
-                const rotX = localX * cos - localY * sin;
-                const rotY = localX * sin + localY * cos;
-                const afterRotX = rotX + destWidth / 2;
-                const afterRotY = rotY + destHeight / 2;
-                const skewY = afterRotY + afterRotX * skewTan;
-                return {
-                    x: awardsX + RIBBON_OFFSET_X + afterRotX,
-                    y: awardsY + RIBBON_OFFSET_Y + skewY,
-                };
+        if (enableTooltips) {
+            tooltipRects.forEach((tooltip) => {
+                const corners = [
+                    { x: tooltip.x, y: tooltip.y },
+                    { x: tooltip.x + tooltip.width, y: tooltip.y },
+                    { x: tooltip.x, y: tooltip.y + tooltip.height },
+                    { x: tooltip.x + tooltip.width, y: tooltip.y + tooltip.height },
+                ].map((pt) => {
+                    const sx = pt.x * scale;
+                    const sy = pt.y * scale;
+                    const mapped = perspective.mapPoint(sx, sy);
+                    const localX = mapped.x - destWidth / 2;
+                    const localY = mapped.y - destHeight / 2;
+                    const rotX = localX * cos - localY * sin;
+                    const rotY = localX * sin + localY * cos;
+                    const afterRotX = rotX + destWidth / 2;
+                    const afterRotY = rotY + destHeight / 2;
+                    const skewY = afterRotY + afterRotX * skewTan;
+                    return {
+                        x: awardsX + RIBBON_OFFSET_X + afterRotX,
+                        y: awardsY + RIBBON_OFFSET_Y + skewY,
+                    };
+                });
+
+                const minX = Math.min(...corners.map((c) => c.x));
+                const maxX = Math.max(...corners.map((c) => c.x));
+                const minY = Math.min(...corners.map((c) => c.y));
+                const maxY = Math.max(...corners.map((c) => c.y));
+                const padding = 1;
+                const width = Math.max(0, maxX - minX - padding * 2);
+                const height = Math.max(0, maxY - minY - padding * 2);
+                registerTooltip(minX + padding, minY + padding, width, height, tooltip.content);
             });
 
-            const minX = Math.min(...corners.map((c) => c.x));
-            const maxX = Math.max(...corners.map((c) => c.x));
-            const minY = Math.min(...corners.map((c) => c.y));
-            const maxY = Math.max(...corners.map((c) => c.y));
-            const padding = 1;
-            const width = Math.max(0, maxX - minX - padding * 2);
-            const height = Math.max(0, maxY - minY - padding * 2);
-            registerTooltip(minX + padding, minY + padding, width, height, tooltip.content);
-        });
-
-        debugLog("[PU:render] Award tooltip rects registered:", tooltipRects.length);
+            debugLog("[PU:render] Award tooltip rects registered:", tooltipRects.length);
+        }
     } catch (error) {
         debugLog("[PU:render] Error processing awards:", error);
     }
 }
 
 // Renders CSA ribbons with service offsets and registers tooltip geometry.
-function renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank) {
+function renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, highestRank, enableTooltips = true) {
     if (!csaImages.length || !csaRibbonEntries.length) {
         return;
     }
@@ -434,49 +442,53 @@ function renderCsaRibbonsWithTooltips(ctx, canvas, csaImages, csaRibbonEntries, 
         const cos = Math.cos(CSA_RIBBON_ROTATION);
         const sin = Math.sin(CSA_RIBBON_ROTATION);
 
-        tooltipRects.forEach((tooltip) => {
-            const corners = [
-                { x: tooltip.x, y: tooltip.y },
-                { x: tooltip.x + tooltip.width, y: tooltip.y },
-                { x: tooltip.x, y: tooltip.y + tooltip.height },
-                { x: tooltip.x + tooltip.width, y: tooltip.y + tooltip.height },
-            ].map((pt) => {
-                const sx = pt.x * scale;
-                const sy = pt.y * scale;
-                const mapped = perspective.mapPoint(sx, sy);
-                const localX = mapped.x - destWidth / 2;
-                const localY = mapped.y - destHeight / 2;
-                const rotX = localX * cos - localY * sin;
-                const rotY = localX * sin + localY * cos;
-                const afterRotX = rotX + destWidth / 2;
-                const afterRotY = rotY + destHeight / 2;
-                const skewY = afterRotY + afterRotX * skewTan;
-                return {
-                    x: anchorX + afterRotX,
-                    y: anchorY + skewY,
-                };
+        if (enableTooltips) {
+            tooltipRects.forEach((tooltip) => {
+                const corners = [
+                    { x: tooltip.x, y: tooltip.y },
+                    { x: tooltip.x + tooltip.width, y: tooltip.y },
+                    { x: tooltip.x, y: tooltip.y + tooltip.height },
+                    { x: tooltip.x + tooltip.width, y: tooltip.y + tooltip.height },
+                ].map((pt) => {
+                    const sx = pt.x * scale;
+                    const sy = pt.y * scale;
+                    const mapped = perspective.mapPoint(sx, sy);
+                    const localX = mapped.x - destWidth / 2;
+                    const localY = mapped.y - destHeight / 2;
+                    const rotX = localX * cos - localY * sin;
+                    const rotY = localX * sin + localY * cos;
+                    const afterRotX = rotX + destWidth / 2;
+                    const afterRotY = rotY + destHeight / 2;
+                    const skewY = afterRotY + afterRotX * skewTan;
+                    return {
+                        x: anchorX + afterRotX,
+                        y: anchorY + skewY,
+                    };
+                });
+
+                const minX = Math.min(...corners.map((c) => c.x));
+                const maxX = Math.max(...corners.map((c) => c.x));
+                const minY = Math.min(...corners.map((c) => c.y));
+                const maxY = Math.max(...corners.map((c) => c.y));
+                const padding = 1;
+                const width = Math.max(0, maxX - minX - padding * 2);
+                const height = Math.max(0, maxY - minY - padding * 2);
+                registerTooltip(minX + padding, minY + padding, width, height, tooltip.content);
             });
 
-            const minX = Math.min(...corners.map((c) => c.x));
-            const maxX = Math.max(...corners.map((c) => c.x));
-            const minY = Math.min(...corners.map((c) => c.y));
-            const maxY = Math.max(...corners.map((c) => c.y));
-            const padding = 1;
-            const width = Math.max(0, maxX - minX - padding * 2);
-            const height = Math.max(0, maxY - minY - padding * 2);
-            registerTooltip(minX + padding, minY + padding, width, height, tooltip.content);
-        });
-
-        debugLog("[PU:render] CSA ribbon tooltip rects registered:", tooltipRects.length);
+            debugLog("[PU:render] CSA ribbon tooltip rects registered:", tooltipRects.length);
+        }
     } catch (error) {
         debugLog("[PU:render] Error processing CSA ribbons:", error);
     }
 }
 
 // Inserts the rendered canvas into the DOM and wires up tooltips.
-function prependCanvas(container, canvas) {
+function prependCanvas(container, canvas, enableTooltips = true) {
     container.prepend(canvas);
-    setupTooltips(canvas);
+    if (enableTooltips) {
+        setupTooltips(canvas);
+    }
     debugLog("[PU:render] Canvas appended and tooltips set up");
 }
 
