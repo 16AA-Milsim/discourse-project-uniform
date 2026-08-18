@@ -408,10 +408,14 @@ export default {
                             recruitNumber,
                         });
 
-                        if (containerElement._puLastRenderSignature === signature) {
+                        const hasExistingRender = !!(
+                            containerElement.querySelector(".discourse-project-uniform-canvas") ||
+                            containerElement.querySelector(".discourse-project-uniform-placeholder")
+                        );
+                        if (containerElement._puLastRenderSignature === signature && hasExistingRender) {
                             debugLog("[PU:init] Render skipped; signature unchanged");
                             return;
-                        }
+                    }
 
                         tearDownExistingUniform(containerElement);
 
