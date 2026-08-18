@@ -413,18 +413,6 @@ export const ranks = deepFreeze([
 ]);
 
 
-export const officerRanks = deepFreeze(ranks.filter(r => r.category === "officer").map(r => r.name));
-export const enlistedRanks = deepFreeze(ranks.filter(r => r.category === "enlisted").map(r => r.name));
-export const rankToImageMap = deepFreeze(Object.fromEntries(ranks.map(r => [r.name, r.imageKey])));
-
-// Maps abbreviated/alternate Discourse group `name` values to their canonical rank name above.
-// Discourse group "name" is often a short slug rather than the full rank name (e.g. a Royal
-// Corps of Signals private's group may be tagged "Sig" rather than "Signaller"), so rank
-// resolution won't match unless we translate it here. Add an entry whenever a unit's group
-// slug doesn't literally match one of the `ranks` names.
-export const rankGroupAliases = deepFreeze({
-  Sig: "Signaller",
-});
 
 // ---------- groups/images ----------
 export const paraCollarImageEnlisted = puPaths.group("para__v2.png");
